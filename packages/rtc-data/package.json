@@ -2,7 +2,7 @@
   "name": "rtc-data",
   "version": "0.0.0-dev-0",
   "description": "Not ready yet",
-  "main": "main.js",
+  "main": "lib/index.js",
   "bin": {
   },
   "scripts": {

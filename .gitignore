@@ -106,3 +106,7 @@ dist
 
 yarn.log
 yarn.lock
+package-lock.json
+
+lib
+build
