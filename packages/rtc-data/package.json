@@ -7,7 +7,8 @@
   },
   "scripts": {
     "eslint": "eslint --ext .js,.ts --format codeframe ./",
-    "lint-staged": "lint-staged"
+    "lint-staged": "lint-staged",
+    "build": "tsc"
   },
   "keywords": [
   ],
