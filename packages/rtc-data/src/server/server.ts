@@ -14,8 +14,9 @@ import "../common/platform";
 
 /** serve with an exist server */
 export function serve(server: HttpServer): void;
-export function serve(port?: number): void;
-export function serve(arg: number | HttpServer = 9000) {
+/** serve with hostname and port */
+export function serve(port?: number, hostname?: string): void;
+export function serve(arg: number | HttpServer = 9000, hostname = "0.0.0.0") {
   const httpServer = typeof arg === "number" ? createServer() : arg;
   const io = new Server<TypeServerMsg, TypeClientMsg>(httpServer, {
     cors: { origin: "*" },
@@ -69,5 +70,5 @@ export function serve(arg: number | HttpServer = 9000) {
     );
   });
 
-  if (typeof arg === "number") httpServer.listen(arg);
+  if (typeof arg === "number") httpServer.listen(arg, hostname);
 }
