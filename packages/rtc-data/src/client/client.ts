@@ -15,7 +15,6 @@ export class Client {
   peerIdMap = new Map<RTCPeerConnection, string>();
   tagList: TypeTagList = [];
   private idSendDataMap = new Map<string, any[]>();
-  a: keyof TypeClientEvent = "connect";
   private cbMap: Partial<
     Combine<
       { [index in keyof TypeClientEvent]: TypeClientEvent[index][] },
