@@ -1,3 +1,3 @@
 export const RtcSetting = {
-  iceServers: [{ urls: "stun:42.192.228.19:11289" }],
+  iceServers: [{ urls: "stun:stun.wcodebase.com:13666" }],
 };
