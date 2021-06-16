@@ -1,10 +1,5 @@
-import {
-  BaseEntity,
-  Column,
-  Entity,
-  PrimaryColumn,
-  PrimaryGeneratedColumn,
-} from "typeorm";
+import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import * as path from "path";
 
 export enum FileType {
   file,
@@ -42,24 +37,46 @@ export class FileInfo extends BaseEntity {
   async save() {
     const res = await super.save();
     await FileInfo.getRepository().query(
-      `insert into ${IndexTableName}(docid, name) values(${
-        this.id
-      },'${textPreProcessor(this.name)}')`
+      `insert into ${IndexTableName}(docid, name) values(${this.id},?)`,
+      [textPreProcessor(this.name)]
     );
     return res;
   }
 
+  async getPath() {
+    let filePath = this.name;
+    let info: FileInfo | undefined = this;
+    while (true) {
+      info = await FileInfo.findOne(info.parentId);
+      if (info) filePath = path.join(info.name, filePath);
+      else break;
+    }
+    return filePath;
+  }
+
   static async findByMatchName(particalName: string) {
     const ids = await this.getRepository().query(
-      `select docid from ${IndexTableName} where name match '${textPreProcessor(
-        particalName
-      )}'`
+      `select docid from ${IndexTableName} where name match ?`,
+      [textPreProcessor(particalName)]
     );
     return await this.findByIds(ids.map((v: any) => v.docid));
+  }
+
+  static async getOrInsert(
+    name: string,
+    type: FileType,
+    parentId = -1,
+    size = 0
+  ) {
+    return (
+      (await this.find({ where: { parentId, type, name } }))[0] ||
+      (await new this(name, type, parentId, size).save())
+    );
   }
 }
 
 const textPreProcessor = (text: string) =>
   text
     .replace(/([^\d])?(\d+)([^\d])?/g, "$1 $2 $3")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
     .replace(/([^\x00-\xff])/g, " $1 ");

@@ -17,5 +17,7 @@ module.exports = {
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "no-async-promise-executor": "off",
     "no-control-regex": "off",
+    "no-constant-condition": "off",
+    "@typescript-eslint/no-this-alias": "off",
   },
 };

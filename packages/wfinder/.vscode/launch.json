@@ -14,6 +14,8 @@
             "program": "${workspaceRoot}/node_modules/ts-node/dist/bin.js",
             "args": [
                 "./src/main.ts",
+                "-f",
+                "e"
             ],
             "cwd": "${workspaceFolder}",
             "protocol": "inspector",

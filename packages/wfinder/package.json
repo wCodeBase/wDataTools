@@ -17,6 +17,9 @@
     "better-sqlite3": "^7.4.1",
     "colors": "^1.4.0",
     "commander": "^7.2.0",
+    "ink": "^3.0.8",
+    "inquirer": "^8.1.1",
+    "react": "^17.0.2",
     "typeorm": "^0.2.34"
   },
   "devDependencies": {
