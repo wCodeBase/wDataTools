@@ -5,10 +5,12 @@ import { isPathInclude, splitPath } from "../tools/tool";
 import { FileInfo, FileType } from "./entities/FileInfo";
 import { getConnection } from "./db";
 import { ScanPath } from "./entities/ScanPath";
+import { EvFinderState, EvUiCmMessage } from "./events/events";
+import { FinderState } from "./events/types";
 
-export class FileScanError extends Error {}
+export class FileScanError extends Error { }
 
-export const scanPath = async (scanPath: string, config = Config) => {
+export const scanPath = async (scanPath: string, ignoreCtime = false, config = Config) => {
   scanPath = path.resolve(scanPath);
   const { finderRoot } = config;
   if (!fs.existsSync(scanPath))
@@ -24,6 +26,7 @@ export const scanPath = async (scanPath: string, config = Config) => {
     const existPath = await FileInfo.getOrInsert(
       pathSeg,
       FileType.folder,
+      new Date(),
       parentId
     );
     parentId = existPath.id;
@@ -40,43 +43,72 @@ export const scanPath = async (scanPath: string, config = Config) => {
     await fileInfo.save();
     return;
   }
-  const scanStack: { id: number; absPath: string; restChildren: string[] }[] = [
-    { id: parentId, absPath: scanPath, restChildren: fs.readdirSync(scanPath) },
+  const scanStack: { id: number; absPath: string; restChildren: string[], ctime: Date }[] = [
+    { id: parentId, absPath: scanPath, restChildren: fs.readdirSync(scanPath), ctime: fs.statSync(scanPath).ctime },
   ];
-  while (true) {
+  while (shouldScan) {
     const item = scanStack.pop();
     if (!item) break;
     for (const name of item.restChildren) {
       const chilPath = path.join(item.absPath, name);
       const stat = fs.statSync(chilPath);
       if (stat.isFile())
-        await FileInfo.getOrInsert(name, FileType.file, item.id, stat.size);
+        await FileInfo.getOrInsert(name, FileType.file, stat.ctime, item.id, stat.size);
       else {
-        const info = await FileInfo.getOrInsert(name, FileType.folder, item.id);
-        scanStack.push({
-          id: info.id,
-          absPath: chilPath,
-          restChildren: fs.readdirSync(chilPath),
-        });
+        const info = await FileInfo.getOrInsert(name, FileType.folder, stat.ctime, item.id);
+        if (ignoreCtime || info.ctime.valueOf() !== stat.ctime.valueOf()) {
+          scanStack.push({
+            id: info.id,
+            absPath: chilPath,
+            restChildren: fs.readdirSync(chilPath),
+            ctime: stat.ctime,
+          });
+        }
+      }
+    }
+    if (shouldScan) {
+      const info = await FileInfo.findOne(item.id);
+      if (info && info.ctime.valueOf() !== item.ctime.valueOf()) {
+        info.ctime = item.ctime;
+        await info.save();
       }
     }
   }
 };
 
-export const doScanCmd = async () => {
+let shouldScan = false;
+
+export const stopScan = () => {
+  shouldScan = false;
+}
+
+export const doScan = async () => {
+  EvFinderState.next(FinderState.scanning);
+  shouldScan = true;
   await getConnection();
   const scanPaths = await ScanPath.find();
-  console.log(`${scanPaths.length} path to scan.`);
+  EvUiCmMessage.next({ message: `${scanPaths.length} path to scan.` });
   for (const path of scanPaths) {
-    console.log(`Scan path: ${path.path}`);
+    EvUiCmMessage.next({ message: `Scan path: ${path.path}` });
     try {
       await scanPath(path.path);
       path.lastScanedAt = new Date();
       await path.save();
-      console.log(`Path scan finished: ${path.path}`);
+      EvUiCmMessage.next({ message: `Path scan finished: ${path.path}` });
     } catch (e) {
-      console.error(`Scan path fail: ${path.path}\n`, e);
+      EvUiCmMessage.next({ message: `Scan path fail: ${path.path}\n`, error: String(e) });
     }
   }
-  console.log("Scan finished.");
+  EvUiCmMessage.next({ message: "Scan finished." });
+  shouldScan = false;
+  EvFinderState.next(FinderState.idle);
+}
+
+export const doScanCmd = async () => {
+  const subscribe = EvUiCmMessage.subscribe(msg => {
+    if (msg.error) console.error(msg.message, msg.error);
+    else console.log(msg.message);
+  });
+  await doScan();
+  subscribe.unsubscribe();
 };

@@ -51,6 +51,7 @@ export const getConnection = (() => {
       database: dbPath,
       entities: [FileInfo, ScanPath],
     });
+    connectionMap.set(dbPath, connection);
     const close = connection.close;
     connection.close = async () => {
       connectionMap.delete(dbPath);

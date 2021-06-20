@@ -1,4 +1,3 @@
-import { finder } from "./finder/index";
 import { Command } from "commander";
 import {
   addScanPath,
@@ -29,7 +28,7 @@ program
     } else if (options.find) {
       await findFiles(options.find);
     } else {
-      finder();
+      require("./finder/index").finder();
     }
   })
   .parse();

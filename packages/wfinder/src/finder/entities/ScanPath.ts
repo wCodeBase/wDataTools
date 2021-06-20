@@ -5,6 +5,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
 } from "typeorm";
+import { TypeMsgPathItem } from "../events/types";
 
 @Entity()
 export class ScanPath extends BaseEntity {
@@ -23,5 +24,10 @@ export class ScanPath extends BaseEntity {
   constructor(path: string) {
     super();
     this.path = path;
+  }
+
+  toItem():TypeMsgPathItem{
+    const {id,path,createdAt} = this;
+    return {id,path,createdAt};
   }
 }

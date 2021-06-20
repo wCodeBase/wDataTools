@@ -1,5 +1,6 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, PrimaryGeneratedColumn, RemoveOptions } from "typeorm";
 import * as path from "path";
+import { EvFileInfoChange } from "../events/events";
 
 export enum FileType {
   file,
@@ -26,10 +27,14 @@ export class FileInfo extends BaseEntity {
   @Column()
   type: FileType;
 
-  constructor(name: string, type: FileType, parentId = -1, size = 0) {
+  @Column({default: 0})
+  ctime!: Date;
+
+  constructor(name: string, type: FileType, ctime: Date, parentId = -1, size = 0) {
     super();
     this.name = name;
     this.type = type;
+    this.ctime = ctime;
     this.parentId = parentId;
     this.size = size;
   }
@@ -40,6 +45,13 @@ export class FileInfo extends BaseEntity {
       `insert into ${IndexTableName}(docid, name) values(${this.id},?)`,
       [textPreProcessor(this.name)]
     );
+    EvFileInfoChange.next();
+    return res;
+  }
+
+  async remove(options?: RemoveOptions){
+    const res = await super.remove(options);
+    EvFileInfoChange.next();
     return res;
   }
 
@@ -54,10 +66,18 @@ export class FileInfo extends BaseEntity {
     return filePath;
   }
 
-  static async findByMatchName(particalName: string) {
+  static async countByMatchName(keywords: string[] ) {
+    const res = await this.getRepository().query(
+      `select count(1) as count from ${IndexTableName} where name match ?`,
+      [textPreProcessor(keywords.join(' '))]
+    );
+    return res[0].count;
+  }
+
+  static async findByMatchName(keywords: string[], take=100, skip =0 ) {
     const ids = await this.getRepository().query(
-      `select docid from ${IndexTableName} where name match ?`,
-      [textPreProcessor(particalName)]
+      `select docid from ${IndexTableName} where name match ? limit ?,?`,
+      [textPreProcessor(keywords.join(' ')),skip, take]
     );
     return await this.findByIds(ids.map((v: any) => v.docid));
   }
@@ -65,12 +85,13 @@ export class FileInfo extends BaseEntity {
   static async getOrInsert(
     name: string,
     type: FileType,
+    ctime: Date,
     parentId = -1,
     size = 0
   ) {
     return (
       (await this.find({ where: { parentId, type, name } }))[0] ||
-      (await new this(name, type, parentId, size).save())
+      (await new this(name, type, ctime, parentId, size).save())
     );
   }
 }

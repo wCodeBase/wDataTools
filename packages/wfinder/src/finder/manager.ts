@@ -1,31 +1,26 @@
+import { exAddScanPath, exListScanPath } from './executors';
 import { getConnection } from "./db";
 import { FileInfo } from "./entities/FileInfo";
 import { ScanPath } from "./entities/ScanPath";
 
 export const addScanPath = async (scanPath: string) => {
-  await getConnection();
-  if (await ScanPath.count({ where: { path: scanPath } }))
-    console.log(`Path already exist: ${scanPath}`);
-  else {
-    await new ScanPath(scanPath).save();
-    console.log("ScanPath saved: ", scanPath);
-  }
+  const res =await exAddScanPath(scanPath);
+  if(res.error !== undefined) console.log(res.error);
+  else console.log("ScanPath saved: ", res.result.path);
 };
 
-export const deleteScanPath = async (scanPath: string) => {
-  await getConnection();
-  const scanPaths = await ScanPath.find({ path: scanPath });
-  if (!scanPaths.length) console.log(`Path dose not exist`);
-  else {
-    await ScanPath.remove(scanPaths);
-    console.log("Scan path removed:", scanPaths.map((v) => v.path).join(", "));
-  }
+export const deleteScanPath = async (scanPath: string, returnRequired = false) => {
+  const res =await exAddScanPath(scanPath);
+  if(res.error !== undefined) console.log(res.error);
+  else console.log("Scan path removed:", res.result.path);
 };
 
 export const listScanPath = async () => {
-  await getConnection();
-  const scanPaths = await ScanPath.find();
-  if (!scanPaths.length) console.log(`No path exists`);
+  const {result: scanPaths} =await exListScanPath();
+  if (!scanPaths.length){
+    const error = `No path exist, you need to add path first.`;
+    console.log(error);
+  }
   else {
     console.log(
       "Scan paths: \n",
@@ -36,7 +31,7 @@ export const listScanPath = async () => {
 
 export const findFiles = async (keyWords: string[]) => {
   await getConnection();
-  const fileInfos = await FileInfo.findByMatchName(keyWords.join(" "));
+  const fileInfos = await FileInfo.findByMatchName(keyWords);
   if (!fileInfos.length) {
     console.log("No file found.");
     return;
@@ -47,5 +42,5 @@ export const findFiles = async (keyWords: string[]) => {
     `Search results(${fileInfos.length}): \n`,
     paths.map((v, i) => `(${i}): ${v}`).join("\n")
   );
-  if (fileInfos.length > 100) console.log("...");
+  if (fileInfos.length >= 100) console.log("...");
 };

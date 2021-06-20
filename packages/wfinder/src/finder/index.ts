@@ -1,7 +1,8 @@
-import { FileInfo, FileType, IndexTableName } from "./entities/FileInfo";
 import { getConnection } from "./db";
+import { renderInkUi } from "../ui/ink";
 
 export const finder = async () => {
+  require('./events/uiCmdExecutor');
   await getConnection();
-  // TODO: ink ui.
+  renderInkUi();
 };
