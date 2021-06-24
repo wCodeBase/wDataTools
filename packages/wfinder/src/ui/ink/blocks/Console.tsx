@@ -4,8 +4,8 @@ import { EvConsole } from '../../../finder/events/events';
 import { useBehaviorSubjectValue, useCountDown } from '../../hooks/hooks';
 
 export const InkConsole = () => {
-    const [value] = useBehaviorSubjectValue(EvConsole);
-    const count = useCountDown(5,[value]);
+    const [value,,timestamp] = useBehaviorSubjectValue(EvConsole);
+    const count = useCountDown(5,[timestamp]);
     return <>
         {
             !!value && !!count && <Box>

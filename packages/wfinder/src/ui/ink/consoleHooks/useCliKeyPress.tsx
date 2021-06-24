@@ -11,6 +11,8 @@ export type OnCliEscape = () => boolean | undefined;
 export type OnCliKeyPress = (key: string) => boolean | undefined;
 
 export const KEY_ESCAPE = String(Buffer.from([27]));
+/** Substitude for ESCAPE */
+export const KEY_CTRL_E = String(Buffer.from([5]));
 export const KEY_ARROW_UP = String(Buffer.from([27, 91,65]));
 export const KEY_ARROW_DOWN = String(Buffer.from([27, 91,66]));
 export const KEY_PAGE_UP = String(Buffer.from([27, 91, 53, 126]));
@@ -28,7 +30,7 @@ const { useCliEscape, useCliKeyPress,triggerCliKeyCallback } = (() => {
     const onStdinData = (chunk:Buffer|string) => {
         // console.log("key", Array.prototype.map.call(chunk, (v => v.charCodeAt(0))));
         const key = String(chunk);
-        if (key === KEY_ESCAPE)
+        if (key === KEY_ESCAPE||key===KEY_CTRL_E)
             // Use setTimeout to delay callbacks execution to avoid React state update conflict with "ink-text-input"
             setTimeout(() => escapeCbs.some(cb => cb()));
         if (CliKeySet.has(key))

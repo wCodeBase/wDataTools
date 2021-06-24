@@ -30,10 +30,20 @@ const initDb = async (dbPath: string) => {
 
 export const getConnection = (() => {
   const connectionMap = new Map<string, Connection>();
+  const blockingResolveMap = new Map<string, ((res: Connection) => void)[]>();
+  const connectionLockMap = new Map<string, boolean | undefined>();
   return async (config = Config) => {
     const { dbPath } = config;
     let connection = connectionMap.get(dbPath);
     if (connection) return connection;
+    const lock = connectionLockMap.get(dbPath);
+    if (lock) {
+      return new Promise<Connection>((r) => {
+        const resolves = blockingResolveMap.get(dbPath) || [];
+        resolves.push(r);
+        blockingResolveMap.set(dbPath, resolves);
+      });
+    } else connectionLockMap.set(dbPath, true);
     if (!fs.existsSync(dbPath)) {
       const answer = await inquirer.prompt({
         name: "dbCreate",
@@ -57,6 +67,9 @@ export const getConnection = (() => {
       connectionMap.delete(dbPath);
       await close();
     };
+    connectionLockMap.delete(dbPath);
+    blockingResolveMap.get(dbPath)?.forEach((v) => v(connection!));
+    blockingResolveMap.delete(dbPath);
     return connection;
   };
 })();
