@@ -1,6 +1,6 @@
 {
   "name": "wfinder",
-  "version": "0.0.0-dev-0",
+  "version": "0.0.0-dev-1",
   "description": "A local file index and search tool.",
   "bin": {
     "wfinder": "dist/main.js"
@@ -14,7 +14,6 @@
   "author": "wCodeBase",
   "license": "MIT",
   "dependencies": {
-    "@types/lodash": "^4.14.170",
     "better-sqlite3": "^7.4.1",
     "colors": "^1.4.0",
     "commander": "^7.2.0",
@@ -29,6 +28,7 @@
     "typeorm": "^0.2.34"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.170",
     "@types/better-sqlite3": "^5.4.1",
     "@types/commander": "^2.12.2",
     "@types/inquirer": "^7.3.1",
