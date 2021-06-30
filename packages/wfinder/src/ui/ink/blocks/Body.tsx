@@ -4,7 +4,7 @@ import SelectInput from 'ink-select-input';
 import { CmdInput } from "../components/CmdInput";
 import { useStableState, useSubjectCallback } from "../../hooks/hooks";
 import { FinderState, TypeMsgPathItem, TypeMsgSearchResultItem, TypeUiCmd, TypeUiMsgMessage, UI_CMD_DEF } from "../../../finder/events/types";
-import { EvFinderState, EvLog, EvUiCmd, EvUiCmdResult, EvUiCmMessage, useFinderState } from "../../../finder/events/events";
+import { EvFinderState, EvLog, EvUiCmd, EvUiCmdResult, EvUiCmdMessage, useFinderState } from "../../../finder/events/events";
 import { KEY_ARROW_DOWN, KEY_ARROW_UP, KEY_ESCAPE, KEY_PAGE_DOWN, KEY_PAGE_UP, triggerCliKeyCallback, useCliEscape, useCliKeyPress } from "../../ink/consoleHooks/useCliKeyPress";
 import { FileType } from "../../../finder/entities/FileInfo";
 import { doInkExit } from '../exit';
@@ -70,7 +70,7 @@ const Search = () => {
             {!state.records.length ? <Text color="yellow">No record matchs search keywords.</Text>
                 : <Box display="flex" flexDirection="column">
                     <Text color="cyan">{`Result list (totoal ${state.total}, use arrow keys to switch page.):`}</Text>
-                    {state.records.map((v, i) => <Text key={v.id}>{`(${state.skip + i + 1}) ${FileType[v.type]} ${ellipsisText(v.name)}`}</Text>)}
+                    {state.records.map((v, i) => <Text key={v.id+v.dbRoot}>{`(${state.skip + i + 1}) ${FileType[v.type]} ${ellipsisText(v.name)}`}</Text>)}
                 </Box>}
         </Box>}
         {finderState === FinderState.idle && <CmdInput label="search"
@@ -97,7 +97,7 @@ const Scan = () => {
         return options.map(v => ({ label: v, value: v }));
     }, [finderState]);
 
-    useSubjectCallback(EvUiCmMessage, msg => setState({ scanMessages: state.scanMessages.concat([{ ...msg, number: state.scanMessages.length }]) }));
+    useSubjectCallback(EvUiCmdMessage, msg => setState({ scanMessages: state.scanMessages.concat([{ ...msg, number: state.scanMessages.length }]) }));
 
     useCliEscape(() => {
         if (subject.value === FinderState.scanning) return true;
@@ -218,7 +218,7 @@ const PathManage = () => {
             <Text color="blue">Scan path list (total {`${state.paths.length}`}):</Text>
             {!state.paths.length ? <Text>No scan path exist yet.</Text>
                 : state.paths.slice(state.skip, state.skip + state.showLength).map((v, i) =>
-                    <Text key={v.path} backgroundColor={v.id === state.selectedId ? 'blue' : ''}>{`(${state.skip + i+1}) ${v.path}`}</Text>)
+                    <Text key={v.path + v.dbRoot} backgroundColor={v.id === state.selectedId ? 'blue' : ''}>{`(${state.skip + i+1}) ${v.path}`}</Text>)
             }
         </Box>
 

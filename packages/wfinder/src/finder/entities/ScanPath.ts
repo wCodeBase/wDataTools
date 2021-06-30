@@ -5,6 +5,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
 } from "typeorm";
+import { getSwitchedDbConfig } from "../db";
 import { TypeMsgPathItem } from "../events/types";
 
 @Entity()
@@ -21,13 +22,15 @@ export class ScanPath extends BaseEntity {
   @Column({ nullable: true })
   lastScanedAt?: Date;
 
+  dbRoot = getSwitchedDbConfig().finderRoot;
+
   constructor(path: string) {
     super();
     this.path = path;
   }
 
-  toItem():TypeMsgPathItem{
-    const {id,path,createdAt} = this;
-    return {id,path,createdAt};
+  toItem(): TypeMsgPathItem {
+    const { id, path, createdAt, dbRoot } = this;
+    return { id, path, createdAt, dbRoot };
   }
 }

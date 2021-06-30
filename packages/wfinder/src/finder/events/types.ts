@@ -24,7 +24,7 @@ export type TypeMsg = {
 
 export type TypeMsgSearchResultItem = Pick<
   FileInfo,
-  "name" | "size" | "type" | "id"
+  "name" | "size" | "type" | "id" | "dbRoot"
 >;
 
 export type TypeMsgSearch = {
@@ -55,7 +55,10 @@ export type TypeMsgStopScan = {
   result: "done";
 };
 
-export type TypeMsgPathItem = Pick<ScanPath, "id" | "path" | "createdAt">;
+export type TypeMsgPathItem = Pick<
+  ScanPath,
+  "id" | "path" | "createdAt" | "dbRoot"
+>;
 
 export type TypeMsgPathManage = {
   cmd: "addPath" | "deletePath" | "listPath";
@@ -87,4 +90,8 @@ export interface TypeUiMsgMessage {
 
 export type TypeDatabaseInfos = {
   fileInfoCount: number;
+};
+
+export type TypeUiStatus = {
+  ink?: boolean;
 };

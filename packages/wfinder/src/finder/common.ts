@@ -10,5 +10,6 @@ export const Config = (() => {
     dbName,
     /** Absolute path for database connection */
     dbPath,
+    readOnly: false,
   };
 })();

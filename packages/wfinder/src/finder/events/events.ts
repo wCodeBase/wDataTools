@@ -7,6 +7,7 @@ import {
   TypeUiMsgData,
   TypeUiMsgMessage,
   TypeUiMsgResult,
+  TypeUiStatus,
 } from "./types";
 
 export const EvFinderState = new BehaviorSubject(FinderState.idle);
@@ -35,4 +36,11 @@ export const EvUiCmd = new Subject<TypeUiMsgData>();
 
 export const EvUiCmdResult = new Subject<TypeUiMsgResult>();
 
-export const EvUiCmMessage = new Subject<TypeUiMsgMessage>();
+export const EvUiCmdMessage = new Subject<TypeUiMsgMessage>();
+
+export const EvUiStatus = (() => {
+  const subject = new BehaviorSubject<TypeUiStatus>({});
+  const next = subject.next.bind(subject);
+  subject.next = (val) => next({ ...subject.value, ...val });
+  return subject;
+})();
