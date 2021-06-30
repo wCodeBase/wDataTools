@@ -1,6 +1,5 @@
 import { Config } from "./../common";
 import { BaseEntity, Column, Entity, PrimaryColumn } from "typeorm";
-import { TypeMsgPathItem } from "../events/types";
 
 @Entity()
 export class DbIncluded extends BaseEntity {

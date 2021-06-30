@@ -5,7 +5,7 @@ import { isPathInclude, splitPath } from "../tools/tool";
 import { FileInfo, FileType } from "./entities/FileInfo";
 import { switchDb, getConnection } from "./db";
 import { ScanPath } from "./entities/ScanPath";
-import { EvFinderState, EvLog, EvUiCmdMessage } from "./events/events";
+import { EvFinderState, EvUiCmdMessage } from "./events/events";
 import { FinderState } from "./events/types";
 import { DbIncluded } from "./entities/DbIncluded";
 

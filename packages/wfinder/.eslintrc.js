@@ -12,6 +12,7 @@ module.exports = {
   },
   rules: {
     "prettier/prettier": "error",
+    "react-hooks/rules-of-hooks": "error",
     "@typescript-eslint/no-var-requires": "off",
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/explicit-module-boundary-types": "off",
@@ -19,5 +20,6 @@ module.exports = {
     "no-control-regex": "off",
     "no-constant-condition": "off",
     "@typescript-eslint/no-this-alias": "off",
+    "@typescript-eslint/no-explicit-any": "off",
   },
 };

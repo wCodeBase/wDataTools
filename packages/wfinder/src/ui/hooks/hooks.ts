@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { BehaviorSubject, Subject } from "rxjs";
 
 export const useStableState = <T extends Record<any, any>>(
@@ -25,7 +18,7 @@ export const useStableState = <T extends Record<any, any>>(
 };
 
 export const useUpdate = () => {
-  const [_, update] = useReducer((v) => v + 1, 0);
+  const [, update] = useReducer((v) => v + 1, 0);
   return update;
 };
 
@@ -54,7 +47,7 @@ export const useSubjectCallback = <T>(
   useEffect(() => {
     const sub = subject.subscribe(cb);
     return () => sub.unsubscribe();
-  }, []);
+  }, deps);
 };
 
 export const useCountDown = (

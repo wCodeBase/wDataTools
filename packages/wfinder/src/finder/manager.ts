@@ -1,27 +1,25 @@
-import { exAddScanPath, exListScanPath } from './executors';
+import { exAddScanPath, exListScanPath } from "./executors";
 import { getConnection } from "./db";
 import { FileInfo } from "./entities/FileInfo";
-import { ScanPath } from "./entities/ScanPath";
 
 export const addScanPath = async (scanPath: string) => {
-  const res =await exAddScanPath(scanPath);
-  if(res.error !== undefined) console.log(res.error);
+  const res = await exAddScanPath(scanPath);
+  if (res.error !== undefined) console.log(res.error);
   else console.log("ScanPath saved: ", res.result.path);
 };
 
-export const deleteScanPath = async (scanPath: string, returnRequired = false) => {
-  const res =await exAddScanPath(scanPath);
-  if(res.error !== undefined) console.log(res.error);
+export const deleteScanPath = async (scanPath: string) => {
+  const res = await exAddScanPath(scanPath);
+  if (res.error !== undefined) console.log(res.error);
   else console.log("Scan path removed:", res.result.path);
 };
 
 export const listScanPath = async () => {
-  const {result: scanPaths} =await exListScanPath();
-  if (!scanPaths.length){
+  const { result: scanPaths } = await exListScanPath();
+  if (!scanPaths.length) {
     const error = `No path exist, you need to add path first.`;
     console.log(error);
-  }
-  else {
+  } else {
     console.log(
       "Scan paths: \n",
       scanPaths.map((v, i) => `(${i}): ${v.path}`).join("\n")

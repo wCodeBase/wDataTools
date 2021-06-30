@@ -6,7 +6,7 @@
     "wfinder": "dist/main.js"
   },
   "scripts": {
-    "eslint": "eslint --ext .js,.ts --format codeframe ./",
+    "eslint": "eslint --ext .js,.ts,.tsx --format codeframe ./",
     "lint-staged": "lint-staged",
     "build": "tsc"
   },
@@ -49,7 +49,7 @@
     "dist"
   ],
   "lint-staged": {
-    "*.{js,ts}": [
+    "*.{js,ts,tsx}": [
       "eslint --format codeframe --fix"
     ]
   }

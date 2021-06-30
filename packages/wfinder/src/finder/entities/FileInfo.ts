@@ -9,7 +9,7 @@ import {
   Repository,
 } from "typeorm";
 import * as path from "path";
-import { EvFileInfoChange, EvLog } from "../events/events";
+import { EvFileInfoChange } from "../events/events";
 import { sumBy } from "lodash";
 
 export enum FileType {

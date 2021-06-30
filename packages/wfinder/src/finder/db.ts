@@ -1,5 +1,4 @@
 import inquirer from "inquirer";
-import path from "path";
 import { Connection, createConnection } from "typeorm";
 import { exit, exitNthTodo } from "../tools/tool";
 import { FileInfo, IndexTableName } from "./entities/FileInfo";
@@ -77,7 +76,8 @@ export const getConnection = (() => {
         connectionMap.delete(dbPath);
         await close();
       };
-      blockingResolveMap.get(dbPath)?.forEach((v) => v(connection!));
+      const con = connection;
+      blockingResolveMap.get(dbPath)?.forEach((v) => v(con));
       blockingResolveMap.delete(dbPath);
       return connection;
     } finally {
@@ -93,11 +93,7 @@ export const { switchDb, getSwitchedDbConfig } = (() => {
     AUTO_CONNECT_ENTITIES.forEach((v) => v.useConnection(connection));
   };
   return {
-    switchDb: async (
-      config: typeof Config,
-      executor: () => Promise<void>,
-      readOnly = false
-    ) => {
+    switchDb: async (config: typeof Config, executor: () => Promise<void>) => {
       await switchConfig(config);
       dbConfigStack.push(config);
       try {
