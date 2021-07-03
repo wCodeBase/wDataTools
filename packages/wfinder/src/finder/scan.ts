@@ -49,71 +49,65 @@ export const scanPath = async (
       await fileInfo.save();
       return;
     }
-    const scanStack: {
-      id: number;
-      absPath: string;
-      restChildren: string[];
-      ctime: Date;
-    }[] = [
+    const scanStack = [
       {
         id: parentId,
         absPath: pathToScan,
         restChildren: fs.readdirSync(pathToScan),
         ctime: fs.statSync(pathToScan).ctime,
+        changed: true,
       },
     ];
     while (shouldScan) {
       const item = scanStack.pop();
       if (!item) break;
+      await FileInfo.removeUnexistChildren(item.id, item.restChildren);
       for (const name of item.restChildren) {
         const chilPath = path.join(item.absPath, name);
         const stat = fs.statSync(chilPath);
-        if (stat.isFile())
-          await FileInfo.getOrInsert(
-            name,
-            FileType.file,
-            stat.ctime,
-            item.id,
-            stat.size
-          );
-        else {
-          const isNewPath =
+        if (stat.isFile()) {
+          if (item.changed)
+            await FileInfo.getOrInsert(
+              name,
+              FileType.file,
+              stat.ctime,
+              item.id,
+              stat.size
+            );
+        } else {
+          const changed =
             ignoreCtime ||
-            !(
-              await FileInfo.find({
-                where: { name, type: FileType.folder, parentId: item.id },
-                take: 1,
-              })
-            ).length;
+            (
+              await FileInfo.find({ where: { parentId: item.id, name } })
+            )[0]?.ctime.valueOf() !== stat.ctime.valueOf();
           const info = await FileInfo.getOrInsert(
             name,
             FileType.folder,
             stat.ctime,
             item.id
           );
-          if (isNewPath || info.ctime.valueOf() !== stat.ctime.valueOf()) {
-            const testDbPath = path.join(chilPath, config.dbName);
-            if (fs.existsSync(testDbPath) && fs.statSync(testDbPath).isFile()) {
-              EvUiCmdMessage.next({
-                message: `Sub database found: ${testDbPath}`,
-              });
-              await DbIncluded.mark(
-                path.relative(config.finderRoot, chilPath),
-                config.dbName
-              );
-              await scanPath(chilPath, ignoreCtime, {
-                ...config,
-                dbPath: testDbPath,
-                finderRoot: chilPath,
-              });
-            } else
-              scanStack.push({
-                id: info.id,
-                absPath: chilPath,
-                restChildren: fs.readdirSync(chilPath),
-                ctime: stat.ctime,
-              });
-          }
+          const testDbPath = path.join(chilPath, config.dbName);
+          if (fs.existsSync(testDbPath) && fs.statSync(testDbPath).isFile()) {
+            EvUiCmdMessage.next({
+              message: `Sub database found: ${testDbPath}`,
+            });
+            await DbIncluded.mark(
+              path.relative(config.finderRoot, chilPath),
+              config.dbName
+            );
+            await scanPath(chilPath, ignoreCtime, {
+              ...config,
+              dbPath: testDbPath,
+              finderRoot: chilPath,
+            });
+          } else
+            scanStack.push({
+              id: info.id,
+              absPath: chilPath,
+              restChildren: fs.readdirSync(chilPath),
+              ctime: stat.ctime,
+              changed,
+            });
         }
       }
       if (shouldScan) {
@@ -124,6 +118,8 @@ export const scanPath = async (
         }
       }
     }
+
+    await DbIncluded.removeUnexists();
   });
 };
 

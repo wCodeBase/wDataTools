@@ -4,6 +4,7 @@ import { Body } from "./blocks/Body";
 import { InkConsole } from "./blocks/Console";
 import { exitCallbacks } from "./exit";
 import { EvUiStatus } from "../../finder/events/events";
+import { render } from "ink";
 
 export const Ui = () => {
   return (

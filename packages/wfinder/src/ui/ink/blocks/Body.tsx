@@ -65,13 +65,6 @@ const Search = () => {
     }
   });
 
-  useCliEscape(() => {
-    if (state.records) {
-      setState({ records: null });
-      return true;
-    }
-  });
-
   useCliKeyPress((key) => {
     if (state.keywords && state.records?.length) {
       if (subject.value === FinderState.searching)

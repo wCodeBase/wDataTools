@@ -9,8 +9,9 @@ import {
   Repository,
 } from "typeorm";
 import * as path from "path";
-import { EvFileInfoChange } from "../events/events";
+import { EvFileInfoChange, EvLog } from "../events/events";
 import { sumBy } from "lodash";
+import * as fs from "fs";
 
 export enum FileType {
   file,
@@ -93,17 +94,21 @@ export class FileInfo extends BaseEntity {
     for (const db of includedDbs) {
       const finderRoot = path.join(config.finderRoot, db.path);
       try {
-        await switchDb(
-          {
-            dbName: db.dbName,
-            finderRoot,
-            dbPath: path.join(finderRoot, db.dbName),
-            readOnly: true,
-          },
-          async () => {
-            res = res.concat(await FileInfo.queryAllDbIncluded(doQuery));
-          }
-        );
+        const dbPath = path.join(finderRoot, db.dbName);
+        if (!fs.existsSync(dbPath)) {
+          EvLog(`It's time to rescan, sub database file not exist: ${dbPath}.`);
+        } else
+          await switchDb(
+            {
+              dbName: db.dbName,
+              finderRoot,
+              dbPath,
+              readOnly: true,
+            },
+            async () => {
+              res = res.concat(await FileInfo.queryAllDbIncluded(doQuery));
+            }
+          );
       } catch (e) {
         console.error("Query sub database failed: ", finderRoot, e);
       }
@@ -142,6 +147,21 @@ export class FileInfo extends BaseEntity {
     });
   }
 
+  static async removeUnexistChildren(id: number, existChildNames: string[]) {
+    const children = await this.find({ where: { parentId: id } });
+    if (children.length) {
+      const existSet = new Set(existChildNames);
+      const toRemove: FileInfo[] = [];
+      for (const child of children) {
+        if (!existSet.has(child.name)) {
+          await this.removeUnexistChildren(child.id, []);
+          toRemove.push(child);
+        }
+      }
+      await this.remove(toRemove);
+    }
+  }
+
   static async getOrInsert(
     name: string,
     type: FileType,
@@ -150,7 +170,7 @@ export class FileInfo extends BaseEntity {
     size = 0
   ) {
     return (
-      (await this.find({ where: { parentId, type, name } }))[0] ||
+      (await this.find({ where: { parentId, name } }))[0] ||
       (await new this(name, type, ctime, parentId, size).save())
     );
   }
