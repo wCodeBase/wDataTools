@@ -25,8 +25,8 @@ EvUiCmd.subscribe(async (msg) => {
     const records = (
       await FileInfo.findByMatchName(data.keywords, data.take, data.skip)
     ).map((v) => {
-      const { name, size, type, id, dbRoot } = v;
-      return { name, size, type, id, dbRoot };
+      const { size, type, id, dbRoot } = v;
+      return { name: v.getName(), size, type, id, dbRoot };
     });
     EvUiCmdResult.next({ cmd, result: { ...data, total, records } });
     EvFinderState.next(FinderState.idle);

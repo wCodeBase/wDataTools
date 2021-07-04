@@ -19,7 +19,9 @@ const initDb = async (dbPath: string) => {
     });
     const { tableName } = connection.getMetadata(FileInfo);
     await connection.query(
-      `CREATE VIRTUAL TABLE ${IndexTableName} USING fts4(content="${tableName}", name);`
+      `CREATE VIRTUAL TABLE ${IndexTableName} USING fts4(content="${tableName}",
+      tokenize=porter unicode61 "separators=/",
+      name);`
     );
     await connection.close();
   } catch (e) {

@@ -24,8 +24,8 @@ export type TypeMsg = {
 
 export type TypeMsgSearchResultItem = Pick<
   FileInfo,
-  "name" | "size" | "type" | "id" | "dbRoot"
->;
+  "size" | "type" | "id" | "dbRoot"
+> & { name: string };
 
 export type TypeMsgSearch = {
   cmd: "search";

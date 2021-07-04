@@ -17,7 +17,7 @@ export const useFinderState = () => useBehaviorSubjectValue(EvFinderState);
 /** Triggered when FileInfo inserted or deleted */
 export const EvFileInfoChange = (() => {
   const subject = new BehaviorSubject<void>(undefined);
-  const observer = subject.pipe(debounceTime(1000));
+  const observer = subject.pipe(debounceTime(500));
   return {
     next: subject.next.bind(subject),
     subscribe: observer.subscribe.bind(observer),

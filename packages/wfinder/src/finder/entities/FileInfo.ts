@@ -12,6 +12,8 @@ import * as path from "path";
 import { EvFileInfoChange, EvLog } from "../events/events";
 import { sumBy } from "lodash";
 import * as fs from "fs";
+import { interactYield } from "../../tools/tool";
+import { BehaviorSubject } from "rxjs";
 
 export enum FileType {
   file,
@@ -30,7 +32,11 @@ export class FileInfo extends BaseEntity {
   parentId: number;
 
   @Column({ type: "text" })
-  name: string;
+  private name: string;
+
+  public getName() {
+    return restoreText(this.name);
+  }
 
   @Column({ type: "float" })
   size: number;
@@ -51,7 +57,7 @@ export class FileInfo extends BaseEntity {
     size = 0
   ) {
     super();
-    this.name = name;
+    this.name = processText(name || "");
     this.type = type;
     this.ctime = ctime;
     this.parentId = parentId;
@@ -61,14 +67,15 @@ export class FileInfo extends BaseEntity {
   async save() {
     const res = await super.save();
     await FileInfo.getRepository().query(
-      `insert into ${IndexTableName}(docid, name) values(${this.id},?)`,
-      [textPreProcessor(this.name)]
+      `insert into ${IndexTableName}(rowid, name) values(${this.id},?)`,
+      [this.name]
     );
     EvFileInfoChange.next();
     return res;
   }
 
   async remove(options?: RemoveOptions) {
+    await FileInfo.removeNameIndexs([this]);
     const res = await super.remove(options);
     EvFileInfoChange.next();
     return res;
@@ -120,7 +127,7 @@ export class FileInfo extends BaseEntity {
     const query = (rep: Repository<FileInfo>) =>
       rep.query(
         `select count(1) as count from ${IndexTableName} where name match ?`,
-        [textPreProcessor(keywords.join(" "))]
+        [processQueryText(keywords.join(" "))]
       );
     const res = await (onlyCurrentDb
       ? query(this.getRepository())
@@ -135,22 +142,43 @@ export class FileInfo extends BaseEntity {
       if (pos > end) return [];
       const count = await this.countByMatchName(keywords, true);
       const mSkip = Math.max(0, skip - pos);
-      const mTake = Math.min(end - pos, count);
+      const mEnd = Math.min(end - pos, count);
+      const mTake = Math.max(0, mEnd - mSkip);
       pos += count;
       if (!mTake) return [];
       return await rep
         .query(
-          `select docid from ${IndexTableName} where name match ? limit ?,?`,
-          [textPreProcessor(keywords.join(" ")), mSkip, mTake]
+          `select rowid from ${IndexTableName} where name match ? limit ?,?`,
+          [processQueryText(keywords.join(" ")), mSkip, mTake]
         )
-        .then((ids) => this.findByIds(ids.map((v: any) => v.docid)));
+        .then((ids) => {
+          return this.findByIds(ids.map((v: any) => v.rowid));
+        });
     });
   }
 
-  static async removeUnexistChildren(id: number, existChildNames: string[]) {
-    const children = await this.find({ where: { parentId: id } });
-    if (children.length) {
-      const existSet = new Set(existChildNames);
+  static async removeNameIndexs(fileInfos: FileInfo[]) {
+    if (!fileInfos.length) return;
+    await FileInfo.getRepository().query(
+      `delete from ${IndexTableName} where rowid in (${fileInfos
+        .map((v) => v.id)
+        .join(",")})`
+    );
+  }
+
+  static async removeUnexistChildren(
+    id: number,
+    existChildNames: string[],
+    brake?: BehaviorSubject<boolean>
+  ) {
+    let skip = 0;
+    const take = 100;
+    const existSet = new Set(existChildNames);
+    let toRemoveIds: number[] = [];
+    while (!brake?.value) {
+      const children = await this.find({ where: { parentId: id }, skip, take });
+      skip += take;
+      if (!children.length) break;
       const toRemove: FileInfo[] = [];
       for (const child of children) {
         if (!existSet.has(child.name)) {
@@ -158,8 +186,11 @@ export class FileInfo extends BaseEntity {
           toRemove.push(child);
         }
       }
-      await this.remove(toRemove);
+      await this.removeNameIndexs(toRemove);
+      toRemoveIds = toRemoveIds.concat(toRemove.map((v) => v.id));
+      await interactYield();
     }
+    if (!brake?.value && toRemoveIds.length) await this.delete(toRemoveIds);
   }
 
   static async getOrInsert(
@@ -176,8 +207,22 @@ export class FileInfo extends BaseEntity {
   }
 }
 
-const textPreProcessor = (text: string) =>
-  text
-    .replace(/([^\d])?(\d+)([^\d])?/g, "$1 $2 $3")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/([^\x00-\xff])/g, " $1 ");
+/** TODO: support searching for special characters like ".[]" */
+const processText = (() => {
+  const regs = [
+    /([^\d/ ])(\d+)/g,
+    /(\d+)([^\d/ ])/g,
+    /([a-z])([A-Z])/g,
+    /([A-Z]{2,})([a-z])/g,
+    /([^/ ])([^\x00-\xff])/g,
+    /([^\x00-\xff])([^/ ])/g,
+  ];
+  return (text: string, separator = "/") => {
+    const replace = `$1${separator}$2`;
+    return regs.reduce((res, reg) => res.replace(reg, replace), text);
+  };
+})();
+
+const processQueryText = (text: string) => processText(text, " ");
+
+const restoreText = (text: string) => text.replace(/\//g, "");

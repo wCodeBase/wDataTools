@@ -1,7 +1,8 @@
+import { cEvScanBrake } from "./events/coreEvents";
 import { Config } from "./common";
 import * as path from "path";
 import * as fs from "fs";
-import { isPathInclude, splitPath } from "../tools/tool";
+import { interactYield, isPathInclude, splitPath } from "../tools/tool";
 import { FileInfo, FileType } from "./entities/FileInfo";
 import { switchDb, getConnection } from "./db";
 import { ScanPath } from "./entities/ScanPath";
@@ -58,10 +59,14 @@ export const scanPath = async (
         changed: true,
       },
     ];
-    while (shouldScan) {
+    while (!cEvScanBrake.value) {
       const item = scanStack.pop();
       if (!item) break;
-      await FileInfo.removeUnexistChildren(item.id, item.restChildren);
+      await FileInfo.removeUnexistChildren(
+        item.id,
+        item.restChildren,
+        cEvScanBrake
+      );
       for (const name of item.restChildren) {
         const chilPath = path.join(item.absPath, name);
         const stat = fs.statSync(chilPath);
@@ -109,13 +114,24 @@ export const scanPath = async (
               changed,
             });
         }
+        if (cEvScanBrake.value) break;
+        await interactYield();
       }
-      if (shouldScan) {
+      if (!cEvScanBrake.value) {
         const info = await FileInfo.findOne(item.id);
         if (info && info.ctime.valueOf() !== item.ctime.valueOf()) {
           info.ctime = item.ctime;
           await info.save();
         }
+      } else {
+        // Scanning is break off here, reset unfinished folder's ctime for next scanning.
+        const unfinished = await FileInfo.findByIds([
+          item.id,
+          ...scanStack.map((v) => v.id),
+        ]);
+        const ctime = new Date(0);
+        unfinished.forEach((v) => (v.ctime = ctime));
+        await FileInfo.save(unfinished);
       }
     }
 
@@ -123,15 +139,13 @@ export const scanPath = async (
   });
 };
 
-let shouldScan = false;
-
 export const stopScan = () => {
-  shouldScan = false;
+  cEvScanBrake.next(true);
 };
 
 export const doScan = async () => {
   EvFinderState.next(FinderState.scanning);
-  shouldScan = true;
+  cEvScanBrake.next(false);
   await getConnection();
   const scanPaths = await ScanPath.find();
   EvUiCmdMessage.next({ message: `${scanPaths.length} path to scan.` });
@@ -149,8 +163,10 @@ export const doScan = async () => {
       });
     }
   }
+  if (cEvScanBrake.value)
+    EvUiCmdMessage.next({ message: "Scan stopped manually." });
   EvUiCmdMessage.next({ message: "Scan finished." });
-  shouldScan = false;
+  cEvScanBrake.next(true);
   EvFinderState.next(FinderState.idle);
 };
 

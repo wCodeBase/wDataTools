@@ -182,6 +182,7 @@ const Scan = () => {
               .map((msg) => (
                 <Text
                   key={msg.number}
+                  backgroundColor={"gray"}
                   color={msg.error ? "yellow" : "white"}
                 >{`(${msg.number}) ${msg.message} ${msg.error || ""}`}</Text>
               ))
