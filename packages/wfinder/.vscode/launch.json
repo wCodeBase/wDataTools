@@ -20,5 +20,17 @@
             "cwd": "${workspaceFolder}",
             "protocol": "inspector",
         },
+        {
+            "name": "Electron Main",
+            "program": "${workspaceFolder}/dist/ui/electron/electronMain.js",
+            "request": "launch",
+            "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+            "preLaunchTask": "npm: dev-build",
+            "env": {"NODE_ENV":"development"},
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "pwa-node"
+        },
     ]
 }

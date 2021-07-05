@@ -18,6 +18,7 @@ program
   .option("-dp, --deletePath <path>", "Delete a scanPath")
   .option("-s, --scan", "Scan each scan path")
   .option("-f, --find <keyWords...>", "Find files by match filename")
+  .option("-g, --gui", "Start GUI")
   .action(async (options) => {
     if (options.addPath) {
       await addScanPath(options.addPath);
@@ -29,6 +30,8 @@ program
       await doScanCmd();
     } else if (options.find) {
       await findFiles(options.find);
+    } else if (options.gui) {
+      require("./ui/electron").startElectron();
     } else {
       require("./finder/index").finder();
     }

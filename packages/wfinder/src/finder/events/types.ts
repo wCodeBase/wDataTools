@@ -1,5 +1,6 @@
 import { FileInfo } from "../entities/FileInfo";
 import { ScanPath } from "../entities/ScanPath";
+import { TypeJsonData } from "../../tools/json";
 
 export enum FinderState {
   idle,
@@ -83,10 +84,10 @@ export type TypeUiMsgResult =
   | ToMsgResult<TypeMsgPathManage>
   | ToMsgResult<TypeMsgStopScan>;
 
-export interface TypeUiMsgMessage {
+export type TypeUiMsgMessage = {
   message: string;
   error?: string;
-}
+};
 
 export type TypeDatabaseInfos = {
   fileInfoCount: number;
@@ -94,4 +95,12 @@ export type TypeDatabaseInfos = {
 
 export type TypeUiStatus = {
   ink?: boolean;
+  electron?: boolean;
+  web?: boolean;
+};
+
+export type GatewayMessage = {
+  label: "GatewayMessage";
+  subjectName: string;
+  data: TypeJsonData;
 };

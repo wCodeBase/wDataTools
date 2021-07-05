@@ -1,5 +1,6 @@
-import { BehaviorSubject, Subject } from "rxjs";
+import { BehaviorSubject as _BehaviorSubject, Subject as _Subject } from "rxjs";
 import { debounceTime } from "rxjs/operators";
+import { TypeJsonData } from "../../tools/json";
 import { useBehaviorSubjectValue } from "../../ui/hooks/hooks";
 import {
   FinderState,
@@ -10,7 +11,10 @@ import {
   TypeUiStatus,
 } from "./types";
 
-export const EvFinderState = new BehaviorSubject(FinderState.idle);
+class BehaviorSubject<T extends TypeJsonData> extends _BehaviorSubject<T> {}
+class Subject<T extends TypeJsonData> extends _Subject<T> {}
+
+export const EvFinderState = new BehaviorSubject<FinderState>(FinderState.idle);
 
 export const useFinderState = () => useBehaviorSubjectValue(EvFinderState);
 
@@ -28,7 +32,7 @@ export const EvDatabaseInfos = new BehaviorSubject<TypeDatabaseInfos>({
   fileInfoCount: 0,
 });
 
-export const EvConsole = new BehaviorSubject("");
+export const EvConsole = new BehaviorSubject<string>("");
 
 export const EvLog = (...args: any[]) => EvConsole.next(args.join(", "));
 
@@ -38,7 +42,7 @@ export const EvUiCmdResult = new Subject<TypeUiMsgResult>();
 
 export const EvUiCmdMessage = new Subject<TypeUiMsgMessage>();
 
-export const EvUiStatus = (() => {
+export const EvUiLaunched = (() => {
   const subject = new BehaviorSubject<TypeUiStatus>({});
   const next = subject.next.bind(subject);
   subject.next = (val) => next({ ...subject.value, ...val });

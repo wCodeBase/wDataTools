@@ -6,7 +6,7 @@ import * as fs from "fs";
 import { Config } from "./common";
 import { ScanPath } from "./entities/ScanPath";
 import { DbIncluded } from "./entities/DbIncluded";
-import { EvUiStatus } from "./events/events";
+import { EvUiLaunched } from "./events/events";
 
 const dbType = "better-sqlite3";
 
@@ -51,7 +51,7 @@ export const getConnection = (() => {
     } else connectionLockMap.set(dbPath, true);
     try {
       if (!fs.existsSync(dbPath)) {
-        if (config.readOnly || EvUiStatus.value.ink)
+        if (config.readOnly || EvUiLaunched.value.ink)
           throw new Error("DbPath not exist: " + dbPath);
         const answer = await inquirer.prompt({
           name: "dbCreate",
