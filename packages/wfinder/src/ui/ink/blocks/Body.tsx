@@ -28,10 +28,10 @@ import {
   useCliEscape,
   useCliKeyPress,
 } from "../../ink/consoleHooks/useCliKeyPress";
-import { FileType } from "../../../finder/entities/FileInfo";
 import { doInkExit } from "../exit";
 import { Confirm } from "../components/Confirm";
 import { HorizontalSelect } from "../components/HorizontalSelect";
+import { FileType } from "../../../finder/types";
 
 const ellipsisText = (text: string, maxLength = 50) => {
   if (text.length <= maxLength) return text;

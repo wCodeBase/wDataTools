@@ -3,11 +3,11 @@
 	"tasks": [
 		{
 			"type": "npm",
-			"script": "build-node",
+			"script": "build-electron",
 			"group": "build",
 			"problemMatcher": [],
-			"label": "npm: dev-build",
-			"detail": "tsc"
+			"label": "npm: build-electron",
+			"detail": "NODE_ENV=production tsc && npm run electron-rebuild"
 		}
 	]
 }

@@ -8,6 +8,8 @@ export enum FinderState {
   searching,
 }
 
+export const BUSY_FINDER_STATES = [FinderState.scanning, FinderState.searching];
+
 export const UI_CMD_DEF = {
   search: "search",
   scan: "scan",
@@ -103,4 +105,5 @@ export type GatewayMessage = {
   label: "GatewayMessage";
   subjectName: string;
   data: TypeJsonData;
+  fromMaster: boolean;
 };

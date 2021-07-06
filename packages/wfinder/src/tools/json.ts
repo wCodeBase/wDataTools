@@ -40,6 +40,7 @@ export const JsonMore = {
       data: undefined,
       special: [],
     };
+
     const src = { data };
     const pathStack: { path: TypeKey[]; rest: TypeKey[] }[] = [
       { path: ["data"], rest: [] },
@@ -58,7 +59,11 @@ export const JsonMore = {
         res.special.push({ type: "Date", path });
         value = srcValue.valueOf();
       } else if (srcValue instanceof Array) {
-        pathStack.push({ path: [...path, 0], rest: range(1, srcValue.length) });
+        if (srcValue.length)
+          pathStack.push({
+            path: [...path, 0],
+            rest: srcValue.length > 1 ? range(1, srcValue.length) : [],
+          });
         value = [];
       } else if (srcValue instanceof Object) {
         const [first, ...rest] = Object.keys(srcValue);

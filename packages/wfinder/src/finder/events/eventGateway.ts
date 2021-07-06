@@ -5,18 +5,29 @@ import * as subjects from "./events";
 import { GatewayMessage } from "./types";
 
 export const GATEWAY_CHANNEL = "GatewayChannel";
+export const CLIENT_READY = "ClientReady";
+export type TypeGateway = {
+  receive: (data: string) => void;
+  unsubscribe: () => void;
+};
 
-export const switchEvent = (send: (data: string) => void) => {
+export const switchEvent = (
+  send: (data: string) => void,
+  isMaster: boolean
+): TypeGateway => {
   const subscribes: Subscription[] = [];
+  const subjectLastValueMap: Record<string, any> = {};
   Object.entries(subjects).forEach(([subjectName, subject]) => {
     // @ts-ignore
     const subscribe = subject.subscribe;
     if (typeof subscribe === "function") {
       const sendMsg = (data: TypeJsonData) => {
+        if (data === subjectLastValueMap[subjectName]) return;
         const msg: GatewayMessage = {
           label: "GatewayMessage",
           subjectName,
           data,
+          fromMaster: isMaster,
         };
         try {
           send(JsonMore.stringify(msg));
@@ -29,7 +40,8 @@ export const switchEvent = (send: (data: string) => void) => {
           );
         }
       };
-      if (subject instanceof BehaviorSubject) sendMsg(subject.value);
+      if (!isMaster && subject instanceof BehaviorSubject)
+        subjectLastValueMap[subjectName] = subject.value;
       subscribes.push(subscribe.call(subject, sendMsg));
     }
   });
@@ -39,6 +51,7 @@ export const switchEvent = (send: (data: string) => void) => {
         // @ts-ignore
         const msg: GatewayMessage | null = JsonMore.parse(data);
         if (msg && msg.label === "GatewayMessage") {
+          subjectLastValueMap[msg.subjectName] = msg.data;
           // @ts-ignore
           subjects[msg.subjectName]?.next?.(msg.data);
         }

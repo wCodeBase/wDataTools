@@ -14,11 +14,7 @@ import { sumBy } from "lodash";
 import * as fs from "fs";
 import { interactYield } from "../../tools/tool";
 import { BehaviorSubject } from "rxjs";
-
-export enum FileType {
-  file,
-  folder,
-}
+import { FileType } from "../types";
 
 export const IndexTableName = "fileindex";
 

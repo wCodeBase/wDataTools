@@ -3,12 +3,13 @@ import { Config } from "./common";
 import * as path from "path";
 import * as fs from "fs";
 import { interactYield, isPathInclude, splitPath } from "../tools/tool";
-import { FileInfo, FileType } from "./entities/FileInfo";
+import { FileInfo } from "./entities/FileInfo";
 import { switchDb, getConnection } from "./db";
 import { ScanPath } from "./entities/ScanPath";
 import { EvFinderState, EvUiCmdMessage } from "./events/events";
 import { FinderState } from "./events/types";
 import { DbIncluded } from "./entities/DbIncluded";
+import { FileType } from "./types";
 
 export class FileScanError extends Error {}
 

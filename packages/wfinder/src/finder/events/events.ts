@@ -22,10 +22,11 @@ export const useFinderState = () => useBehaviorSubjectValue(EvFinderState);
 export const EvFileInfoChange = (() => {
   const subject = new BehaviorSubject<void>(undefined);
   const observer = subject.pipe(debounceTime(500));
-  return {
+  return Object.assign(new BehaviorSubject<void>(undefined), {
     next: subject.next.bind(subject),
     subscribe: observer.subscribe.bind(observer),
-  };
+    pipe: subject.pipe.bind(subject),
+  });
 })();
 
 export const EvDatabaseInfos = new BehaviorSubject<TypeDatabaseInfos>({
@@ -45,6 +46,14 @@ export const EvUiCmdMessage = new Subject<TypeUiMsgMessage>();
 export const EvUiLaunched = (() => {
   const subject = new BehaviorSubject<TypeUiStatus>({});
   const next = subject.next.bind(subject);
-  subject.next = (val) => next({ ...subject.value, ...val });
+  subject.next = (val) => {
+    next(
+      Object.entries(subject.value)
+        // @ts-ignore
+        .every(([key, value]) => value === val[key])
+        ? val
+        : { ...subject.value, ...val }
+    );
+  };
   return subject;
 })();

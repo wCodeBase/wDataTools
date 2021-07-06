@@ -25,7 +25,7 @@
             "program": "${workspaceFolder}/dist/ui/electron/electronMain.js",
             "request": "launch",
             "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
-            "preLaunchTask": "npm: dev-build",
+            "preLaunchTask": "npm: build-electron",
             "env": {"NODE_ENV":"development"},
             "skipFiles": [
                 "<node_internals>/**"

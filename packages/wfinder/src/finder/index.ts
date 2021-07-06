@@ -1,9 +1,13 @@
 import { getConnection } from "./db";
 import { renderInkUi } from "../ui/ink";
 
-export const finder = async () => {
+export const initFinder = async () => {
   require("./events/uiCmdExecutor");
   require("./events/eventFiller");
   await getConnection();
+};
+
+export const finder = async () => {
+  await initFinder();
   renderInkUi();
 };
