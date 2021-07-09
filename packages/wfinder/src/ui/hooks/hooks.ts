@@ -13,7 +13,11 @@ export const useStableState = <T extends Record<any, any>>(
         update();
       }
     };
-    return [state, setState] as [typeof state, typeof setState];
+    return [state, setState, update] as [
+      typeof state,
+      typeof setState,
+      typeof update
+    ];
   }, []);
 };
 
@@ -68,4 +72,19 @@ export const useCountDown = (
     return () => clearInterval(interval);
   }, deps);
   return count;
+};
+
+/** Skip first effect callback execution */
+export const useLaterEffect = (
+  effect: React.EffectCallback,
+  deps?: React.DependencyList | undefined
+) => {
+  const inited = useRef(false);
+  useEffect(() => {
+    if (!inited.current) {
+      inited.current = true;
+      return;
+    }
+    return effect();
+  }, deps);
 };

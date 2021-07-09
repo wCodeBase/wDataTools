@@ -19,43 +19,39 @@ export const UI_CMD_DEF = {
 
 export type TypeUiCmd = keyof typeof UI_CMD_DEF;
 
-export type TypeMsg = {
-  cmd: string;
-  data: any;
-  result: any;
-};
-
 export type TypeMsgSearchResultItem = Pick<
   FileInfo,
   "size" | "type" | "id" | "dbRoot"
 > & { name: string };
 
-export type TypeMsgSearch = {
-  cmd: "search";
-  data: {
-    keywords: string[];
-    skip: number;
-    take: number;
-  };
-  result: {
-    records: TypeMsgSearchResultItem[];
-    total: number;
-    keywords: string[];
-    skip: number;
-    take: number;
+type TypeMsgSearch = {
+  search: {
+    data: {
+      keywords: string[];
+      skip: number;
+      take: number;
+    };
+    result: {
+      records: TypeMsgSearchResultItem[];
+      total: number;
+      keywords: string[];
+      skip: number;
+      take: number;
+    };
   };
 };
 
-export type TypeMsgScan = {
-  cmd: "scan";
+type TypeSimpleMsgDef = {
   data: null;
   result: "done";
 };
 
-export type TypeMsgStopScan = {
-  cmd: "stopScan";
-  data: null;
-  result: "done";
+type TypeMsgScan = {
+  scan: TypeSimpleMsgDef;
+};
+
+type TypeMsgStopScan = {
+  stopScan: TypeSimpleMsgDef;
 };
 
 export type TypeMsgPathItem = Pick<
@@ -63,8 +59,8 @@ export type TypeMsgPathItem = Pick<
   "id" | "path" | "createdAt" | "dbRoot"
 >;
 
-export type TypeMsgPathManage = {
-  cmd: "addPath" | "deletePath" | "listPath";
+type TypeMsgPathManageDef = {
+  // FIXME: TODO: verify dbRoot and remove scanPath on sub databases or remote databases.
   data: string[];
   result: {
     results: TypeMsgPathItem[];
@@ -72,19 +68,36 @@ export type TypeMsgPathManage = {
   };
 };
 
-export type ToMsgData<T extends TypeMsg> = Pick<T, "cmd" | "data">;
-export type ToMsgResult<T extends TypeMsg> = Pick<T, "cmd" | "result">;
+type TypeMsgPathManage = {
+  addPath: TypeMsgPathManageDef;
+  deletePath: TypeMsgPathManageDef;
+  listPath: TypeMsgPathManageDef;
+};
 
-export type TypeUiMsgData =
-  | ToMsgData<TypeMsgScan>
-  | ToMsgData<TypeMsgSearch>
-  | ToMsgData<TypeMsgPathManage>
-  | ToMsgData<TypeMsgStopScan>;
-export type TypeUiMsgResult =
-  | ToMsgResult<TypeMsgScan>
-  | ToMsgResult<TypeMsgSearch>
-  | ToMsgResult<TypeMsgPathManage>
-  | ToMsgResult<TypeMsgStopScan>;
+type TypeCmdUiMsgDefMap = TypeMsgScan &
+  TypeMsgSearch &
+  TypeMsgPathManage &
+  TypeMsgStopScan;
+
+export type TypeCmdUiMsgMap = {
+  [key in keyof TypeCmdUiMsgDefMap]: TypeCmdUiMsgDefMap[key] & { cmd: key };
+};
+export type TypeUiMsgDataMap = {
+  [key in keyof TypeCmdUiMsgDefMap]: Pick<TypeCmdUiMsgMap[key], "data" | "cmd">;
+};
+export type TypeUiMsgData = TypeUiMsgDataMap[keyof TypeCmdUiMsgDefMap];
+export type TypeUiMsgResultMap = {
+  [key in keyof TypeCmdUiMsgDefMap]: Pick<
+    TypeCmdUiMsgMap[key],
+    "result" | "cmd"
+  >;
+};
+export type TypeUiMsgResult = TypeUiMsgResultMap[keyof TypeCmdUiMsgDefMap];
+
+export const judgeUiMsgResultType = <T extends keyof TypeCmdUiMsgMap>(
+  msg: TypeUiMsgResult,
+  cmd: T
+): msg is TypeUiMsgResultMap[T] => msg.cmd === cmd;
 
 export type TypeUiMsgMessage = {
   message: string;

@@ -16,6 +16,7 @@ import { FileType } from "../../../finder/types";
 import { useRef } from "react";
 import { useEffect } from "react";
 import { debounce } from "lodash";
+import { simpleGetKey } from "../../tools";
 
 const Columns: ColumnsType<TypeMsgSearchResultItem> = [
   { title: "name", key: "name", dataIndex: "name" },
@@ -28,7 +29,7 @@ const Columns: ColumnsType<TypeMsgSearchResultItem> = [
   { title: "size", key: "size", dataIndex: "size" },
 ];
 
-export const Search = () => {
+export const Search = ({ className = "" }) => {
   const [finderState, subject] = useFinderState();
   const [state, setState] = useStableState(() => ({
     skip: 0,
@@ -74,7 +75,7 @@ export const Search = () => {
   });
 
   return (
-    <div className="rounded-sm my-2 mx-3 p-1 flex flex-col flex-grow">
+    <div className={"rounded-sm flex flex-col flex-grow " + className}>
       <Input.Search
         allowClear
         placeholder="input search keywords"
@@ -103,7 +104,7 @@ export const Search = () => {
             }}
             dataSource={state.records}
             columns={Columns}
-            rowKey={(v) => v.id + v.dbRoot}
+            rowKey={simpleGetKey}
           />
         )}
       </div>

@@ -32,6 +32,7 @@ import { doInkExit } from "../exit";
 import { Confirm } from "../components/Confirm";
 import { HorizontalSelect } from "../components/HorizontalSelect";
 import { FileType } from "../../../finder/types";
+import { simpleGetKey } from "../../tools";
 
 const ellipsisText = (text: string, maxLength = 50) => {
   if (text.length <= maxLength) return text;
@@ -95,7 +96,7 @@ const Search = () => {
             <Box display="flex" flexDirection="column">
               <Text color="cyan">{`Result list (totoal ${state.total}, use arrow keys to switch page.):`}</Text>
               {state.records.map((v, i) => (
-                <Text key={v.id + v.dbRoot}>{`(${state.skip + i + 1}) ${
+                <Text key={simpleGetKey(v)}>{`(${state.skip + i + 1}) ${
                   FileType[v.type]
                 } ${ellipsisText(v.name)}`}</Text>
               ))}
@@ -329,7 +330,7 @@ const PathManage = () => {
             .slice(state.skip, state.skip + state.showLength)
             .map((v, i) => (
               <Text
-                key={v.path + v.dbRoot}
+                key={simpleGetKey(v)}
                 backgroundColor={v.id === state.selectedId ? "blue" : ""}
               >{`(${state.skip + i + 1}) ${v.path}`}</Text>
             ))
