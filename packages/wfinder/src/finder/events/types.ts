@@ -1,6 +1,7 @@
 import { FileInfo } from "../entities/FileInfo";
 import { ScanPath } from "../entities/ScanPath";
 import { TypeJsonData } from "../../tools/json";
+import { ConfigLine } from "../entities/ConfigLine";
 
 export enum FinderState {
   idle,
@@ -14,6 +15,8 @@ export const UI_CMD_DEF = {
   search: "search",
   scan: "scan",
   pathManage: "manage scan path",
+  fileNameToExclude: "manage file name to exclude",
+  fileNameToExcludeChildren: "manage file name to exclude children",
   exit: "exit",
 };
 
@@ -21,7 +24,7 @@ export type TypeUiCmd = keyof typeof UI_CMD_DEF;
 
 export type TypeMsgSearchResultItem = Pick<
   FileInfo,
-  "size" | "type" | "id" | "dbRoot"
+  "size" | "type" | "id" | "dbInfo"
 > & { name: string };
 
 type TypeMsgSearch = {
@@ -54,13 +57,11 @@ type TypeMsgStopScan = {
   stopScan: TypeSimpleMsgDef;
 };
 
-export type TypeMsgPathItem = Pick<
-  ScanPath,
-  "id" | "path" | "createdAt" | "dbRoot"
->;
+export type TypeMsgPathItem = Pick<ScanPath, "id" | "path" | "createdAt"> &
+  Partial<Pick<ScanPath, "dbInfo">>;
 
 type TypeMsgPathManageDef = {
-  // FIXME: TODO: verify dbRoot and remove scanPath on sub databases or remote databases.
+  // FIXME: TODO: verify dbInfo and remove scanPath on sub databases or remote databases.
   data: string[];
   result: {
     results: TypeMsgPathItem[];
@@ -74,23 +75,52 @@ type TypeMsgPathManage = {
   listPath: TypeMsgPathManageDef;
 };
 
+export type TypeMsgConfigItem = Pick<
+  ConfigLine,
+  "id" | "content" | "updatedAt" | "type"
+> &
+  Partial<Pick<ConfigLine, "dbInfo">>;
+
+type TypeMsgConfigLineDef = {
+  result: {
+    results: TypeMsgConfigItem[];
+    error: string;
+  };
+};
+
+type TypeMsgConfigLineManage = {
+  addConfig: {
+    data: Pick<TypeMsgConfigItem, "dbInfo" | "type" | "content">;
+  } & TypeMsgConfigLineDef;
+  deleteConfig: {
+    data: Pick<TypeMsgConfigItem, "dbInfo" | "type" | "content">;
+  } & TypeMsgConfigLineDef;
+  listConfig: {
+    data: Pick<TypeMsgConfigItem, "type">;
+  } & TypeMsgConfigLineDef;
+  saveConfig: {
+    data: Pick<TypeMsgConfigItem, "type" | "content" | "id" | "dbInfo">;
+  } & TypeMsgConfigLineDef;
+};
+
 type TypeCmdUiMsgDefMap = TypeMsgScan &
   TypeMsgSearch &
   TypeMsgPathManage &
-  TypeMsgStopScan;
+  TypeMsgStopScan &
+  TypeMsgConfigLineManage;
 
 export type TypeCmdUiMsgMap = {
-  [key in keyof TypeCmdUiMsgDefMap]: TypeCmdUiMsgDefMap[key] & { cmd: key };
+  [key in keyof TypeCmdUiMsgDefMap]: TypeCmdUiMsgDefMap[key] & {
+    cmd: key;
+    tag?: string | number;
+  };
 };
 export type TypeUiMsgDataMap = {
-  [key in keyof TypeCmdUiMsgDefMap]: Pick<TypeCmdUiMsgMap[key], "data" | "cmd">;
+  [key in keyof TypeCmdUiMsgDefMap]: Omit<TypeCmdUiMsgMap[key], "result">;
 };
 export type TypeUiMsgData = TypeUiMsgDataMap[keyof TypeCmdUiMsgDefMap];
 export type TypeUiMsgResultMap = {
-  [key in keyof TypeCmdUiMsgDefMap]: Pick<
-    TypeCmdUiMsgMap[key],
-    "result" | "cmd"
-  >;
+  [key in keyof TypeCmdUiMsgDefMap]: Omit<TypeCmdUiMsgMap[key], "data">;
 };
 export type TypeUiMsgResult = TypeUiMsgResultMap[keyof TypeCmdUiMsgDefMap];
 

@@ -1,4 +1,6 @@
 import * as path from "path";
+import { EvDefaultDbInfo } from "./events/events";
+import { TypeDbInfo } from "./types";
 
 export const Config = (() => {
   const finderRoot = path.resolve("./");
@@ -11,5 +13,7 @@ export const Config = (() => {
     /** Absolute path for database connection */
     dbPath,
     readOnly: false,
-  };
+  } as TypeDbInfo;
 })();
+
+EvDefaultDbInfo.next(Config);

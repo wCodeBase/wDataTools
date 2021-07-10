@@ -10,11 +10,16 @@ import {
   TypeUiMsgResult,
   TypeUiStatus,
 } from "./types";
+import { TypeDbInfo } from "../types";
 
 class BehaviorSubject<T extends TypeJsonData> extends _BehaviorSubject<T> {}
 class Subject<T extends TypeJsonData> extends _Subject<T> {}
 
 export const EvFinderState = new BehaviorSubject<FinderState>(FinderState.idle);
+
+export const EvDefaultDbInfo = new BehaviorSubject<TypeDbInfo | undefined>(
+  undefined
+);
 
 export const useFinderState = () => useBehaviorSubjectValue(EvFinderState);
 

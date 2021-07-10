@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import { GetRowKey } from "antd/lib/table/interface";
 import { useCallback } from "react";
 import { PlusOutlined } from "@ant-design/icons";
+import { Empty } from "./Empty";
 
 const TEXT_OPERATION = "operation";
 type TypeTableEditRenderProps<T> = {
@@ -44,7 +45,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
   return defaultPropsFc(
     {
       className: "",
-      tableTitle: "",
+      tableTitle: "" as string | JSX.Element,
       titleClassName: "",
       records: [] as T[],
       loading: false,
@@ -55,6 +56,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
       readOnly: false,
       onNewRecord: null as null | ((data: T) => Promise<boolean>),
       onRemove: null as null | ((data: T) => Promise<void>),
+      onSave: null as null | ((data: T) => Promise<boolean>),
     },
     (props) => {
       const [state, setState, update] = useStableState(() => {
@@ -103,9 +105,9 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                           ? newRender
                           : null;
                       if (Render) {
-                        // @ts-ignore
                         return (
                           <div>
+                            {/* @ts-ignore */}
                             <Render value={v} onChange={onChange} />
                           </div>
                         );
@@ -126,22 +128,38 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                     render: (v, record) => {
                       const { onRemove } = props;
                       return (
-                        <div className="overflow-auto">
+                        <div>
                           {isEdit(record) ? (
                             <>
-                              <Popconfirm
-                                title="Save change?"
-                                onConfirm={async () => {
-                                  const { newRecord } = state;
-                                  const { onNewRecord } = props;
-                                  if (!newRecord || !onNewRecord) return;
-                                  const data = { ...newRecord };
-                                  if (await onNewRecord(data))
-                                    setState({ newRecord: null });
-                                }}
-                              >
-                                <a className="text-red-500 p-1">Save</a>
-                              </Popconfirm>
+                              {record === state.newRecord ? (
+                                <a
+                                  onClick={async () => {
+                                    const { newRecord } = state;
+                                    const { onNewRecord } = props;
+                                    if (!newRecord || !onNewRecord) return;
+                                    const data = { ...newRecord };
+                                    if (await onNewRecord(data))
+                                      setState({ newRecord: null });
+                                  }}
+                                  className=" p-1"
+                                >
+                                  Add
+                                </a>
+                              ) : (
+                                <Popconfirm
+                                  title="Save change?"
+                                  onConfirm={async () => {
+                                    const { onSave } = props;
+                                    const { editRecord } = state;
+                                    if (!onSave || !editRecord) return;
+                                    const data = { ...editRecord };
+                                    if (await onSave(data))
+                                      setState({ editRecord: null });
+                                  }}
+                                >
+                                  <a className="text-red-500 p-1">Save</a>
+                                </Popconfirm>
+                              )}
                               <a
                                 className="p-0.5"
                                 onClick={() =>
@@ -156,7 +174,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                             </>
                           ) : state.editRecord || state.newRecord ? null : (
                             <>
-                              {hasEditProps && (
+                              {hasEditProps && props.onSave && (
                                 <a
                                   className="p-0.5"
                                   onClick={() =>
@@ -189,6 +207,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
           dataSource: props.records,
           columns: genColumns(),
           genColumns,
+          addRecord: async () => setState({ newRecord: getEmptyRecord() }),
         };
       });
 
@@ -218,11 +237,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
             {props.tableTitle}
             <div className="flex-grow" />
             {!props.readOnly && !state.editRecord && !state.newRecord && (
-              <Button
-                type="primary"
-                size="small"
-                onClick={() => setState({ newRecord: getEmptyRecord() })}
-              >
+              <Button type="primary" size="small" onClick={state.addRecord}>
                 <div className="flex items-center">
                   <PlusOutlined />
                   Add
@@ -231,14 +246,18 @@ export const genManagerTable = <T extends Record<string, unknown>>(
             )}
           </div>
           <div className="flex overflow-auto">
-            <Table
-              className="w-full"
-              pagination={false}
-              dataSource={state.dataSource}
-              columns={state.columns}
-              loading={props.loading}
-              rowKey={props.rowKey}
-            />
+            {state.dataSource.length ? (
+              <Table
+                className="w-full"
+                pagination={false}
+                dataSource={state.dataSource}
+                columns={state.columns}
+                loading={props.loading}
+                rowKey={props.rowKey}
+              />
+            ) : (
+              <Empty onAdd={state.addRecord} />
+            )}
           </div>
         </div>
       );

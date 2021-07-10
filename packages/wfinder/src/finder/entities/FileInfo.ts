@@ -1,9 +1,11 @@
+import { BaseDbInfoEntity } from "./Template";
 import { getSwitchedDbConfig, switchDb } from "./../db";
 import { DbIncluded } from "./DbIncluded";
 import {
   BaseEntity,
   Column,
   Entity,
+  In,
   PrimaryGeneratedColumn,
   RemoveOptions,
   Repository,
@@ -19,7 +21,7 @@ import { FileType } from "../types";
 export const IndexTableName = "fileindex";
 
 @Entity()
-export class FileInfo extends BaseEntity {
+export class FileInfo extends BaseDbInfoEntity {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -30,7 +32,7 @@ export class FileInfo extends BaseEntity {
   @Column({ type: "text" })
   private name: string;
 
-  public getName() {
+  getName() {
     return restoreText(this.name);
   }
 
@@ -42,8 +44,6 @@ export class FileInfo extends BaseEntity {
 
   @Column({ default: 0 })
   ctime!: Date;
-
-  dbRoot = getSwitchedDbConfig().finderRoot;
 
   constructor(
     name: string,
@@ -162,6 +162,47 @@ export class FileInfo extends BaseEntity {
     );
   }
 
+  /**
+   * Remove children.
+   * @param childrenNames if not given, all children will be removed.
+   * @returns
+   */
+  static async removeChildren(
+    id: number,
+    childrenNames?: string[],
+    brake?: BehaviorSubject<boolean>,
+    removeSelf = false
+  ) {
+    let skip = 0;
+    const take = 100;
+    let toRemoveIds: number[] = [];
+    while (!brake?.value) {
+      const children = await this.find({
+        where: {
+          parentId: id,
+          ...(childrenNames
+            ? { name: In(childrenNames.map((v) => processText(v))) }
+            : {}),
+        },
+        skip,
+        take,
+      });
+      skip += take;
+      if (!children.length) break;
+      const toRemove: FileInfo[] = [];
+      for (const child of children) {
+        await this.removeChildren(child.id);
+        toRemove.push(child);
+      }
+      await this.removeNameIndexs(toRemove);
+      toRemoveIds = toRemoveIds.concat(toRemove.map((v) => v.id));
+      await interactYield();
+    }
+    if (brake?.value) return;
+    if (removeSelf) toRemoveIds.concat(id);
+    if (toRemoveIds.length) await this.delete(toRemoveIds);
+  }
+
   static async removeUnexistChildren(
     id: number,
     existChildNames: string[],
@@ -197,7 +238,7 @@ export class FileInfo extends BaseEntity {
     size = 0
   ) {
     return (
-      (await this.find({ where: { parentId, name } }))[0] ||
+      (await this.find({ where: { parentId, name: processText(name) } }))[0] ||
       (await new this(name, type, ctime, parentId, size).save())
     );
   }
@@ -212,6 +253,8 @@ const processText = (() => {
     /([A-Z]{2,})([a-z])/g,
     /([^/ ])([^\x00-\xff])/g,
     /([^\x00-\xff])([^/ ])/g,
+    /([^/ ])([_])/g,
+    /([_])([^/ ])/g,
   ];
   return (text: string, separator = "/") => {
     const replace = `$1${separator}$2`;

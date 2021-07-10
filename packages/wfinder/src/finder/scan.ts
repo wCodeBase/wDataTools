@@ -1,15 +1,17 @@
+import { interactYield } from "./../tools/tool";
+import { ConfigLine } from "./entities/ConfigLine";
 import { cEvScanBrake } from "./events/coreEvents";
 import { Config } from "./common";
 import * as path from "path";
 import * as fs from "fs";
-import { interactYield, isPathInclude, splitPath } from "../tools/tool";
+import { isPathInclude, splitPath } from "../tools/nodeTool";
 import { FileInfo } from "./entities/FileInfo";
 import { switchDb, getConnection } from "./db";
 import { ScanPath } from "./entities/ScanPath";
 import { EvFinderState, EvUiCmdMessage } from "./events/events";
 import { FinderState } from "./events/types";
 import { DbIncluded } from "./entities/DbIncluded";
-import { FileType } from "./types";
+import { ConfigLineType, FileType } from "./types";
 
 export class FileScanError extends Error {}
 
@@ -60,6 +62,30 @@ export const scanPath = async (
         changed: true,
       },
     ];
+
+    enum ExcludeType {
+      false,
+      current,
+      children,
+    }
+    const judgeExcludeType = await (async () => {
+      const [current, children] = await Promise.all(
+        [
+          ConfigLineType.excludeFileName,
+          ConfigLineType.excludeChildrenFolderName,
+        ].map(async (type) => {
+          return (await ConfigLine.find({ where: { type } })).map(
+            (v) => new RegExp(v.content)
+          );
+        })
+      );
+      return (fileName: string) => {
+        if (current.some((v) => v.test(fileName))) return ExcludeType.current;
+        if (children.some((v) => v.test(fileName))) return ExcludeType.children;
+        return ExcludeType.false;
+      };
+    })();
+
     while (!cEvScanBrake.value) {
       const item = scanStack.pop();
       if (!item) break;
@@ -69,6 +95,11 @@ export const scanPath = async (
         cEvScanBrake
       );
       for (const name of item.restChildren) {
+        const excludeType = judgeExcludeType(name);
+        if (excludeType === ExcludeType.current) {
+          await FileInfo.removeChildren(item.id, [name], cEvScanBrake);
+          continue;
+        }
         const chilPath = path.join(item.absPath, name);
         const stat = fs.statSync(chilPath);
         if (stat.isFile()) {
@@ -92,28 +123,33 @@ export const scanPath = async (
             stat.ctime,
             item.id
           );
-          const testDbPath = path.join(chilPath, config.dbName);
-          if (fs.existsSync(testDbPath) && fs.statSync(testDbPath).isFile()) {
-            EvUiCmdMessage.next({
-              message: `Sub database found: ${testDbPath}`,
-            });
-            await DbIncluded.mark(
-              path.relative(config.finderRoot, chilPath),
-              config.dbName
-            );
-            await scanPath(chilPath, ignoreCtime, {
-              ...config,
-              dbPath: testDbPath,
-              finderRoot: chilPath,
-            });
-          } else
-            scanStack.push({
-              id: info.id,
-              absPath: chilPath,
-              restChildren: fs.readdirSync(chilPath),
-              ctime: stat.ctime,
-              changed,
-            });
+          if (excludeType === ExcludeType.children) {
+            FileInfo.removeChildren(info.id, undefined, cEvScanBrake);
+          } else {
+            const testDbPath = path.join(chilPath, config.dbName);
+            if (fs.existsSync(testDbPath) && fs.statSync(testDbPath).isFile()) {
+              EvUiCmdMessage.next({
+                message: `Sub database found: ${testDbPath}`,
+              });
+              await DbIncluded.mark(
+                path.relative(config.finderRoot, chilPath),
+                config.dbName
+              );
+              await scanPath(chilPath, ignoreCtime, {
+                ...config,
+                dbPath: testDbPath,
+                finderRoot: chilPath,
+              });
+            } else {
+              scanStack.push({
+                id: info.id,
+                absPath: chilPath,
+                restChildren: fs.readdirSync(chilPath),
+                ctime: stat.ctime,
+                changed,
+              });
+            }
+          }
         }
         if (cEvScanBrake.value) break;
         await interactYield();

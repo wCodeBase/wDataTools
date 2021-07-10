@@ -9,6 +9,7 @@ import {
 import { FinderUi } from "./pages";
 import "./index.css";
 import "antd/dist/antd.css";
+import { EvConsole } from "../../finder/events/events";
 
 if (typeof require === "function") {
   try {
@@ -29,6 +30,10 @@ if (typeof require === "function") {
     console.error("Import electron failed", e);
   }
 }
+
+EvConsole.subscribe((val) => {
+  console.warn(val);
+});
 
 const Root = hot(() => <FinderUi />);
 

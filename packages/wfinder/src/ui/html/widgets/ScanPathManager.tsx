@@ -1,30 +1,38 @@
 import { defaultPropsFc } from "./../../tools/fc";
 import React, { useEffect } from "react";
-import { EvUiCmdResult, EvUiCmd } from "../../../finder/events/events";
+import {
+  EvUiCmdResult,
+  EvUiCmd,
+  EvDefaultDbInfo,
+} from "../../../finder/events/events";
 import { useStableState, useSubjectCallback } from "../../hooks/hooks";
 import { TypeMsgPathItem } from "../../../finder/events/types";
 import { message } from "antd";
 import { genManagerTable, SimpleTextEdit } from "../components/ManagerTable";
 import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
+import { Config } from "../../../finder/common";
 
 const PathTable = genManagerTable<TypeMsgPathItem>(
-  // FIXME: TODO: support dbRoot.
+  // FIXME: TODO: support dbInfo.
   ["path", "createdAt"],
   { path: SimpleTextEdit },
   { path: SimpleTextEdit },
   simpleGetKey,
-  () => ({ id: -1, path: "", createdAt: new Date(), dbRoot: "./" })
+  () => ({
+    id: -1,
+    path: "",
+    createdAt: new Date(),
+    dbInfo: EvDefaultDbInfo.value,
+  })
 );
 
 export const ScanPathManager = defaultPropsFc(
   { className: "", titleClassName: "" },
   (props) => {
     const [state, setState] = useStableState(() => ({
-      cmd: "",
       waitingForCmdResult: false,
       paths: [] as TypeMsgPathItem[],
-      newPath: "",
       remove: async (v: TypeMsgPathItem) => {
         await executeUiCmd("deletePath", {
           cmd: "deletePath",
@@ -58,15 +66,13 @@ export const ScanPathManager = defaultPropsFc(
           setState({ waitingForCmdResult: false });
         } else {
           EvUiCmd.next({ cmd: "listPath", data: [] });
-          setState({ newPath: "" });
         }
       } else if (msg.cmd === "listPath") {
         setState({
           paths: msg.result.results,
         });
         if (msg.result.error) message.error(msg.result.error);
-        if (state.waitingForCmdResult)
-          setState({ waitingForCmdResult: false, cmd: "" });
+        if (state.waitingForCmdResult) setState({ waitingForCmdResult: false });
       }
     });
 

@@ -1,3 +1,4 @@
+import { BaseDbInfoEntity } from "./Template";
 import { Config } from "./../common";
 import { BaseEntity, Column, Entity, PrimaryColumn } from "typeorm";
 import { getSwitchedDbConfig } from "../db";
@@ -5,7 +6,7 @@ import * as path from "path";
 import * as fs from "fs";
 
 @Entity()
-export class DbIncluded extends BaseEntity {
+export class DbIncluded extends BaseDbInfoEntity {
   @PrimaryColumn()
   path: string;
 

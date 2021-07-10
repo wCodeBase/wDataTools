@@ -1,12 +1,14 @@
+import { ConfigLine } from "./entities/ConfigLine";
 import inquirer from "inquirer";
 import { Connection, createConnection } from "typeorm";
-import { exit, exitNthTodo } from "../tools/tool";
+import { exit, exitNthTodo } from "../tools/nodeTool";
 import { FileInfo, IndexTableName } from "./entities/FileInfo";
 import * as fs from "fs";
 import { Config } from "./common";
 import { ScanPath } from "./entities/ScanPath";
 import { DbIncluded } from "./entities/DbIncluded";
 import { EvUiLaunched } from "./events/events";
+import { ConfigLineType } from "./types";
 
 const dbType = "better-sqlite3";
 
@@ -15,7 +17,7 @@ const initDb = async (dbPath: string) => {
     const connection = await createConnection({
       type: dbType,
       database: dbPath,
-      entities: [FileInfo],
+      entities: [FileInfo, ConfigLine],
     });
     const { tableName } = connection.getMetadata(FileInfo);
     await connection.query(
@@ -23,6 +25,10 @@ const initDb = async (dbPath: string) => {
       tokenize=porter unicode61 "separators=/",
       name);`
     );
+    await new ConfigLine(
+      "^node_modules$",
+      ConfigLineType.excludeChildrenFolderName
+    ).save();
     await connection.close();
   } catch (e) {
     fs.unlinkSync(dbPath);
@@ -31,7 +37,12 @@ const initDb = async (dbPath: string) => {
   }
 };
 
-export const AUTO_CONNECT_ENTITIES = [FileInfo, ScanPath, DbIncluded];
+export const AUTO_CONNECT_ENTITIES = [
+  FileInfo,
+  ScanPath,
+  DbIncluded,
+  ConfigLine,
+];
 
 export const getConnection = (() => {
   const connectionMap = new Map<string, Connection>();
@@ -95,11 +106,11 @@ export const { switchDb, getSwitchedDbConfig } = (() => {
     AUTO_CONNECT_ENTITIES.forEach((v) => v.useConnection(connection));
   };
   return {
-    switchDb: async (config: typeof Config, executor: () => Promise<void>) => {
+    switchDb: async <T>(config: typeof Config, executor: () => Promise<T>) => {
       await switchConfig(config);
       dbConfigStack.push(config);
       try {
-        await executor();
+        return await executor();
       } finally {
         dbConfigStack.pop();
         switchConfig(dbConfigStack[dbConfigStack.length - 1] || Config);

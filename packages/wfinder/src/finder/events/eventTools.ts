@@ -12,15 +12,16 @@ export const executeUiCmd = <T extends keyof TypeUiMsgDataMap>(
   cmdData: TypeUiMsgDataMap[T],
   timeout = 5000
 ) => {
+  const { tag = Math.random() } = cmdData;
   return new Promise<TypeUiMsgResultMap[T]>((res, rej) => {
     const subscribe = EvUiCmdResult.subscribe((data) => {
-      if (judgeUiMsgResultType<T>(data, cmd)) {
+      if (judgeUiMsgResultType<T>(data, cmd) && data.tag === tag) {
         subscribe.unsubscribe();
         clearTimeout(tHandle);
         res(data);
       }
     });
-    EvUiCmd.next(cmdData);
+    EvUiCmd.next({ ...cmdData, tag });
     const tHandle = setTimeout(() => {
       subscribe.unsubscribe();
       rej(new ErrorExecuteTimeout(`Execute cmd ${cmd} timeout.`));
