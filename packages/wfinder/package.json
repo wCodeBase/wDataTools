@@ -10,6 +10,7 @@
     "lint-staged": "lint-staged",
     "build-node": "NODE_ENV=production tsc",
     "build-electron": "NODE_ENV=production tsc && npm run electron-rebuild",
+    "build-electron-ipc": "NODE_ENV=production tsc && npm rebuild",
     "build-html": "NODE_ENV=production webpack -c webpack-configs/html-cfg.js",
     "build": "rm -rf dist && npm run build-node && npm run build-html",
     "electron-rebuild": "electron-rebuild -f",

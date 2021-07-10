@@ -32,5 +32,19 @@
             ],
             "type": "pwa-node"
         },
+        {
+            "type": "pwa-node",
+            "request": "launch",
+            "name": "Ipc Electron Main",
+            "program": "${workspaceFolder}/dist/main.js",
+            "preLaunchTask": "npm: build-electron-ipc",
+            "args": [
+                "-g",
+            ],
+            "env": {"NODE_ENV":"development"},
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
+        },
     ]
 }
