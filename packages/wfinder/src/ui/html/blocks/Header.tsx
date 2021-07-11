@@ -4,6 +4,8 @@ import { Button } from "antd";
 import { Modal, Drawer } from "antd";
 import { useStableState } from "../../hooks/hooks";
 import { Setting } from "../widgets/Setting";
+import { ConnectionLight } from "../components/ConnectionLight";
+import { isElectron } from "../../../finder/events/webEventTools";
 
 const SettingButton = React.memo(() => {
   const [state, setState] = useStableState(() => ({
@@ -23,8 +25,8 @@ const SettingButton = React.memo(() => {
         }}
       >
         <div className="flex items-center">
-          <SettingOutlined className="pr-1" />
-          Settings
+          <SettingOutlined />
+          <div className="sm:hidden pl-1">Settings</div>
         </div>
       </Button>
 
@@ -37,7 +39,9 @@ const SettingButton = React.memo(() => {
       >
         <div className="flex flex-col h-full overflow-y-auto p-3 bg-gradient-to-tr from-cyan-700 to-lightBlue-700">
           <div className="flex justify-end">
-            <Button type="primary">Close</Button>
+            <Button type="primary" onClick={state.hideSetting} className="mb-2">
+              Close
+            </Button>
           </div>
           <Setting className="flex-grow" />
         </div>
@@ -54,6 +58,7 @@ export const Header = () => {
       <div className="lg:hidden">
         <SettingButton />
       </div>
+      {!isElectron && <ConnectionLight />}
     </div>
   );
 };

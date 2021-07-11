@@ -21,6 +21,22 @@
             "protocol": "inspector",
         },
         {
+            "type": "node",
+            "request": "launch",
+            "name": "ts-node-server",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceRoot}/node_modules/ts-node/dist/bin.js",
+            "env": {"NODE_ENV":"development"},
+            "args": [
+                "./src/main.ts",
+                "serve",
+            ],
+            "cwd": "${workspaceFolder}",
+            "protocol": "inspector",
+        },
+        {
             "name": "Electron Main",
             "program": "${workspaceFolder}/dist/ui/electron/electronMain.js",
             "request": "launch",

@@ -17,6 +17,7 @@ import { useRef } from "react";
 import { useEffect } from "react";
 import { debounce } from "lodash";
 import { simpleGetKey } from "../../tools";
+import { executeUiCmd } from "../../../finder/events/eventTools";
 
 const Columns: ColumnsType<TypeMsgSearchResultItem> = [
   { title: "name", key: "name", dataIndex: "name" },
@@ -47,9 +48,21 @@ export const Search = ({ className = "" }) => {
         message.warn("Keyword input is empty!");
       }
     },
-    doSearch: () => {
-      if (state.keywords.every((v) => v))
-        EvUiCmd.next({ cmd: "search", data: { ...state } });
+
+    doSearch: async () => {
+      if (state.keywords.every((v) => v)) {
+        const res = await executeUiCmd("search", {
+          cmd: "search",
+          data: { ...state },
+        }).catch((e) => {
+          message.error(String(e));
+          return null;
+        });
+        if (res) {
+          const { records, skip, total } = res.result;
+          setState({ records, skip, total });
+        }
+      }
     },
     adjusTakeNum: debounce(() => {
       const element = tableAreaRef.current;
@@ -66,13 +79,6 @@ export const Search = ({ className = "" }) => {
     window.addEventListener("resize", state.adjusTakeNum);
     return () => window.removeEventListener("resize", state.adjusTakeNum);
   }, []);
-
-  useSubjectCallback(EvUiCmdResult, (msg) => {
-    if (msg.cmd === "search") {
-      const { records, skip, total } = msg.result;
-      setState({ records, skip, total });
-    }
-  });
 
   return (
     <div className={"rounded-sm flex flex-col flex-grow " + className}>

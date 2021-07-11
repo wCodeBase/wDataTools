@@ -1,14 +1,14 @@
 import { packetTool } from "./../../tools/streamTool";
 import { switchEvent, TypeGateway } from "./../../finder/events/eventGateway";
-import { Subscription } from "rxjs";
 import net from "net";
 import { isDev } from "./common";
+import { localhost } from "../../constants";
 
-const localhost = "localhost";
 export const USE_IPC_SERVER = "useIpcServer";
 
-export const startIpcServer = async () => {
+export const startIpcServer = async (connectionLimit = 1) => {
   const token = Date.now().toString(36) + Math.random().toString(36);
+  let connectCount = 0;
   const server = new net.Server((socket) => {
     let verified = false;
     let gateway: TypeGateway | undefined;
@@ -16,8 +16,10 @@ export const startIpcServer = async () => {
     socket.on("data", (data) => {
       try {
         if (!verified) {
+          if (connectCount >= connectionLimit) return;
           if (String(data) === token) {
             verified = true;
+            connectCount++;
             clearTimeout(timeout);
             socket.setNoDelay(true);
             gateway = switchEvent(
@@ -50,6 +52,7 @@ export const startIpcServer = async () => {
     const timeout = setTimeout(() => socket.destroy(), isDev ? 60000 : 6000);
     socket.on("close", () => {
       gateway?.unsubscribe();
+      if (verified) connectCount--;
     });
   });
   await new Promise<void>((res) => server.listen(0, localhost, undefined, res));

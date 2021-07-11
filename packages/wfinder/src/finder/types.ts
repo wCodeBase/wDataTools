@@ -16,3 +16,8 @@ export type TypeDbInfo = {
   dbPath: string;
   readOnly: boolean;
 };
+
+export type HttpServerOption = {
+  port: number;
+  host: string;
+};

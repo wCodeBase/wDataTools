@@ -1,35 +1,20 @@
 import { hot } from "react-hot-loader/root";
 import ReactDOM from "react-dom";
 import React from "react";
-import {
-  CLIENT_READY,
-  GATEWAY_CHANNEL,
-  switchEvent,
-} from "../../finder/events/eventGateway";
 import { FinderUi } from "./pages";
 import "./index.css";
 import "antd/dist/antd.css";
 import { EvConsole } from "../../finder/events/events";
+import { webInitEvent } from "../../finder/events/webEventTools";
+import { executeUiCmdInterceptors } from "../../finder/events/eventTools";
+import { WebEventStatus, wEvEventStatus } from "../../finder/events/webEvent";
 
-if (typeof require === "function") {
-  try {
-    const electron = eval(`try{require('electron')}catch(e){}`);
-    if (electron) {
-      electron.ipcRenderer.send(GATEWAY_CHANNEL, CLIENT_READY);
-      const gateway = switchEvent((data) => {
-        electron.ipcRenderer.send(GATEWAY_CHANNEL, data);
-      }, false);
-      electron.ipcRenderer.addListener(
-        GATEWAY_CHANNEL,
-        (_: any, data: string) => {
-          gateway.receive(data);
-        }
-      );
-    }
-  } catch (e) {
-    console.error("Import electron failed", e);
-  }
-}
+webInitEvent();
+executeUiCmdInterceptors.add(async () => {
+  if (wEvEventStatus.value !== WebEventStatus.connected)
+    throw new Error("Server is not connected yet.");
+  return undefined;
+});
 
 EvConsole.subscribe((val) => {
   console.warn(val);

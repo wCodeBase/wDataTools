@@ -13,6 +13,7 @@ import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import { ConfigLineType } from "../../../finder/types";
 import { Config } from "../../../finder/common";
+import { useEventReady } from "../../hooks/webHooks";
 
 const genTypedConfigmanager = (
   type: ConfigLineType,
@@ -40,14 +41,14 @@ const genTypedConfigmanager = (
           waitingForCmdResult: false,
           configs: [] as TypeMsgConfigItem[],
           remove: async (v: TypeMsgConfigItem) => {
-            await executeUiCmd("deleteConfig", {
+            const res = await executeUiCmd("deleteConfig", {
               cmd: "deleteConfig",
               data: v,
             }).catch((e) => {
               message.error(String(e));
               return null;
             });
-            await state.listConfig();
+            if (res) await state.listConfig();
           },
           addNew: async (v: TypeMsgConfigItem) => {
             const res = await executeUiCmd("addConfig", {
@@ -87,8 +88,11 @@ const genTypedConfigmanager = (
             return state.waitingForCmdResult;
           },
         };
-        res.listConfig();
         return res;
+      });
+
+      useEventReady(() => {
+        state.listConfig();
       });
 
       return (

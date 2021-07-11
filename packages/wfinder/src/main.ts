@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
+import { localhost } from "./constants";
 import {
   addScanPath,
   deleteScanPath,
@@ -8,8 +9,48 @@ import {
   listScanPath,
 } from "./finder/manager";
 import { doScanCmd } from "./finder/scan";
+import { HttpServerOption } from "./finder/types";
 
 const program = new Command();
+const defaultServerPort = 9000;
+const defaultServerHost = localhost;
+program
+  .command("serve")
+  .description("Start web server.")
+  .option(
+    "-p, --port <number>",
+    `Port to listen to. default ${defaultServerPort}`
+  )
+  .option(
+    "-a, --address <address>",
+    `Host address to bind. default ${defaultServerHost}`
+  )
+  .action(async (options) => {
+    let port = options.port ? Number.parseInt(options.port) : defaultServerPort;
+    const host = options.host || defaultServerHost;
+    let portConflict = false;
+    while (true) {
+      try {
+        await require("./finder/server").runAsServer({
+          port,
+          host,
+        } as HttpServerOption);
+        console.log(`Server listening on http://${host}:${port}`);
+        break;
+      } catch (e) {
+        if (e.code === "EADDRINUSE" && !options.port) {
+          if (!portConflict) {
+            console.log("Default port is in use, try another port...");
+            portConflict = true;
+          }
+          port++;
+        } else {
+          console.error(`Faile to start server`, e);
+          break;
+        }
+      }
+    }
+  });
 program
   .name("wfinder")
   .version(require("../package.json").version)

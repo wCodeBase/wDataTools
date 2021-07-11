@@ -16,7 +16,6 @@ import {
   TypeMsgConfigItem,
   TypeMsgPathItem,
   TypeUiMsgResult,
-  TypeUiMsgResultMap,
 } from "./types";
 
 EvUiCmd.subscribe(async (msg) => {

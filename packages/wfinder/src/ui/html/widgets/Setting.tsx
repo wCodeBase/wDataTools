@@ -6,15 +6,16 @@ import {
   FileNameToExcludeManager,
 } from "./TypedConfigLineManager";
 
-const segments = [
+const Segments = {
   ScanPathManager,
   FileNameToExcludeManager,
   FileNameToExcludeChildrenManager,
-];
+};
 
 export const Setting = defaultPropsFc(
-  { className: "" },
+  { className: "", segments: Object.entries(Segments) },
   (props) => {
+    const { segments } = props;
     return (
       <div className={"flex flex-col shadow-sm h-full " + props.className}>
         <div className="text-white text-lg font-bold bg-lightBlue-500 rounded-sm p-0.5 px-2 ">
@@ -22,10 +23,10 @@ export const Setting = defaultPropsFc(
         </div>
         <div className="h-2 flex-shrink-0" />
         <div className="overflow-auto">
-          {segments.map((Render, index) => {
+          {segments.map(([name, Render], index) => {
             return (
               <div
-                key={Render.name}
+                key={name}
                 className={
                   "rounded-sm shadow-sm" +
                   (index < segments.length - 1 ? " mb-2 " : "")
