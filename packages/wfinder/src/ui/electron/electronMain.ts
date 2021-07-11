@@ -1,3 +1,4 @@
+import { getUserPreference, setUserPreference } from "./preference";
 import { USE_IPC_SERVER } from "./ipcServer";
 import { switchEvent } from "./../../finder/events/eventGateway";
 import { loadHtml } from "./common";
@@ -10,6 +11,7 @@ import {
   GATEWAY_CHANNEL,
   CLIENT_READY,
 } from "../../finder/events/eventTools";
+import { throttle } from "lodash";
 
 (() => {
   const [tag, port, address, token] = process.argv.slice(2);
@@ -56,9 +58,12 @@ import {
 Menu.setApplicationMenu(null);
 
 app.whenReady().then(() => {
+  const preference = getUserPreference();
   const win = new BrowserWindow({
-    // width: 500,
-    // height: 500,
+    width: preference.windowWidth,
+    height: preference.windowHeight,
+    x: preference.windowX,
+    y: preference.windowY,
     minWidth: 500,
     minHeight: 600,
     webPreferences: {
@@ -66,6 +71,21 @@ app.whenReady().then(() => {
       contextIsolation: false,
     },
   });
+  if (preference.maximize) win.maximize();
+  const updateWindowPreference = throttle(() => {
+    const [windowWidth, windowHeight] = win.getSize();
+    const { x, y } = win.getBounds();
+    console.log({ x, y });
+    setUserPreference({ windowWidth, windowHeight, windowX: x, windowY: y });
+  }, 500);
+  win.addListener("resize", updateWindowPreference);
+  win.addListener("move", updateWindowPreference);
+  win.addListener(
+    "maximize",
+    throttle(() => {
+      setUserPreference({ maximize: true });
+    }, 500)
+  );
   win.webContents.openDevTools();
   (() => {
     let clientReady = false;
