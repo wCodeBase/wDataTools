@@ -1,15 +1,15 @@
 import { USE_IPC_SERVER } from "./ipcServer";
-import {
-  switchEvent,
-  GATEWAY_CHANNEL,
-  CLIENT_READY,
-  TypeGateway,
-} from "./../../finder/events/eventGateway";
+import { switchEvent } from "./../../finder/events/eventGateway";
 import { loadHtml } from "./common";
 import { app, BrowserWindow, Menu } from "electron";
 import { initFinder } from "../../finder";
 import net from "net";
 import { packetTool } from "../../tools/streamTool";
+import {
+  TypeGateway,
+  GATEWAY_CHANNEL,
+  CLIENT_READY,
+} from "../../finder/events/eventTools";
 
 (() => {
   const [tag, port, address, token] = process.argv.slice(2);

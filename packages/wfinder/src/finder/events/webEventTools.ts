@@ -1,10 +1,7 @@
 import { WebEventStatus, wEvEventStatus } from "./../../finder/events/webEvent";
-import {
-  GATEWAY_CHANNEL,
-  CLIENT_READY,
-  switchEvent,
-} from "../../finder/events/eventGateway";
+import { switchEvent } from "../../finder/events/eventGateway";
 import { EVENT_WEBSOCKET_ROUTE } from "../../constants";
+import { GATEWAY_CHANNEL, CLIENT_READY } from "./eventTools";
 
 const electron = eval(`try{require('electron')}catch(e){}`);
 

@@ -1,8 +1,9 @@
 import { packetTool } from "./../../tools/streamTool";
-import { switchEvent, TypeGateway } from "./../../finder/events/eventGateway";
+import { switchEvent } from "./../../finder/events/eventGateway";
 import net from "net";
 import { isDev } from "./common";
 import { localhost } from "../../constants";
+import { TypeGateway } from "../../finder/events/eventTools";
 
 export const USE_IPC_SERVER = "useIpcServer";
 

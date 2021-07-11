@@ -2,7 +2,7 @@ import { get, range, setWith } from "lodash";
 
 type TypeKey = string | number;
 
-type _TypeSimpleData<T> =
+export type _TypeSimpleData<T> =
   | string
   | number
   | boolean
@@ -10,7 +10,8 @@ type _TypeSimpleData<T> =
   | void
   | T
   | _TypeSimpleData<T>[];
-type _TypeJsonData<T> =
+
+export type _TypeJsonData<T> =
   | _TypeSimpleData<T>
   | _TypeJsonData<T>[]
   | {
@@ -21,74 +22,176 @@ type _TypeJsonData<T> =
         | _TypeJsonData<T>[];
     };
 
-export type TypeSimpleData = _TypeSimpleData<Date>;
-export type TypeJsonData = _TypeJsonData<Date>;
-let tt: _TypeJsonData<Date> = {};
-const ll: { data: _TypeJsonData<Date> } = { data: tt };
-tt = ll;
-
-type JsonMoreData = {
-  label: "JsonMoreData";
-  data: _TypeJsonData<void>;
-  special: { type: "Date"; path: TypeKey[] }[];
+export type TypeSpecialJsonPacker<T> = {
+  constructor: (new (...p: any[]) => T) | ((...p: any[]) => T);
+  pack: (data: T) => _TypeJsonData<void>;
+  unpack: (json: _TypeJsonData<void>) => T;
+  /** If source code will be uglified, an explicit name string should be privided */
+  name?: string;
 };
 
-export const JsonMore = {
-  stringify: (data: TypeJsonData) => {
-    const res: JsonMoreData = {
-      label: "JsonMoreData",
-      data: undefined,
-      special: [],
-    };
+export const concatSpecialPackers = <T, Y>(
+  packer: TypeSpecialJsonPacker<T>[],
+  packer1: TypeSpecialJsonPacker<Y>[]
+  // @ts-ignore
+): TypeSpecialJsonPacker<T | Y>[] => [...packer, ...packer1];
 
-    const src = { data };
-    const pathStack: { path: TypeKey[]; rest: TypeKey[] }[] = [
-      { path: ["data"], rest: [] },
-    ];
-    while (true) {
-      const item = pathStack.pop();
-      if (item === undefined) break;
-      const { path, rest } = item;
-      const first = rest.pop();
-      if (first) {
-        pathStack.push({ path: [...path.slice(0, -1), first], rest });
+const simpleJsonDataTypeSet = new Set(["string", "number", "boolean"]);
+const specialValuePackers: [_TypeSimpleData<void>, string][] = [
+  [NaN, "sp_NaN"],
+  [Infinity, "sp_Infinity"],
+  [-Infinity, "sp_neg_Infinity"],
+];
+const specialValueNameMap = new Map<any, string>(specialValuePackers);
+const nameSpecialValueMap = new Map(
+  specialValuePackers.map(([a, b]) => [b, a])
+);
+
+/** FIXME: deal with NaN Infinity BigInt */
+export const buildJsonMore = <T>(
+  specialPackers: TypeSpecialJsonPacker<T>[]
+) => {
+  const constructorPackerMap = new Map<any, TypeSpecialJsonPacker<T>>();
+  const namePackerMap = new Map<string, TypeSpecialJsonPacker<T>>();
+  specialPackers.forEach((packer) => {
+    const name = packer.name || packer.constructor.name;
+    if (namePackerMap.has(name) || nameSpecialValueMap.has(name))
+      throw new Error(`Duplicated specialJsonPacker "${name}"`);
+    namePackerMap.set(name, packer);
+    if (constructorPackerMap.has(packer.constructor))
+      throw new Error(`Duplicated specialJsonPacker constructor "${name}"`);
+    constructorPackerMap.set(packer.constructor, packer);
+  });
+
+  type TypeJsonData = _TypeJsonData<T>;
+
+  type JsonMoreData = {
+    label: "JsonMoreData";
+    data: _TypeJsonData<void>;
+    special: { type: string; path: TypeKey[] }[];
+  };
+
+  return {
+    stringify: (data: TypeJsonData) => {
+      const res: JsonMoreData = {
+        label: "JsonMoreData",
+        data: undefined,
+        special: [],
+      };
+
+      const src = { data };
+      const pathStack: { path: TypeKey[]; rest: TypeKey[] }[] = [
+        { path: ["data"], rest: [] },
+      ];
+      while (true) {
+        const item = pathStack.pop();
+        if (item === undefined) break;
+        const { path, rest } = item;
+        const first = rest.pop();
+        if (first) {
+          pathStack.push({ path: [...path.slice(0, -1), first], rest });
+        }
+        const srcValue: TypeJsonData = get(src, path);
+        let value: _TypeJsonData<void>;
+        const special = specialValueNameMap.get(srcValue);
+        if (special) {
+          value = special;
+          res.special.push({ type: special, path });
+        } else if (
+          srcValue === null ||
+          srcValue === undefined ||
+          simpleJsonDataTypeSet.has(typeof srcValue)
+        ) {
+          // @ts-ignore
+          value = srcValue;
+        } else if (srcValue instanceof Array) {
+          if (srcValue.length)
+            pathStack.push({
+              path: [...path, 0],
+              rest: srcValue.length > 1 ? range(1, srcValue.length) : [],
+            });
+          value = [];
+          // @ts-ignore
+        } else if (constructorPackerMap.has(srcValue["constructor"])) {
+          // @ts-ignore
+          const packer = constructorPackerMap.get(srcValue["constructor"]);
+          if (packer) {
+            // @ts-ignore
+            value = packer.pack(srcValue);
+            res.special.push({
+              type: packer.name || packer.constructor.name,
+              path,
+            });
+          }
+        } else if (srcValue instanceof Object) {
+          const [first, ...rest] = Object.keys(srcValue);
+          pathStack.push({ path: [...path, first], rest });
+          value = {};
+        } else {
+          throw new Error(
+            `Failed to pack jsonMore value, unknown type: ${srcValue}`
+          );
+        }
+        setWith(res, path, value, Object);
       }
-      const srcValue: TypeJsonData = get(src, path);
-      let value: _TypeJsonData<void>;
-      if (srcValue instanceof Date) {
-        res.special.push({ type: "Date", path });
-        value = srcValue.valueOf();
-      } else if (srcValue instanceof Array) {
-        if (srcValue.length)
-          pathStack.push({
-            path: [...path, 0],
-            rest: srcValue.length > 1 ? range(1, srcValue.length) : [],
-          });
-        value = [];
-      } else if (srcValue instanceof Object) {
-        const [first, ...rest] = Object.keys(srcValue);
-        pathStack.push({ path: [...path, first], rest });
-        value = {};
-      } else {
-        value = srcValue;
-      }
-      setWith(res, path, value, Object);
-    }
-    return JSON.stringify(res);
-  },
-  parse: (data: string) => {
-    const json: JsonMoreData = JSON.parse(data);
-    if (json.label !== "JsonMoreData") return null;
-    json.special.forEach((special) => {
-      const { type, path } = special;
-      if (type === "Date") {
-        const value = get(json, path);
-        if (typeof value === "number")
-          setWith(json, path, new Date(value), Object);
-      } else {
-        throw new Error("Unknown JsonMore special type: " + type);
-      }
-    });
-    return json.data as TypeJsonData;
-  },
+      return JSON.stringify(res);
+    },
+    parse: (data: string) => {
+      const json: JsonMoreData = JSON.parse(data);
+      if (json.label !== "JsonMoreData") return null;
+      json.special.forEach((special) => {
+        const { type, path } = special;
+        if (nameSpecialValueMap.has(type)) {
+          setWith(json, path, nameSpecialValueMap.get(type), Object);
+        } else {
+          const packer = namePackerMap.get(type);
+          if (packer) {
+            const value = get(json, path);
+            setWith(json, path, packer.unpack(value), Object);
+          } else {
+            throw new Error("Unknown JsonMore special type: " + type);
+          }
+        }
+      });
+      return json.data as TypeJsonData;
+    },
+  };
 };
+
+export class ErrorSpecialDataUnpack extends Error {}
+export class ErrorSpecialDatapack extends Error {}
+
+export type TypeDefaultSpecialJsonType = Date | BigInt;
+
+const defaultPackers: TypeSpecialJsonPacker<TypeDefaultSpecialJsonType>[] = [
+  {
+    constructor: Date,
+    pack: (data) => {
+      if (!(data instanceof Date)) throw new ErrorSpecialDatapack();
+      return data.valueOf();
+    },
+    unpack: (data) => {
+      if (typeof data !== "number") throw new ErrorSpecialDataUnpack();
+      return new Date(data);
+    },
+  },
+  {
+    constructor: BigInt,
+    pack: (data) => {
+      if (typeof data !== "bigint") throw new ErrorSpecialDatapack();
+      return data.toString();
+    },
+    unpack: (data) => {
+      if (typeof data !== "string") throw new ErrorSpecialDataUnpack();
+      return BigInt(data);
+    },
+  },
+];
+
+export type TypeSimpleData = _TypeSimpleData<TypeDefaultSpecialJsonType>;
+export type TypeJsonData = _TypeJsonData<TypeDefaultSpecialJsonType>;
+export const JsonMore = buildJsonMore(defaultPackers);
+
+export const buildJsonMoreWithDefaultPackers = <T>(
+  specialPackers: TypeSpecialJsonPacker<T>[]
+) => buildJsonMore(concatSpecialPackers(specialPackers, defaultPackers));
