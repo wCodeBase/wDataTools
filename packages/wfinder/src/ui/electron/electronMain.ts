@@ -75,7 +75,6 @@ app.whenReady().then(() => {
   const updateWindowPreference = throttle(() => {
     const [windowWidth, windowHeight] = win.getSize();
     const { x, y } = win.getBounds();
-    console.log({ x, y });
     setUserPreference({ windowWidth, windowHeight, windowX: x, windowY: y });
   }, 500);
   win.addListener("resize", updateWindowPreference);

@@ -4,10 +4,10 @@ import "antd/lib/message/style/css";
 import {
   EvUiCmd,
   EvUiCmdResult,
-  useFinderState,
+  useFinderStatus,
 } from "../../../finder/events/events";
 import {
-  FinderState,
+  FinderStatus,
   TypeMsgSearchResultItem,
 } from "../../../finder/events/types";
 import { useStableState, useSubjectCallback } from "../../hooks/hooks";
@@ -31,7 +31,7 @@ const Columns: ColumnsType<TypeMsgSearchResultItem> = [
 ];
 
 export const Search = ({ className = "" }) => {
-  const [finderState, subject] = useFinderState();
+  const [finderStatus, subject] = useFinderStatus();
   const [state, setState] = useStableState(() => ({
     skip: 0,
     take: 5,
@@ -39,7 +39,7 @@ export const Search = ({ className = "" }) => {
     keywords: [] as string[],
     records: null as TypeMsgSearchResultItem[] | null,
     onSubmit: (str: string) => {
-      if (finderState === FinderState.searching) {
+      if (finderStatus === FinderStatus.searching) {
         message.warning("Busy searching now, please retry later.");
       } else if (str) {
         setState({ skip: 0, keywords: [str] });

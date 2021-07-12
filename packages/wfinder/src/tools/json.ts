@@ -11,16 +11,18 @@ export type _TypeSimpleData<T> =
   | T
   | _TypeSimpleData<T>[];
 
+export type _TypeJsonObject<T> = {
+  [key in TypeKey]:
+    | _TypeSimpleData<T>
+    | _TypeSimpleData<T>[]
+    | _TypeJsonData<T>
+    | _TypeJsonData<T>[];
+};
+
 export type _TypeJsonData<T> =
   | _TypeSimpleData<T>
   | _TypeJsonData<T>[]
-  | {
-      [key in TypeKey]:
-        | _TypeSimpleData<T>
-        | _TypeSimpleData<T>[]
-        | _TypeJsonData<T>
-        | _TypeJsonData<T>[];
-    };
+  | _TypeJsonObject<T>;
 
 export type TypeSpecialJsonPacker<T> = {
   constructor: (new (...p: any[]) => T) | ((...p: any[]) => T);
@@ -47,10 +49,15 @@ const nameSpecialValueMap = new Map(
   specialValuePackers.map(([a, b]) => [b, a])
 );
 
+export type TypeJsonMore = {
+  stringify: (data: _TypeJsonData<any>) => string;
+  parse: (data: string) => _TypeJsonData<any>;
+};
+
 /** FIXME: deal with NaN Infinity BigInt */
 export const buildJsonMore = <T>(
   specialPackers: TypeSpecialJsonPacker<T>[]
-) => {
+): TypeJsonMore => {
   const constructorPackerMap = new Map<any, TypeSpecialJsonPacker<T>>();
   const namePackerMap = new Map<string, TypeSpecialJsonPacker<T>>();
   specialPackers.forEach((packer) => {
@@ -190,8 +197,20 @@ const defaultPackers: TypeSpecialJsonPacker<TypeDefaultSpecialJsonType>[] = [
 
 export type TypeSimpleData = _TypeSimpleData<TypeDefaultSpecialJsonType>;
 export type TypeJsonData = _TypeJsonData<TypeDefaultSpecialJsonType>;
+export type TypeJsonObject = _TypeJsonObject<TypeDefaultSpecialJsonType>;
 export const JsonMore = buildJsonMore(defaultPackers);
 
 export const buildJsonMoreWithDefaultPackers = <T>(
   specialPackers: TypeSpecialJsonPacker<T>[]
 ) => buildJsonMore(concatSpecialPackers(specialPackers, defaultPackers));
+
+export const removeFunctionProperties = <T extends Record<string, any>>(
+  v: T
+) => {
+  const res: Partial<T> = {};
+  Object.entries(v).forEach(([k, v]) => {
+    // @ts-ignore
+    if (typeof v !== "function") res[k] = v;
+  });
+  return res;
+};

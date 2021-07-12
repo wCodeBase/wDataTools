@@ -6,6 +6,8 @@ export enum FileType {
 export enum ConfigLineType {
   excludeFileName = 1,
   excludeChildrenFolderName,
+  remoteUrl,
+  coreInfo,
 }
 
 export type TypeDbInfo = {
@@ -15,9 +17,19 @@ export type TypeDbInfo = {
   /** Absolute path for database connection */
   dbPath: string;
   readOnly: boolean;
+  remoteUrls?: string[];
 };
 
 export type HttpServerOption = {
   port: number;
   host: string;
+};
+
+export type TypeFinderCoreInfo = {
+  thumnail: string;
+};
+
+export type TypeQueryLimit = {
+  dbThumnailStack: string[];
+  remoteLimit: number;
 };

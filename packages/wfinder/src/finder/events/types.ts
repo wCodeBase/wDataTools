@@ -1,15 +1,22 @@
+import {
+  TypeDefaultSpecialJsonType,
+  TypeJsonData,
+  _TypeJsonData,
+} from "./../../tools/json";
 import { FileInfo } from "../entities/FileInfo";
 import { ScanPath } from "../entities/ScanPath";
-import { TypeJsonData } from "../../tools/json";
 import { ConfigLine } from "../entities/ConfigLine";
 
-export enum FinderState {
+export enum FinderStatus {
   idle,
   scanning,
   searching,
 }
 
-export const BUSY_FINDER_STATES = [FinderState.scanning, FinderState.searching];
+export const BUSY_FINDER_STATES = [
+  FinderStatus.scanning,
+  FinderStatus.searching,
+];
 
 export const UI_CMD_DEF = {
   search: "search",
@@ -77,7 +84,7 @@ type TypeMsgPathManage = {
 
 export type TypeMsgConfigItem = Pick<
   ConfigLine,
-  "id" | "content" | "updatedAt" | "type"
+  "id" | "content" | "updatedAt" | "type" | "createdAt" | "jsonStr" | "disabled"
 > &
   Partial<Pick<ConfigLine, "dbInfo">>;
 
@@ -90,7 +97,8 @@ type TypeMsgConfigLineDef = {
 
 type TypeMsgConfigLineManage = {
   addConfig: {
-    data: Pick<TypeMsgConfigItem, "dbInfo" | "type" | "content">;
+    data: Pick<TypeMsgConfigItem, "dbInfo" | "type" | "content"> &
+      Partial<TypeMsgConfigItem>;
   } & TypeMsgConfigLineDef;
   deleteConfig: {
     data: Pick<TypeMsgConfigItem, "dbInfo" | "type" | "content">;
@@ -99,9 +107,16 @@ type TypeMsgConfigLineManage = {
     data: Pick<TypeMsgConfigItem, "type">;
   } & TypeMsgConfigLineDef;
   saveConfig: {
-    data: Pick<TypeMsgConfigItem, "type" | "content" | "id" | "dbInfo">;
+    data: Pick<TypeMsgConfigItem, "type" | "content" | "id" | "dbInfo"> &
+      Partial<TypeMsgConfigItem>;
   } & TypeMsgConfigLineDef;
 };
+
+// type TypeMsgDbManage = {
+//   switchDb: {
+//     data: ;
+//   }
+// }; tttt
 
 type TypeCmdUiMsgDefMap = TypeMsgScan &
   TypeMsgSearch &
@@ -149,4 +164,44 @@ export type GatewayMessage = {
   subjectName: string;
   data: TypeJsonData;
   fromMaster: boolean;
+};
+
+export type RemoteMessage = {
+  label: "RemoteMessage";
+  tag: string | number;
+  data: TypeJsonData;
+  type: "cmd" | "res";
+};
+
+export type RemoteHeartbeat = {
+  label: "RemoteHeartbeat";
+  tag: string | number;
+};
+
+export type RemoteError = {
+  label: "RemoteError";
+  tag: string | number;
+  error: string;
+};
+
+export type TypeCommonMsgResultDef<T> = {
+  tag?: string | number;
+  data: _TypeJsonData<T | TypeDefaultSpecialJsonType>;
+  result: _TypeJsonData<T | TypeDefaultSpecialJsonType>;
+};
+
+export type TypeCommonMsgDef<T> = {
+  [key: string]: TypeCommonMsgResultDef<T>;
+};
+
+export type ToCommonMsgData<K, T extends TypeCommonMsgDef<K>> = {
+  [key in keyof T]: {
+    cmd: key;
+  } & Omit<T[key], "result">;
+};
+
+export type ToCommonMsgResult<K, T extends TypeCommonMsgDef<K>> = {
+  [key in keyof T]: {
+    cmd: key;
+  } & Omit<T[key], "data">;
 };

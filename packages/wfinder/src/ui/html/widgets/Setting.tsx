@@ -4,12 +4,14 @@ import { ScanPathManager } from "./ScanPathManager";
 import {
   FileNameToExcludeChildrenManager,
   FileNameToExcludeManager,
+  RemoteWfinderManager,
 } from "./TypedConfigLineManager";
 
 const Segments = {
   ScanPathManager,
   FileNameToExcludeManager,
   FileNameToExcludeChildrenManager,
+  RemoteWfinderManager,
 };
 
 export const Setting = defaultPropsFc(

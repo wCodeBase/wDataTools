@@ -1,4 +1,4 @@
-import { BaseDbInfoEntity } from "./Template";
+import { BaseDbInfoEntity } from "./BaseDbInfoEntity";
 import { Config } from "./../common";
 import { BaseEntity, Column, Entity, PrimaryColumn } from "typeorm";
 import { getSwitchedDbConfig } from "../db";

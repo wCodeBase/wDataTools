@@ -1,12 +1,15 @@
 import { Box, Text } from "ink";
 import React from "react";
-import { EvDatabaseInfos, useFinderState } from "../../../finder/events/events";
+import {
+  EvDatabaseInfos,
+  useFinderStatus,
+} from "../../../finder/events/events";
 import Spinner from "ink-spinner";
-import { FinderState } from "../../../finder/events/types";
+import { FinderStatus } from "../../../finder/events/types";
 import { useBehaviorSubjectValue } from "../../hooks/hooks";
 
 export const Header = () => {
-  const [finderState] = useFinderState();
+  const [finderStatus] = useFinderStatus();
   const [dbInfo] = useBehaviorSubjectValue(EvDatabaseInfos);
 
   return (
@@ -14,9 +17,9 @@ export const Header = () => {
       <Box>
         <Text>WFinder state: </Text>
         <Box>
-          <Text color="blueBright">{FinderState[finderState]}</Text>
-          {[FinderState.searching, FinderState.scanning].includes(
-            finderState
+          <Text color="blueBright">{FinderStatus[finderStatus]}</Text>
+          {[FinderStatus.searching, FinderStatus.scanning].includes(
+            finderStatus
           ) && <Spinner />}
         </Box>
         <Box marginLeft={2}>

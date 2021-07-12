@@ -38,23 +38,28 @@ export const exListScanPath = async (config = Config) => {
 };
 
 export const exAddConfigLine = async (
-  content: string,
-  type: ConfigLineType,
+  data: Pick<TypeMsgConfigItem, "type" | "content" | "dbInfo"> &
+    Partial<TypeMsgConfigItem>,
   config = Config
 ) => {
   return await switchDb(config, async () => {
+    const { content, type } = data;
     if (await ConfigLine.count({ where: { content, type } })) {
       const error = `Content already exist: ${ConfigLineType[type]}-${content}.`;
       return { error };
     } else {
-      const result = await new ConfigLine(content, type).save();
+      const result = await Object.assign(
+        new ConfigLine(content, type),
+        data
+      ).save();
       return { result };
     }
   });
 };
 
 export const exSaveConfigLine = async (
-  item: Pick<TypeMsgConfigItem, "type" | "content" | "id" | "dbInfo">
+  item: Pick<TypeMsgConfigItem, "type" | "content" | "id" | "dbInfo"> &
+    Partial<TypeMsgConfigItem>
 ) => {
   return await switchDb(item.dbInfo || Config, async () => {
     const config = await ConfigLine.findOne(item.id);
@@ -63,7 +68,7 @@ export const exSaveConfigLine = async (
       const error = `Content not found: ${ConfigLineType[type]}-${content}.`;
       return { error };
     } else {
-      Object.assign(config, { content, type });
+      Object.assign(config, item);
       const result = await config.save();
       return { result };
     }

@@ -4,14 +4,37 @@ import {
   EvUiCmdResult,
   EvUiCmd,
   EvDefaultDbInfo,
+  useFinderStatus,
 } from "../../../finder/events/events";
 import { useStableState, useSubjectCallback } from "../../hooks/hooks";
-import { TypeMsgPathItem } from "../../../finder/events/types";
-import { message } from "antd";
-import { genManagerTable, SimpleTextEdit } from "../components/ManagerTable";
+import { FinderStatus, TypeMsgPathItem } from "../../../finder/events/types";
+import { Button, message } from "antd";
+import {
+  genManagerTable,
+  SimpleTextEdit,
+  TypeManagerTableAddonButtonProps,
+} from "../components/ManagerTable";
 import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import { useEventReady } from "../../hooks/webHooks";
+
+const SearchButton = React.memo((props: TypeManagerTableAddonButtonProps) => {
+  const [finderStatus] = useFinderStatus();
+  return (
+    <div className="pl-2">
+      <Button
+        onClick={() => {
+          EvUiCmd.next({ cmd: "scan", data: null });
+        }}
+        loading={finderStatus === FinderStatus.scanning}
+        type="primary"
+        size="small"
+      >
+        Scan
+      </Button>
+    </div>
+  );
+});
 
 const PathTable = genManagerTable<TypeMsgPathItem>(
   // FIXME: TODO: support dbInfo.
@@ -24,7 +47,8 @@ const PathTable = genManagerTable<TypeMsgPathItem>(
     path: "",
     createdAt: new Date(),
     dbInfo: EvDefaultDbInfo.value,
-  })
+  }),
+  SearchButton
 );
 
 export const ScanPathManager = defaultPropsFc(

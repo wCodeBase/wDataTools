@@ -1,15 +1,14 @@
+import { TypeJsonData, _TypeJsonObject } from "./../../tools/json";
 import {
-  BaseEntity,
   Column,
   CreateDateColumn,
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { getSwitchedDbConfig } from "../db";
 import { TypeMsgConfigItem } from "../events/types";
 import { ConfigLineType } from "../types";
-import { BaseDbInfoEntity } from "./Template";
+import { BaseDbInfoEntity } from "./BaseDbInfoEntity";
 
 @Entity()
 export class ConfigLine extends BaseDbInfoEntity {
@@ -21,6 +20,12 @@ export class ConfigLine extends BaseDbInfoEntity {
 
   @Column()
   type: ConfigLineType;
+
+  @Column({ nullable: true })
+  disabled?: boolean;
+
+  @Column({ type: "text", nullable: true })
+  jsonStr?: string;
 
   @UpdateDateColumn()
   updatedAt!: Date;
@@ -35,7 +40,25 @@ export class ConfigLine extends BaseDbInfoEntity {
   }
 
   toItem(): TypeMsgConfigItem {
-    const { id, updatedAt, content, type, dbInfo } = this;
-    return { id, updatedAt, content, type, dbInfo };
+    const {
+      id,
+      updatedAt,
+      createdAt,
+      content,
+      type,
+      dbInfo,
+      disabled,
+      jsonStr,
+    } = this;
+    return {
+      id,
+      updatedAt,
+      createdAt,
+      content,
+      type,
+      dbInfo,
+      disabled,
+      jsonStr,
+    };
   }
 }

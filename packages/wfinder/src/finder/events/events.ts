@@ -1,6 +1,6 @@
 import { debounceTime } from "rxjs/operators";
 import {
-  FinderState,
+  FinderStatus,
   TypeDatabaseInfos,
   TypeUiMsgData,
   TypeUiMsgMessage,
@@ -8,24 +8,28 @@ import {
   TypeUiStatus,
 } from "./types";
 import { TypeDbInfo } from "../types";
-import { JsonBehaviorSubject, JsonSubject } from "./eventTools";
+import {
+  JsonBehaviorSubject,
+  JsonSubject,
+  ShallowJsonBehaviorSubject,
+} from "./eventTools";
 import { useBehaviorSubjectValue } from "../../ui/hooks/hooks";
 
-export const EvFinderState = new JsonBehaviorSubject<FinderState>(
-  FinderState.idle
+export const EvFinderStatus = new JsonBehaviorSubject<FinderStatus>(
+  FinderStatus.idle
 );
 
 export const EvDefaultDbInfo = new JsonBehaviorSubject<TypeDbInfo | undefined>(
   undefined
 );
 
-export const useFinderState = () => useBehaviorSubjectValue(EvFinderState);
+export const useFinderStatus = () => useBehaviorSubjectValue(EvFinderStatus);
 
 /** Triggered when FileInfo inserted or deleted */
 export const EvFileInfoChange = (() => {
-  const subject = new JsonBehaviorSubject<void>(undefined);
+  const subject = new JsonBehaviorSubject(null);
   const observer = subject.pipe(debounceTime(500));
-  return Object.assign(new JsonBehaviorSubject<void>(undefined), {
+  return Object.assign(new JsonBehaviorSubject(null), {
     next: subject.next.bind(subject),
     subscribe: observer.subscribe.bind(observer),
     pipe: subject.pipe.bind(subject),
@@ -46,17 +50,8 @@ export const EvUiCmdResult = new JsonSubject<TypeUiMsgResult>();
 
 export const EvUiCmdMessage = new JsonSubject<TypeUiMsgMessage>();
 
-export const EvUiLaunched = (() => {
-  const subject = new JsonBehaviorSubject<TypeUiStatus>({});
-  const next = subject.next.bind(subject);
-  subject.next = (val) => {
-    next(
-      Object.entries(subject.value)
-        // @ts-ignore
-        .every(([key, value]) => value === val[key])
-        ? val
-        : { ...subject.value, ...val }
-    );
-  };
-  return subject;
-})();
+export const EvUiLaunched = new ShallowJsonBehaviorSubject<TypeUiStatus>({});
+
+export const EvConfigLineChange = new JsonSubject<null>();
+
+export const EvScanPathChange = new JsonSubject<null>();

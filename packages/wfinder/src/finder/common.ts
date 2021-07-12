@@ -1,6 +1,12 @@
+import { Subject } from "rxjs";
+import { BaseDbInfoEntity } from "./entities/BaseDbInfoEntity";
 import * as path from "path";
 import { EvDefaultDbInfo } from "./events/events";
-import { TypeDbInfo } from "./types";
+import { ConfigLineType, TypeDbInfo, TypeFinderCoreInfo } from "./types";
+import { ObjectType } from "typeorm";
+import { STR_FINDER_CORE_INFO } from "../constants";
+import { genDbThumnail } from "../tools/nodeTool";
+import { ConfigLine } from "./entities/ConfigLine";
 
 export const Config = (() => {
   const finderRoot = path.resolve("./");
@@ -16,4 +22,14 @@ export const Config = (() => {
   } as TypeDbInfo;
 })();
 
+export const entityChangeWatchingSubjectMap = new Map<
+  ObjectType<BaseDbInfoEntity>,
+  Subject<null>
+>();
+
 EvDefaultDbInfo.next(Config);
+
+export const DEFAULT_QUERY_LIMIT = {
+  dbThumnailStack: [],
+  remoteLimit: 10,
+};

@@ -1,4 +1,5 @@
-import { BaseDbInfoEntity } from "./Template";
+import { DEFAULT_QUERY_LIMIT } from "./../common";
+import { BaseDbInfoEntity } from "./BaseDbInfoEntity";
 import { getSwitchedDbConfig, switchDb } from "./../db";
 import { DbIncluded } from "./DbIncluded";
 import {
@@ -11,7 +12,7 @@ import {
   Repository,
 } from "typeorm";
 import * as path from "path";
-import { EvFileInfoChange, EvLog } from "../events/events";
+import { EvLog } from "../events/events";
 import { sumBy } from "lodash";
 import * as fs from "fs";
 import { interactYield } from "../../tools/tool";
@@ -66,14 +67,12 @@ export class FileInfo extends BaseDbInfoEntity {
       `insert into ${IndexTableName}(rowid, name) values(${this.id},?)`,
       [this.name]
     );
-    EvFileInfoChange.next();
     return res;
   }
 
   async remove(options?: RemoveOptions) {
     await FileInfo.removeNameIndexs([this]);
     const res = await super.remove(options);
-    EvFileInfoChange.next();
     return res;
   }
 
@@ -119,22 +118,49 @@ export class FileInfo extends BaseDbInfoEntity {
     return res;
   }
 
-  static async countByMatchName(keywords: string[], onlyCurrentDb = false) {
+  static async countByMatchName(
+    keywords: string[],
+    onlyCurrentDb = false,
+    queryLimit = DEFAULT_QUERY_LIMIT
+  ) {
     const query = (rep: Repository<FileInfo>) =>
       rep.query(
         `select count(1) as count from ${IndexTableName} where name match ?`,
         [processQueryText(keywords.join(" "))]
       );
-    const res = await (onlyCurrentDb
+    const res: any[] = await (onlyCurrentDb
       ? query(this.getRepository())
       : this.queryAllDbIncluded(query));
-    return sumBy(res, "count");
+    const remoteQuery = this.callRemoteStaticMethod(
+      "countByMatchName",
+      [keywords, onlyCurrentDb],
+      queryLimit
+    );
+    let rRes = await remoteQuery.next();
+    let rTotal = 0;
+    while (!rRes.done) {
+      const { result } = rRes.value.rRes;
+      if (typeof result === "number") rTotal += result;
+      else {
+        EvLog(
+          `Error: remote call countByMatchName return invalid value: `,
+          result
+        );
+      }
+      rRes = await remoteQuery.next();
+    }
+    return sumBy(res, "count") + rTotal;
   }
 
-  static async findByMatchName(keywords: string[], take = 100, skip = 0) {
+  static async findByMatchName(
+    keywords: string[],
+    take = 100,
+    skip = 0,
+    queryLimit = DEFAULT_QUERY_LIMIT
+  ) {
     const end = take + skip;
     let pos = 0;
-    return await this.queryAllDbIncluded(async (rep) => {
+    let res = await this.queryAllDbIncluded(async (rep) => {
       if (pos > end) return [];
       const count = await this.countByMatchName(keywords, true);
       const mSkip = Math.max(0, skip - pos);
@@ -151,6 +177,31 @@ export class FileInfo extends BaseDbInfoEntity {
           return this.findByIds(ids.map((v: any) => v.rowid));
         });
     });
+    if (pos < end) {
+      const remoteQuery = this.callRemoteStaticMethod(
+        "findByMatchName",
+        [keywords, take, skip],
+        queryLimit
+      );
+      let rRes = await remoteQuery.next();
+      while (!rRes.done) {
+        const value = rRes.value;
+        if (value !== undefined && value.rRes.result?.constructor === Array) {
+          // @ts-ignore
+          const fileInfos: FileInfo[] = rRes.value.rRes.result;
+          fileInfos.forEach(
+            (v) =>
+              (v.dbInfo.remoteUrls = [
+                value.url,
+                ...(v.dbInfo.remoteUrls || []),
+              ])
+          );
+          res = res.concat(fileInfos);
+        }
+        rRes = await remoteQuery.next();
+      }
+    }
+    return res;
   }
 
   static async removeNameIndexs(fileInfos: FileInfo[]) {

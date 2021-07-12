@@ -1,6 +1,6 @@
 import { interactYield } from "./../tools/tool";
 import { ConfigLine } from "./entities/ConfigLine";
-import { cEvScanBrake } from "./events/coreEvents";
+import { cEvScanBrake } from "./events/core/coreEvents";
 import { Config } from "./common";
 import * as path from "path";
 import * as fs from "fs";
@@ -8,8 +8,8 @@ import { isPathInclude, splitPath } from "../tools/nodeTool";
 import { FileInfo } from "./entities/FileInfo";
 import { switchDb, getConnection } from "./db";
 import { ScanPath } from "./entities/ScanPath";
-import { EvFinderState, EvUiCmdMessage } from "./events/events";
-import { FinderState } from "./events/types";
+import { EvFinderStatus, EvUiCmdMessage } from "./events/events";
+import { FinderStatus } from "./events/types";
 import { DbIncluded } from "./entities/DbIncluded";
 import { ConfigLineType, FileType } from "./types";
 
@@ -181,7 +181,7 @@ export const stopScan = () => {
 };
 
 export const doScan = async () => {
-  EvFinderState.next(FinderState.scanning);
+  EvFinderStatus.next(FinderStatus.scanning);
   cEvScanBrake.next(false);
   await getConnection();
   const scanPaths = await ScanPath.find();
@@ -204,7 +204,7 @@ export const doScan = async () => {
     EvUiCmdMessage.next({ message: "Scan stopped manually." });
   EvUiCmdMessage.next({ message: "Scan finished." });
   cEvScanBrake.next(true);
-  EvFinderState.next(FinderState.idle);
+  EvFinderStatus.next(FinderStatus.idle);
 };
 
 export const doScanCmd = async () => {

@@ -8,26 +8,32 @@ import {
 import { useStableState, useSubjectCallback } from "../../hooks/hooks";
 import { TypeMsgConfigItem } from "../../../finder/events/types";
 import { message } from "antd";
-import { genManagerTable, SimpleTextEdit } from "../components/ManagerTable";
+import {
+  genManagerTable,
+  SimpleBooleanEdit,
+  SimpleTextEdit,
+  TypeTableEditRender,
+} from "../components/ManagerTable";
 import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import { ConfigLineType } from "../../../finder/types";
-import { Config } from "../../../finder/common";
 import { useEventReady } from "../../hooks/webHooks";
 
 const genTypedConfigmanager = (
   type: ConfigLineType,
-  tableTitle: string | JSX.Element
+  tableTitle: string | JSX.Element,
+  moreColumns: (keyof TypeMsgConfigItem)[] = []
 ) => {
   const TypedConfigTable = genManagerTable<TypeMsgConfigItem>(
-    ["content", "updatedAt"],
-    { content: SimpleTextEdit },
-    { content: SimpleTextEdit },
+    ["content", "updatedAt", ...moreColumns],
+    { content: SimpleTextEdit, disabled: SimpleBooleanEdit },
+    { content: SimpleTextEdit, disabled: SimpleBooleanEdit },
     simpleGetKey,
     () => ({
       id: -1,
       content: "",
       updatedAt: new Date(),
+      createdAt: new Date(),
       dbInfo: EvDefaultDbInfo.value,
       type,
     })
@@ -119,4 +125,9 @@ export const FileNameToExcludeManager = genTypedConfigmanager(
 export const FileNameToExcludeChildrenManager = genTypedConfigmanager(
   ConfigLineType.excludeChildrenFolderName,
   "File names to exclude children"
+);
+export const RemoteWfinderManager = genTypedConfigmanager(
+  ConfigLineType.remoteUrl,
+  "Remote wfinder to connect to",
+  ["disabled"]
 );

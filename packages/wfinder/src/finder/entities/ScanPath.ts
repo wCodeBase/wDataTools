@@ -1,4 +1,4 @@
-import { BaseDbInfoEntity } from "./Template";
+import { BaseDbInfoEntity } from "./BaseDbInfoEntity";
 import {
   BaseEntity,
   Column,

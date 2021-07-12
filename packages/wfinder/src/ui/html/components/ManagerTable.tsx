@@ -1,7 +1,16 @@
 import { defaultPropsFc } from "./../../tools/fc";
 import React, { Component, useEffect } from "react";
 import { useLaterEffect, useStableState } from "../../hooks/hooks";
-import { message, Spin, Table, Tooltip, Input, Popconfirm, Button } from "antd";
+import {
+  message,
+  Spin,
+  Table,
+  Tooltip,
+  Input,
+  Popconfirm,
+  Button,
+  Switch,
+} from "antd";
 import { ColumnsType, ColumnType } from "antd/lib/table";
 import dayjs from "dayjs";
 import { GetRowKey } from "antd/lib/table/interface";
@@ -31,12 +40,25 @@ export const SimpleTextEdit: TypeTableEditRender<string> = (props) => {
   return <Input value={props.value} onChange={onChange} />;
 };
 
+export const SimpleBooleanEdit: TypeTableEditRender<boolean | undefined> = (
+  props
+) => {
+  return <Switch checked={props.value} onChange={props.onChange} />;
+};
+
+export type TypeManagerTableAddonButtonProps = {
+  isEdit: boolean;
+  isNew: boolean;
+  isReadonly: boolean;
+};
+
 export const genManagerTable = <T extends Record<string, unknown>>(
   showProperties: (keyof T)[],
   editableProperties: TypeTableEditProps<T>,
   newRecordProperties: TypeTableEditProps<T>,
   rowKey: string | GetRowKey<T>,
-  getEmptyRecord: () => T
+  getEmptyRecord: () => T,
+  AddonButton?: React.FC<TypeManagerTableAddonButtonProps>
 ) => {
   return defaultPropsFc(
     {
@@ -239,6 +261,13 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                   Add
                 </div>
               </Button>
+            )}
+            {AddonButton && (
+              <AddonButton
+                isEdit={!!state.editRecord}
+                isNew={!!state.newRecord}
+                isReadonly={props.readOnly}
+              />
             )}
           </div>
           <div className="flex overflow-auto">

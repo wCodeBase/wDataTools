@@ -7,3 +7,11 @@ export const interactYield = (() => {
     await new Promise((r) => setTimeout(r, wait));
   };
 })();
+
+export const isCompleteType = <T>(a: Partial<T>, b: T): a is T => {
+  return (
+    Object.entries(b)
+      // @ts-ignore
+      .every(([key, value]) => value === a[key])
+  );
+};

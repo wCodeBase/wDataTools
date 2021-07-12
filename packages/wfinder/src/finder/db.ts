@@ -1,22 +1,31 @@
+import { JsonMore } from "./../tools/json";
+
+import { cEvFinderState } from "./events/core/coreEvents";
 import { ConfigLine } from "./entities/ConfigLine";
 import inquirer from "inquirer";
 import { Connection, createConnection } from "typeorm";
-import { exit, exitNthTodo } from "../tools/nodeTool";
+import { exit, exitNthTodo, genDbThumnail } from "../tools/nodeTool";
 import { FileInfo, IndexTableName } from "./entities/FileInfo";
 import * as fs from "fs";
-import { Config } from "./common";
+import { Config, entityChangeWatchingSubjectMap } from "./common";
 import { ScanPath } from "./entities/ScanPath";
 import { DbIncluded } from "./entities/DbIncluded";
-import { EvUiLaunched } from "./events/events";
-import { ConfigLineType } from "./types";
+import {
+  EvConfigLineChange,
+  EvFileInfoChange,
+  EvScanPathChange,
+  EvUiLaunched,
+} from "./events/events";
+import { ConfigLineType, TypeFinderCoreInfo } from "./types";
+import { STR_FINDER_CORE_INFO } from "../constants";
 
 const dbType = "better-sqlite3";
-
 const initDb = async (dbPath: string) => {
   try {
     const connection = await createConnection({
       type: dbType,
       database: dbPath,
+      synchronize: true,
       entities: [FileInfo, ConfigLine],
     });
     const { tableName } = connection.getMetadata(FileInfo);
@@ -43,6 +52,14 @@ export const AUTO_CONNECT_ENTITIES = [
   DbIncluded,
   ConfigLine,
 ];
+
+// Register entity to trigger change event.
+entityChangeWatchingSubjectMap.set(FileInfo, EvFileInfoChange);
+entityChangeWatchingSubjectMap.set(ConfigLine, EvConfigLineChange);
+entityChangeWatchingSubjectMap.set(ScanPath, EvScanPathChange);
+
+// Register entity to serve remote orm method.
+cEvFinderState.next({ remoteMethodServeEntityMap: { FileInfo } });
 
 export const getConnection = (() => {
   const connectionMap = new Map<string, Connection>();
@@ -120,3 +137,27 @@ export const { switchDb, getSwitchedDbConfig } = (() => {
       dbConfigStack[dbConfigStack.length - 1] || Config,
   };
 })();
+
+let coreInfo: TypeFinderCoreInfo | undefined;
+export const getFinderCoreInfo = async () => {
+  if (!coreInfo) {
+    coreInfo = await switchDb(Config, async () => {
+      const info =
+        (
+          await ConfigLine.find({ where: { type: ConfigLineType.coreInfo } })
+        )[0] || new ConfigLine(STR_FINDER_CORE_INFO, ConfigLineType.coreInfo);
+      let json: TypeFinderCoreInfo | undefined;
+      // @ts-ignore
+      if (info.jsonStr) json = JsonMore.parse(info.jsonStr);
+      if (!json) {
+        json = {
+          thumnail: await genDbThumnail(Config.dbPath),
+        };
+        info.jsonStr = JsonMore.stringify(json);
+        await info.save();
+      }
+      return json;
+    });
+  }
+  return coreInfo;
+};

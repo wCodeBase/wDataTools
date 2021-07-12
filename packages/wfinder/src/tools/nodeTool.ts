@@ -1,4 +1,6 @@
 import * as path from "path";
+import { createHash } from "crypto";
+import os from "os";
 
 export const exitNthTodo = () => exit("Nothing to do, program will exit now.");
 
@@ -23,4 +25,28 @@ export const splitPath = (pathStr: string) => {
     rest = parsed.dir;
   }
   return paths;
+};
+
+export const genDbThumnail = (dbPath: string) => {
+  const hash = createHash("sha256");
+  hash.update(Date.now().toString());
+  hash.update(
+    JSON.stringify([
+      os.arch(),
+      os.cpus(),
+      os.freemem(),
+      os.homedir(),
+      os.hostname(),
+      os.networkInterfaces(),
+      os.platform(),
+      os.release(),
+    ])
+  );
+  hash.update(dbPath);
+  const buffer = hash.digest();
+  const numbers: number[] = [];
+  while (numbers.length * 4 < buffer.length) {
+    numbers.push(buffer.readUInt32BE(numbers.length * 4));
+  }
+  return numbers.map((v) => v.toString(36)).join("");
 };

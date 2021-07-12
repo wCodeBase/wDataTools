@@ -11,7 +11,6 @@ const SettingButton = React.memo(() => {
   const [state, setState] = useStableState(() => ({
     showSetting: false,
     hideSetting: () => {
-      console.log("close");
       setState({ showSetting: false });
     },
   }));
@@ -20,7 +19,6 @@ const SettingButton = React.memo(() => {
       <Button
         type="primary"
         onClick={() => {
-          console.log("click");
           setState({ showSetting: true });
         }}
       >
