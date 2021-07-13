@@ -58,18 +58,17 @@ export const exAddConfigLine = async (
 };
 
 export const exSaveConfigLine = async (
-  item: Pick<TypeMsgConfigItem, "type" | "content" | "id" | "dbInfo"> &
-    Partial<TypeMsgConfigItem>
+  item: Pick<TypeMsgConfigItem, "type" | "dbInfo"> & Partial<TypeMsgConfigItem>
 ) => {
   return await switchDb(item.dbInfo || Config, async () => {
-    const config = await ConfigLine.findOne(item.id);
-    const { content, type } = item;
-    if (!config) {
+    const { content, type, id } = item;
+    const configs = await ConfigLine.find({ where: { content, type, id } });
+    if (!configs.length) {
       const error = `Content not found: ${ConfigLineType[type]}-${content}.`;
       return { error };
     } else {
-      Object.assign(config, item);
-      const result = await config.save();
+      configs.forEach((config) => Object.assign(config, item));
+      const result = await ConfigLine.save(configs);
       return { result };
     }
   });

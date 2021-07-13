@@ -107,9 +107,33 @@ type TypeMsgConfigLineManage = {
     data: Pick<TypeMsgConfigItem, "type">;
   } & TypeMsgConfigLineDef;
   saveConfig: {
-    data: Pick<TypeMsgConfigItem, "type" | "content" | "id" | "dbInfo"> &
+    data: Pick<TypeMsgConfigItem, "type" | "dbInfo"> &
       Partial<TypeMsgConfigItem>;
   } & TypeMsgConfigLineDef;
+  saveOrCreateConfig: {
+    data: Pick<TypeMsgConfigItem, "type" | "dbInfo" | "content"> &
+      Partial<TypeMsgConfigItem>;
+  } & TypeMsgConfigLineDef;
+};
+
+type TypeQueryForInfo = {
+  queryUserDataDir: {
+    result: string;
+  };
+};
+
+type TypeMsgRequestUiAction = {
+  requestChooseFinderRoot: {
+    data: {
+      cwd: string;
+      currentDatabaseDir?: string;
+      userDataDir?: string;
+      message?: string;
+    };
+    result: {
+      finderRoot: string;
+    };
+  };
 };
 
 // type TypeMsgDbManage = {
@@ -122,7 +146,9 @@ type TypeCmdUiMsgDefMap = TypeMsgScan &
   TypeMsgSearch &
   TypeMsgPathManage &
   TypeMsgStopScan &
-  TypeMsgConfigLineManage;
+  TypeMsgConfigLineManage &
+  TypeMsgRequestUiAction &
+  TypeQueryForInfo;
 
 export type TypeCmdUiMsgMap = {
   [key in keyof TypeCmdUiMsgDefMap]: TypeCmdUiMsgDefMap[key] & {
@@ -147,6 +173,11 @@ export const judgeUiMsgResultType = <T extends keyof TypeCmdUiMsgMap>(
 export type TypeUiMsgMessage = {
   message: string;
   error?: string;
+};
+
+export type MsgHeartbeat = {
+  cmd: "MsgHeartbeat";
+  tag: string | number;
 };
 
 export type TypeDatabaseInfos = {

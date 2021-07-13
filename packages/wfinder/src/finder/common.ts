@@ -4,12 +4,8 @@ import * as path from "path";
 import { EvDefaultDbInfo } from "./events/events";
 import { ConfigLineType, TypeDbInfo, TypeFinderCoreInfo } from "./types";
 import { ObjectType } from "typeorm";
-import { STR_FINDER_CORE_INFO } from "../constants";
-import { genDbThumnail } from "../tools/nodeTool";
-import { ConfigLine } from "./entities/ConfigLine";
 
-export const Config = (() => {
-  const finderRoot = path.resolve("./");
+export const genConfig = (finderRoot: string) => {
   const dbName = "wfinder.db";
   const dbPath = path.join(finderRoot, dbName);
   return {
@@ -20,7 +16,9 @@ export const Config = (() => {
     dbPath,
     readOnly: false,
   } as TypeDbInfo;
-})();
+};
+
+export const Config = genConfig(path.resolve("./"));
 
 export const entityChangeWatchingSubjectMap = new Map<
   ObjectType<BaseDbInfoEntity>,

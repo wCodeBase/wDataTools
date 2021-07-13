@@ -1,6 +1,8 @@
 import { useRef } from "react";
 import { WebEventStatus, wEvEventStatus } from "./../../finder/events/webEvent";
 import { useEffect, useReducer } from "react";
+import { EvFinderReady } from "../../finder/events/events";
+import { useUpdate } from "./hooks";
 
 export const useEventReady = (effect: React.EffectCallback) => {
   const [val, update] = useReducer((v) => v + 1, 0);
@@ -19,4 +21,17 @@ export const useEventReady = (effect: React.EffectCallback) => {
       });
     }
   }, [val]);
+};
+
+export const useFinderReady = (effect: React.EffectCallback) => {
+  const update = useUpdate();
+  useEffect(() => {
+    const subscribe = EvFinderReady.subscribe((ready) => {
+      if (ready) {
+        effect();
+        update();
+      }
+    });
+    return subscribe.unsubscribe.bind(subscribe);
+  }, []);
 };

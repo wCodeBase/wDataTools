@@ -16,6 +16,7 @@ import {
   JsonMoreEntity,
 } from "../events/core/coreTypes";
 import { getFinderCoreInfo } from "../db";
+import { EvUiLaunched } from "../events/events";
 
 export const createHttpServer = async (options: HttpServerOption) => {
   const app = express.default();
@@ -50,7 +51,10 @@ export const createHttpServer = async (options: HttpServerOption) => {
       ormSocketSet.clear();
     }
   });
-  server.addListener("close", () => finderStateSubscribe.unsubscribe());
+  server.addListener("close", () => {
+    finderStateSubscribe.unsubscribe();
+    EvUiLaunched.next({ web: false });
+  });
   server.on("upgrade", (request, socket, head) => {
     if (request.url === EVENT_WEBSOCKET_ROUTE) {
       wss.handleUpgrade(request, socket, head, (socket, request) => {
@@ -107,5 +111,6 @@ export const createHttpServer = async (options: HttpServerOption) => {
     server.once("error", (err) => rej(err));
     server.listen(options.port, options.host, undefined, () => res());
   });
+  EvUiLaunched.next({ web: true });
   return server;
 };

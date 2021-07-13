@@ -241,6 +241,11 @@ export const genManagerTable = <T extends Record<string, unknown>>(
       ]);
 
       useLaterEffect(() => {
+        if (state.newRecord || state.editRecord)
+          setState({ newRecord: null, editRecord: null });
+      }, [props.records]);
+
+      useLaterEffect(() => {
         setState({
           dataSource: [
             ...(state.newRecord ? [state.newRecord] : []),

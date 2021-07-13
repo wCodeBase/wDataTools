@@ -15,3 +15,9 @@ export const isCompleteType = <T>(a: Partial<T>, b: T): a is T => {
       .every(([key, value]) => value === a[key])
   );
 };
+
+export function waitMilli(timeMilli: number) {
+  return new Promise<void>((r) => {
+    setTimeout(() => r(undefined), timeMilli);
+  });
+}

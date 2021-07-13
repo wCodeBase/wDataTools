@@ -8,6 +8,7 @@ export enum ConfigLineType {
   excludeChildrenFolderName,
   remoteUrl,
   coreInfo,
+  userPreference,
 }
 
 export type TypeDbInfo = {

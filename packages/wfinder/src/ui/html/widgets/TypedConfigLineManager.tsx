@@ -17,7 +17,7 @@ import {
 import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import { ConfigLineType } from "../../../finder/types";
-import { useEventReady } from "../../hooks/webHooks";
+import { useEventReady, useFinderReady } from "../../hooks/webHooks";
 
 const genTypedConfigmanager = (
   type: ConfigLineType,
@@ -97,7 +97,7 @@ const genTypedConfigmanager = (
         return res;
       });
 
-      useEventReady(() => {
+      useFinderReady(() => {
         state.listConfig();
       });
 

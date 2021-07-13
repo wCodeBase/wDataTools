@@ -1,23 +1,30 @@
 import { JsonMore } from "./../tools/json";
-
+import path from "path";
 import { cEvFinderState } from "./events/core/coreEvents";
 import { ConfigLine } from "./entities/ConfigLine";
 import inquirer from "inquirer";
 import { Connection, createConnection } from "typeorm";
-import { exit, exitNthTodo, genDbThumnail } from "../tools/nodeTool";
+import {
+  exit,
+  exitNthTodo,
+  genDbThumnail,
+  getPathPermission,
+} from "../tools/nodeTool";
 import { FileInfo, IndexTableName } from "./entities/FileInfo";
 import * as fs from "fs";
-import { Config, entityChangeWatchingSubjectMap } from "./common";
+import { Config, entityChangeWatchingSubjectMap, genConfig } from "./common";
 import { ScanPath } from "./entities/ScanPath";
 import { DbIncluded } from "./entities/DbIncluded";
 import {
   EvConfigLineChange,
   EvFileInfoChange,
   EvScanPathChange,
+  EvUiCmd,
   EvUiLaunched,
 } from "./events/events";
 import { ConfigLineType, TypeFinderCoreInfo } from "./types";
 import { STR_FINDER_CORE_INFO } from "../constants";
+import { executeUiCmd } from "./events/eventTools";
 
 const dbType = "better-sqlite3";
 const initDb = async (dbPath: string) => {
@@ -65,12 +72,16 @@ export const getConnection = (() => {
   const connectionMap = new Map<string, Connection>();
   const blockingResolveMap = new Map<string, ((res: Connection) => void)[]>();
   const connectionLockMap = new Map<string, boolean | undefined>();
-  return async (config = Config) => {
+  return async (
+    config = Config,
+    forceCreate = false,
+    ignoreLock = false
+  ): Promise<Connection> => {
     const { dbPath } = config;
     let connection = connectionMap.get(dbPath);
     if (connection) return connection;
     const lock = connectionLockMap.get(dbPath);
-    if (lock) {
+    if (lock && !ignoreLock) {
       return new Promise<Connection>((r) => {
         const resolves = blockingResolveMap.get(dbPath) || [];
         resolves.push(r);
@@ -81,12 +92,81 @@ export const getConnection = (() => {
       if (!fs.existsSync(dbPath)) {
         if (config.readOnly || EvUiLaunched.value.ink)
           throw new Error("DbPath not exist: " + dbPath);
-        const answer = await inquirer.prompt({
-          name: "dbCreate",
-          message: "Index database dosent exist, create it now?",
-          type: "confirm",
-        });
-        if (!answer.dbCreate) exitNthTodo();
+        if (!forceCreate || !getPathPermission(path.parse(dbPath).dir).write) {
+          // Only global database config be initialed.
+          if (config !== Config)
+            throw new Error(
+              "Failed to create connection to config: " + JSON.stringify(config)
+            );
+          if (EvUiLaunched.value.electron || EvUiLaunched.value.web) {
+            let userDataDir: string | undefined;
+            if (EvUiLaunched.value.electron) {
+              try {
+                userDataDir = (
+                  await executeUiCmd("queryUserDataDir", {
+                    cmd: "queryUserDataDir",
+                  })
+                ).result;
+              } catch (e) {
+                console.error("queryUserDataDir failed: ", e);
+              }
+            }
+            let newDbPath = "";
+            if (
+              userDataDir &&
+              getPathPermission(path.join(userDataDir, config.dbName)).write
+            ) {
+              newDbPath = userDataDir;
+            } else {
+              let message = "";
+              while (true) {
+                try {
+                  const res = await executeUiCmd(
+                    "requestChooseFinderRoot",
+                    {
+                      cmd: "requestChooseFinderRoot",
+                      data: {
+                        cwd: process.cwd(),
+                        userDataDir,
+                        currentDatabaseDir: path.parse(dbPath).dir,
+                        message,
+                      },
+                    },
+                    Infinity
+                  );
+                  const { finderRoot } = res.result;
+                  const newPath = path.resolve(finderRoot);
+                  if (finderRoot === userDataDir && !fs.existsSync(userDataDir))
+                    fs.mkdirSync(userDataDir);
+                  if (!fs.existsSync(newPath))
+                    message = `Error: path "${newPath}" dosen't exist.`;
+                  else if (!getPathPermission(newPath).write)
+                    message = `Error: path "${newPath}" is not writable.`;
+                  else {
+                    newDbPath = newPath;
+                    break;
+                  }
+                } catch (e) {
+                  console.error("requestChooseFinderRoot failed: ", e);
+                }
+              }
+            }
+            const newConfig = genConfig(newDbPath);
+            Object.assign(Config, newConfig);
+            return await getConnection(
+              Config,
+              true,
+              newConfig.dbPath === dbPath
+            );
+          } else {
+            const answer = await inquirer.prompt({
+              name: "dbCreate",
+              message: "Index database dosent exist, create it now?",
+              type: "confirm",
+            });
+            if (!answer.dbCreate) exitNthTodo();
+          }
+        }
         console.log("Creating index database...");
         await initDb(dbPath);
       }

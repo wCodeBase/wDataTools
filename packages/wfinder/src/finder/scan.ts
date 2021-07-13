@@ -4,7 +4,7 @@ import { cEvScanBrake } from "./events/core/coreEvents";
 import { Config } from "./common";
 import * as path from "path";
 import * as fs from "fs";
-import { isPathInclude, splitPath } from "../tools/nodeTool";
+import { getPathPermission, isPathInclude, splitPath } from "../tools/nodeTool";
 import { FileInfo } from "./entities/FileInfo";
 import { switchDb, getConnection } from "./db";
 import { ScanPath } from "./entities/ScanPath";
@@ -127,7 +127,11 @@ export const scanPath = async (
             FileInfo.removeChildren(info.id, undefined, cEvScanBrake);
           } else {
             const testDbPath = path.join(chilPath, config.dbName);
-            if (fs.existsSync(testDbPath) && fs.statSync(testDbPath).isFile()) {
+            if (
+              fs.existsSync(testDbPath) &&
+              fs.statSync(testDbPath).isFile() &&
+              getPathPermission(testDbPath).write
+            ) {
               EvUiCmdMessage.next({
                 message: `Sub database found: ${testDbPath}`,
               });

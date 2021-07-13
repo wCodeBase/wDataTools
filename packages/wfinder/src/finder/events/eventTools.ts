@@ -15,7 +15,7 @@ import {
 import { TypeJsonData, TypeJsonMore, TypeJsonObject } from "./../../tools/json";
 import { BehaviorSubject, Observable, Subject, Subscription } from "rxjs";
 import { JsonMore } from "../../tools/json";
-import { isCompleteType } from "../../tools/tool";
+import { JsonBehaviorSubject, JsonSubject } from "./eventLib";
 
 export class ErrorExecuteTimeout extends Error {}
 
@@ -26,10 +26,12 @@ export type ExecuteUiCmdInterceptor = <T extends keyof TypeUiMsgDataMap>(
 
 export const executeUiCmdInterceptors = new Set<ExecuteUiCmdInterceptor>();
 
+export const uiMsgTimeout = 5000;
+
 export const executeUiCmd = async <T extends keyof TypeUiMsgDataMap>(
   cmd: T,
   cmdData: TypeUiMsgDataMap[T],
-  timeout = 5000
+  timeout = uiMsgTimeout
 ) => {
   let interceptRes: TypeUiMsgResultMap[T] | undefined;
   const iterator = executeUiCmdInterceptors.entries();
@@ -42,17 +44,23 @@ export const executeUiCmd = async <T extends keyof TypeUiMsgDataMap>(
   const { tag = Math.random() } = cmdData;
   return await new Promise<TypeUiMsgResultMap[T]>((res, rej) => {
     const subscribe = EvUiCmdResult.subscribe((data) => {
-      if (judgeUiMsgResultType<T>(data, cmd) && data.tag === tag) {
+      if (data.cmd === "MsgHeartbeat") {
+        if (tHandle) {
+          clearTimeout(tHandle);
+          tHandle = setTimeout(doTimeout, timeout);
+        }
+      } else if (judgeUiMsgResultType<T>(data, cmd) && data.tag === tag) {
         subscribe.unsubscribe();
-        clearTimeout(tHandle);
+        if (tHandle) clearTimeout(tHandle);
         res(data);
       }
     });
     EvUiCmd.next({ ...cmdData, tag });
-    const tHandle = setTimeout(() => {
+    const doTimeout = () => {
       subscribe.unsubscribe();
       rej(new ErrorExecuteTimeout(`Execute cmd ${cmd} timeout.`));
-    }, timeout);
+    };
+    let tHandle = timeout === Infinity ? null : setTimeout(doTimeout, timeout);
   });
 };
 
@@ -62,40 +70,6 @@ export type TypeGateway = {
   receive: (data: string) => void;
   unsubscribe: () => void;
 };
-
-export class JsonBehaviorSubject<
-  T extends TypeJsonData
-> extends BehaviorSubject<T> {}
-
-const shallowMergeSubjectValue = <T>(newData: Partial<T>, oldData: T) => {
-  return isCompleteType(newData, oldData)
-    ? newData
-    : { ...oldData, ...newData };
-};
-export class ShallowBehaviorSubject<
-  T extends Record<string, any>
-> extends BehaviorSubject<T> {
-  constructor(value: T) {
-    super(value);
-  }
-  next(v: Partial<T>) {
-    this.value;
-    super.next(shallowMergeSubjectValue(v, this.value));
-  }
-}
-export class ShallowJsonBehaviorSubject<
-  T extends TypeJsonObject
-> extends JsonBehaviorSubject<T> {
-  constructor(value: T) {
-    super(value);
-  }
-  next(v: Partial<T>) {
-    this.value;
-    super.next(shallowMergeSubjectValue(v, this.value));
-  }
-}
-
-export class JsonSubject<T extends TypeJsonData> extends Subject<T> {}
 
 export const switchEventInSubjects = (
   subjects: Record<string, any>,

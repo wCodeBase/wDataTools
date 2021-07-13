@@ -2,6 +2,7 @@ import React from "react";
 import { Empty, Input, message, Table } from "antd";
 import "antd/lib/message/style/css";
 import {
+  EvFinderReady,
   EvUiCmd,
   EvUiCmdResult,
   useFinderStatus,
@@ -18,6 +19,7 @@ import { useEffect } from "react";
 import { debounce } from "lodash";
 import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
+import { useFinderReady } from "../../hooks/webHooks";
 
 const Columns: ColumnsType<TypeMsgSearchResultItem> = [
   { title: "name", key: "name", dataIndex: "name" },
@@ -50,6 +52,7 @@ export const Search = ({ className = "" }) => {
     },
 
     doSearch: async () => {
+      if (!EvFinderReady.value) return;
       if (state.keywords.every((v) => v)) {
         const res = await executeUiCmd("search", {
           cmd: "search",
@@ -73,6 +76,10 @@ export const Search = ({ className = "" }) => {
     }, 300),
   }));
 
+  useFinderReady(() => {
+    setState({ skip: 0, total: 0, records: null, keywords: [] });
+  });
+
   const tableAreaRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     state.adjusTakeNum();
@@ -83,6 +90,7 @@ export const Search = ({ className = "" }) => {
   return (
     <div className={"rounded-sm flex flex-col flex-grow " + className}>
       <Input.Search
+        disabled={!EvFinderReady.value}
         allowClear
         placeholder="input search keywords"
         enterButton="Search"

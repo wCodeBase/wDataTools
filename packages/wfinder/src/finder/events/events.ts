@@ -1,6 +1,7 @@
 import { debounceTime } from "rxjs/operators";
 import {
   FinderStatus,
+  MsgHeartbeat,
   TypeDatabaseInfos,
   TypeUiMsgData,
   TypeUiMsgMessage,
@@ -12,7 +13,7 @@ import {
   JsonBehaviorSubject,
   JsonSubject,
   ShallowJsonBehaviorSubject,
-} from "./eventTools";
+} from "./eventLib";
 import { useBehaviorSubjectValue } from "../../ui/hooks/hooks";
 
 export const EvFinderStatus = new JsonBehaviorSubject<FinderStatus>(
@@ -44,9 +45,9 @@ export const EvConsole = new JsonBehaviorSubject<string>("");
 
 export const EvLog = (...args: any[]) => EvConsole.next(args.join(", "));
 
-export const EvUiCmd = new JsonSubject<TypeUiMsgData>();
+export const EvUiCmd = new JsonBehaviorSubject<TypeUiMsgData | null>(null);
 
-export const EvUiCmdResult = new JsonSubject<TypeUiMsgResult>();
+export const EvUiCmdResult = new JsonSubject<TypeUiMsgResult | MsgHeartbeat>();
 
 export const EvUiCmdMessage = new JsonSubject<TypeUiMsgMessage>();
 
@@ -55,3 +56,5 @@ export const EvUiLaunched = new ShallowJsonBehaviorSubject<TypeUiStatus>({});
 export const EvConfigLineChange = new JsonSubject<null>();
 
 export const EvScanPathChange = new JsonSubject<null>();
+
+export const EvFinderReady = new JsonBehaviorSubject<boolean>(false);

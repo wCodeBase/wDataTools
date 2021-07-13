@@ -17,9 +17,21 @@ import {
   TypeMsgPathItem,
   TypeUiMsgResult,
 } from "./types";
+import { waitMilli } from "../../tools/tool";
+import { uiMsgTimeout } from "./eventTools";
 
 EvUiCmd.subscribe(async (msg) => {
+  if (!msg) return;
+  let finished = false;
   try {
+    const triggerHeartBeat = async () => {
+      const { tag } = msg;
+      if (!tag) return;
+      while (!finished) {
+        await waitMilli(uiMsgTimeout / 4);
+        EvUiCmdResult.next({ cmd: "MsgHeartbeat", tag });
+      }
+    };
     let cmdResult: TypeUiMsgResult;
     if (msg.cmd === "scan") {
       const { cmd } = msg;
@@ -32,6 +44,7 @@ EvUiCmd.subscribe(async (msg) => {
       const { cmd } = msg;
       cmdResult = { cmd, result: "done" };
     } else if (msg.cmd === "search") {
+      triggerHeartBeat();
       const { cmd, data } = msg;
       EvFinderStatus.next(FinderStatus.searching);
       const total = await FileInfo.countByMatchName(data.keywords);
@@ -94,12 +107,17 @@ EvUiCmd.subscribe(async (msg) => {
         cmd,
         result: { results: result.map((v) => v.toItem()), error: "" },
       };
-    } else if (msg.cmd === "saveConfig") {
+    } else if (msg.cmd === "saveConfig" || msg.cmd === "saveOrCreateConfig") {
       const { cmd } = msg;
-      const { result, error = "" } = await exSaveConfigLine(msg.data);
+      let { result, error = "" } = await exSaveConfigLine(msg.data);
+      if (!error && !result?.length) {
+        const res = await exSaveConfigLine(msg.data);
+        result = res.result;
+        error = res.error || "";
+      }
       cmdResult = {
         cmd,
-        result: { results: result ? [result] : [], error },
+        result: { results: result ? result : [], error },
       };
     } else {
       throw new Error(`Command will not be processed.`);
@@ -110,5 +128,7 @@ EvUiCmd.subscribe(async (msg) => {
     EvLog(
       `Error: failed to execute ui command. command: ${msg.cmd}, error: ${e}`
     );
+  } finally {
+    finished = true;
   }
 });

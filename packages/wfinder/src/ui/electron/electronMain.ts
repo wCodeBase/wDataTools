@@ -12,6 +12,13 @@ import {
   CLIENT_READY,
 } from "../../finder/events/eventTools";
 import { throttle } from "lodash";
+import {
+  EvUiCmd,
+  EvUiCmdResult,
+  EvUiLaunched,
+} from "../../finder/events/events";
+import path from "path";
+import { APP_DATA_FOLDER_NAME } from "../../constants";
 
 (() => {
   const [tag, port, address, token] = process.argv.slice(2);
@@ -52,8 +59,21 @@ import { throttle } from "lodash";
     socket.on("close", () => {
       gateway?.unsubscribe();
     });
-  } else initFinder();
+  } else {
+    EvUiLaunched.next({ electron: true });
+    initFinder();
+  }
 })();
+
+EvUiCmd.subscribe((msg) => {
+  if (msg?.cmd === "queryUserDataDir") {
+    EvUiCmdResult.next({
+      cmd: "queryUserDataDir",
+      tag: msg.tag,
+      result: path.join(app.getPath("appData"), APP_DATA_FOLDER_NAME),
+    });
+  }
+});
 
 Menu.setApplicationMenu(null);
 

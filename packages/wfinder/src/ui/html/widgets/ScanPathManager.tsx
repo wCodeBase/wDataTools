@@ -16,7 +16,7 @@ import {
 } from "../components/ManagerTable";
 import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
-import { useEventReady } from "../../hooks/webHooks";
+import { useEventReady, useFinderReady } from "../../hooks/webHooks";
 
 const SearchButton = React.memo((props: TypeManagerTableAddonButtonProps) => {
   const [finderStatus] = useFinderStatus();
@@ -55,7 +55,6 @@ export const ScanPathManager = defaultPropsFc(
   { className: "", titleClassName: "" },
   (props) => {
     const [state, setState] = useStableState(() => ({
-      waitingForCmdResult: false,
       paths: [] as TypeMsgPathItem[],
       remove: async (v: TypeMsgPathItem) => {
         const res = await executeUiCmd("deletePath", {
@@ -94,7 +93,7 @@ export const ScanPathManager = defaultPropsFc(
       },
     }));
 
-    useEventReady(() => {
+    useFinderReady(() => {
       state.listPath();
     });
 

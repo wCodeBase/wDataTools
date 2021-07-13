@@ -1,6 +1,7 @@
 import * as path from "path";
 import { createHash } from "crypto";
 import os from "os";
+import fs from "fs";
 
 export const exitNthTodo = () => exit("Nothing to do, program will exit now.");
 
@@ -49,4 +50,13 @@ export const genDbThumnail = (dbPath: string) => {
     numbers.push(buffer.readUInt32BE(numbers.length * 4));
   }
   return numbers.map((v) => v.toString(36)).join("");
+};
+
+export const getPathPermission = (path: string) => {
+  const mode = fs.existsSync(path) ? fs.statSync(path).mode : 0;
+  return {
+    read: !!(mode & (1 << 8)),
+    write: !!(mode & (1 << 7)),
+    exec: !!(mode & (1 << 6)),
+  };
 };

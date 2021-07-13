@@ -3,12 +3,9 @@ import { cTypeJsonMoreEntitySpecial, cTypeOrmCallDef } from "./coreTypes";
 import WebSocket from "ws";
 import { BehaviorSubject } from "rxjs";
 import { TypeDbInfo } from "../../types";
-import {
-  genRemoteCaller,
-  genRemoteExector,
-  ShallowBehaviorSubject,
-} from "../eventTools";
+import { genRemoteCaller, genRemoteExector } from "../eventTools";
 import { BaseDbInfoEntity } from "../../entities/BaseDbInfoEntity";
+import { ShallowBehaviorSubject } from "../eventLib";
 
 export const cEvScanBrake = new BehaviorSubject(false);
 const callTpl = genRemoteCaller<cTypeJsonMoreEntitySpecial, cTypeOrmCallDef>(

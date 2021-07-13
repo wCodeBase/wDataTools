@@ -2,8 +2,10 @@ import { startIpcServer, USE_IPC_SERVER } from "./ipcServer";
 import { spawn } from "child_process";
 import path from "path";
 import { initFinder } from "../../finder";
+import { EvUiLaunched } from "../../finder/events/events";
 
 export const startElectron = async () => {
+  EvUiLaunched.next({ electron: true });
   initFinder();
   const {
     token,
