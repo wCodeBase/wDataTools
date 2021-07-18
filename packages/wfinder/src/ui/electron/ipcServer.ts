@@ -1,7 +1,7 @@
 import { packetTool } from "./../../tools/streamTool";
 import { switchEvent } from "./../../finder/events/eventGateway";
 import net from "net";
-import { isDev } from "./common";
+import { isDev } from "../../finder/common";
 import { localhost } from "../../constants";
 import { TypeGateway } from "../../finder/events/eventTools";
 
@@ -52,7 +52,7 @@ export const startIpcServer = async (connectionLimit = 1) => {
     });
     const timeout = setTimeout(() => socket.destroy(), isDev ? 60000 : 6000);
     socket.on("close", () => {
-      gateway?.unsubscribe();
+      gateway?.destory();
       if (verified) connectCount--;
     });
   });

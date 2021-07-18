@@ -1,3 +1,5 @@
+import { isUndefined, omitBy } from "lodash";
+
 export const interactYield = (() => {
   let lastYield = 0;
   const interval = 1000 / 10;
@@ -12,7 +14,7 @@ export const isCompleteType = <T>(a: Partial<T>, b: T): a is T => {
   return (
     Object.entries(b)
       // @ts-ignore
-      .every(([key, value]) => value === a[key])
+      .every(([key, value]) => value === undefined || a[key] !== undefined)
   );
 };
 

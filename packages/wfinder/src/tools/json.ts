@@ -40,6 +40,7 @@ export const concatSpecialPackers = <T, Y>(
 
 const simpleJsonDataTypeSet = new Set(["string", "number", "boolean"]);
 const specialValuePackers: [_TypeSimpleData<void>, string][] = [
+  [undefined, "sp_undefined"],
   [NaN, "sp_NaN"],
   [Infinity, "sp_Infinity"],
   [-Infinity, "sp_neg_Infinity"],
@@ -49,15 +50,17 @@ const nameSpecialValueMap = new Map(
   specialValuePackers.map(([a, b]) => [b, a])
 );
 
-export type TypeJsonMore = {
-  stringify: (data: _TypeJsonData<any>) => string;
-  parse: (data: string) => _TypeJsonData<any>;
+export type _TypeJsonMore<T> = {
+  stringify: (data: _TypeJsonData<T>) => string;
+  parse: (data: string) => _TypeJsonData<T>;
 };
 
-/** FIXME: deal with NaN Infinity BigInt */
+export type TypeJsonMore = _TypeJsonMore<any>;
+
+// TODO: store thesame data in one object.
 export const buildJsonMore = <T>(
   specialPackers: TypeSpecialJsonPacker<T>[]
-): TypeJsonMore => {
+): _TypeJsonMore<T> => {
   const constructorPackerMap = new Map<any, TypeSpecialJsonPacker<T>>();
   const namePackerMap = new Map<string, TypeSpecialJsonPacker<T>>();
   specialPackers.forEach((packer) => {
@@ -170,30 +173,31 @@ export class ErrorSpecialDatapack extends Error {}
 
 export type TypeDefaultSpecialJsonType = Date | BigInt;
 
-const defaultPackers: TypeSpecialJsonPacker<TypeDefaultSpecialJsonType>[] = [
-  {
-    constructor: Date,
-    pack: (data) => {
-      if (!(data instanceof Date)) throw new ErrorSpecialDatapack();
-      return data.valueOf();
+export const defaultPackers: TypeSpecialJsonPacker<TypeDefaultSpecialJsonType>[] =
+  [
+    {
+      constructor: Date,
+      pack: (data) => {
+        if (!(data instanceof Date)) throw new ErrorSpecialDatapack();
+        return data.valueOf();
+      },
+      unpack: (data) => {
+        if (typeof data !== "number") throw new ErrorSpecialDataUnpack();
+        return new Date(data);
+      },
     },
-    unpack: (data) => {
-      if (typeof data !== "number") throw new ErrorSpecialDataUnpack();
-      return new Date(data);
+    {
+      constructor: BigInt,
+      pack: (data) => {
+        if (typeof data !== "bigint") throw new ErrorSpecialDatapack();
+        return data.toString();
+      },
+      unpack: (data) => {
+        if (typeof data !== "string") throw new ErrorSpecialDataUnpack();
+        return BigInt(data);
+      },
     },
-  },
-  {
-    constructor: BigInt,
-    pack: (data) => {
-      if (typeof data !== "bigint") throw new ErrorSpecialDatapack();
-      return data.toString();
-    },
-    unpack: (data) => {
-      if (typeof data !== "string") throw new ErrorSpecialDataUnpack();
-      return BigInt(data);
-    },
-  },
-];
+  ];
 
 export type TypeSimpleData = _TypeSimpleData<TypeDefaultSpecialJsonType>;
 export type TypeJsonData = _TypeJsonData<TypeDefaultSpecialJsonType>;

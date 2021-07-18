@@ -10,7 +10,7 @@ export type TypeShowModalHandle = {
 };
 
 export const showModal = (
-  props: Omit<ModalProps, "visible"> & { render: () => ReactNode }
+  getProps: () => Omit<ModalProps, "visible"> & { render: () => ReactNode }
 ): TypeShowModalHandle => {
   const root = document.createElement("div");
   document.body.appendChild(root);
@@ -26,6 +26,12 @@ export const showModal = (
     useEffect(() => {
       close = () => setState({ visible: false });
     }, [setState]);
+
+    useEffect(() => {
+      window.addEventListener("resize", update);
+      return () => window.removeEventListener("resize", update);
+    }, []);
+    const props = getProps();
     return (
       <div>
         <Modal {...props} visible={state.visible}>

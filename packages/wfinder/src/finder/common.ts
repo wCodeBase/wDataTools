@@ -31,3 +31,5 @@ export const DEFAULT_QUERY_LIMIT = {
   dbThumnailStack: [],
   remoteLimit: 10,
 };
+
+export const isDev = process.env.NODE_ENV === "development";

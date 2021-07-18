@@ -17,7 +17,8 @@ import {
 import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import { ConfigLineType } from "../../../finder/types";
-import { useEventReady, useFinderReady } from "../../hooks/webHooks";
+import { useFinderReady } from "../../hooks/webHooks";
+import { isEqual } from "lodash";
 
 const genTypedConfigmanager = (
   type: ConfigLineType,
@@ -38,7 +39,7 @@ const genTypedConfigmanager = (
       type,
     })
   );
-
+  const listConfigData = { type };
   return defaultPropsFc(
     { className: "", titleClassName: "" },
     (props) => {
@@ -81,7 +82,7 @@ const genTypedConfigmanager = (
           listConfig: async () => {
             const res = await executeUiCmd("listConfig", {
               cmd: "listConfig",
-              data: { type },
+              data: listConfigData,
             }).catch((e) => {
               message.error(String(e));
               return null;
@@ -99,6 +100,16 @@ const genTypedConfigmanager = (
 
       useFinderReady(() => {
         state.listConfig();
+      });
+
+      useSubjectCallback(EvUiCmdResult, (res) => {
+        if (
+          res.cmd === "listConfig" &&
+          !res.result.error &&
+          isEqual(listConfigData, res.result.oriData)
+        ) {
+          setState({ configs: res.result.results });
+        }
       });
 
       return (

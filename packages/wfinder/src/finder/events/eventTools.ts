@@ -10,12 +10,32 @@ import {
   TypeCommonMsgDef,
   ToCommonMsgData,
   ToCommonMsgResult,
-  TypeCommonMsgResultDef,
+  TypeCommonMsgContentDef,
+  ToCommonMsgDataItem,
+  isRemoteHeartBeat,
+  ToCommonMsgItem,
+  isCommonMsgResult,
+  ToCommonMsgResultItem,
 } from "./types";
-import { TypeJsonData, TypeJsonMore, TypeJsonObject } from "./../../tools/json";
-import { BehaviorSubject, Observable, Subject, Subscription } from "rxjs";
+import {
+  TypeDefaultSpecialJsonType,
+  TypeJsonData,
+  TypeJsonMore,
+  TypeJsonObject,
+  _TypeJsonData,
+  _TypeJsonMore,
+} from "./../../tools/json";
+import {
+  BehaviorSubject,
+  observable,
+  Observable,
+  of,
+  Subject,
+  Subscription,
+} from "rxjs";
 import { JsonMore } from "../../tools/json";
-import { JsonBehaviorSubject, JsonSubject } from "./eventLib";
+import { ComsumableEvent, JsonBehaviorSubject, JsonSubject } from "./eventLib";
+import { filter } from "rxjs/operators";
 
 export class ErrorExecuteTimeout extends Error {}
 
@@ -68,14 +88,24 @@ export const GATEWAY_CHANNEL = "GatewayChannel";
 export const CLIENT_READY = "ClientReady";
 export type TypeGateway = {
   receive: (data: string) => void;
-  unsubscribe: () => void;
+  destory: () => void;
 };
 
-export const switchEventInSubjects = (
+export const switchEventInSubjects = <T>(
   subjects: Record<string, any>,
-  jsonMore = JsonMore
+  jsonMore: _TypeJsonMore<T | TypeDefaultSpecialJsonType>
 ) => {
-  return (send: (data: string) => void, isMaster: boolean): TypeGateway => {
+  return (
+    send: (data: string) => void,
+    isMaster: boolean,
+    packer?: (
+      data: _TypeJsonData<T | TypeDefaultSpecialJsonType>
+    ) => _TypeJsonData<T | TypeDefaultSpecialJsonType>,
+    unPacker?: (
+      data: _TypeJsonData<T | TypeDefaultSpecialJsonType>
+    ) => _TypeJsonData<T | TypeDefaultSpecialJsonType>
+  ): TypeGateway => {
+    let destoried = false;
     const subscribes: Subscription[] = [];
     const subjectLastValueMap: Record<string, any> = {};
     Object.entries(subjects).forEach(([subjectName, subject]) => {
@@ -95,7 +125,7 @@ export const switchEventInSubjects = (
           fromMaster: isMaster,
         };
         try {
-          send(jsonMore.stringify(msg));
+          send(jsonMore.stringify(packer ? packer(msg) : msg));
         } catch (e) {
           subjects.EvLog(
             "Error in eventGateway, failed to stringify message data: ",
@@ -111,9 +141,12 @@ export const switchEventInSubjects = (
     });
     return {
       receive: (data: string) => {
+        if (destoried) return;
         try {
           // @ts-ignore
-          const msg: GatewayMessage | null = jsonMore.parse(data);
+          const msg: GatewayMessage | null = unPacker
+            ? unPacker(jsonMore.parse(data))
+            : jsonMore.parse(data);
           if (msg && msg.label === "GatewayMessage") {
             subjectLastValueMap[msg.subjectName] = msg.data;
             // @ts-ignore
@@ -128,8 +161,9 @@ export const switchEventInSubjects = (
           );
         }
       },
-      unsubscribe: () => {
+      destory: () => {
         subscribes.forEach((sub) => sub.unsubscribe());
+        destoried = true;
       },
     };
   };
@@ -138,7 +172,7 @@ export const switchEventInSubjects = (
 // TODO: idle heartBeat
 export const genRemoteCaller = <K, T extends TypeCommonMsgDef<K>>(
   send: (data: string) => void,
-  jsonMore: TypeJsonMore = JsonMore,
+  jsonMore: _TypeJsonMore<K>,
   timeout = 5000
 ) => {
   type TypeMsg = ToCommonMsgData<K, T>;
@@ -172,7 +206,7 @@ export const genRemoteCaller = <K, T extends TypeCommonMsgDef<K>>(
         do {
           tag = Date.now().toString(36) + Math.random().toString(36);
         } while (tag in tagPromiseMap);
-        const data: RemoteMessage = {
+        const data: RemoteMessage<K> = {
           label: "RemoteMessage",
           tag,
           type: "cmd",
@@ -207,7 +241,7 @@ export const genRemoteCaller = <K, T extends TypeCommonMsgDef<K>>(
 
 export const genRemoteExector = <K, T extends TypeCommonMsgDef<K>>(
   send: (data: string) => void,
-  jsonMore = JsonMore,
+  jsonMore: _TypeJsonMore<K>,
   timeout = 5000
 ) => {
   type TypeMsg = ToCommonMsgData<K, T>;
@@ -236,7 +270,7 @@ export const genRemoteExector = <K, T extends TypeCommonMsgDef<K>>(
             const callData: TypeMsg[keyof TypeMsg] = msg.data;
             const res = await executor(callData);
             const { data: _, ...rest } = callData;
-            const resData: Omit<TypeCommonMsgResultDef<any>, "data"> = {
+            const resData: Omit<TypeCommonMsgContentDef<any>, "data"> = {
               ...rest,
               result: res,
             };
@@ -246,7 +280,7 @@ export const genRemoteExector = <K, T extends TypeCommonMsgDef<K>>(
                 type: "res",
                 data: resData,
                 tag: msg.tag,
-              } as RemoteMessage)
+              } as RemoteMessage<K>)
             );
           } catch (e) {
             send(
@@ -268,4 +302,110 @@ export const genRemoteExector = <K, T extends TypeCommonMsgDef<K>>(
       recieve,
     };
   };
+};
+
+export const keepHeartBeat = (
+  send: (data: string) => void,
+  tag: RemoteHeartbeat["tag"],
+  interval = uiMsgTimeout / 4
+) => {
+  let tHandle: number | undefined;
+  let stopped = false;
+  const heartBeatMsg: RemoteHeartbeat = { label: "RemoteHeartbeat", tag };
+  const start = () => {
+    if (tHandle !== undefined) clearInterval(tHandle);
+    tHandle = Number(
+      setInterval(() => {
+        send(JsonMore.stringify(heartBeatMsg));
+      }, interval)
+    );
+  };
+  start();
+  return {
+    stop: () => {
+      stopped = true;
+      if (tHandle !== undefined) {
+        clearInterval(tHandle);
+        tHandle = undefined;
+      }
+    },
+    restart: start,
+  };
+};
+
+export const hearHeartBeat = <K>(
+  onTimeout: () => void,
+  tag: RemoteHeartbeat["tag"],
+  recieve: ComsumableEvent<RemoteHeartbeat | _TypeJsonData<K>>,
+  timeout = uiMsgTimeout
+) => {
+  let tHandle: number | undefined;
+  const timeoutTriggered = false;
+  const hear = () => {
+    if (tHandle) clearTimeout(tHandle);
+    tHandle = Number(
+      setTimeout(() => {
+        if (timeoutTriggered) return;
+        onTimeout();
+      }, timeout)
+    );
+  };
+  recieve.subscribe({
+    next: (msg) => {
+      if (isRemoteHeartBeat(msg) && msg.tag === tag) {
+        if (!timeoutTriggered) hear();
+        return true;
+      }
+      return false;
+    },
+    destory: () => {
+      if (tHandle) clearTimeout(tHandle);
+    },
+  });
+};
+
+export const executeRemoteMsg = <
+  K,
+  T extends TypeCommonMsgDef<K>,
+  M extends keyof ToCommonMsgData<K, T> = keyof ToCommonMsgData<K, T>
+>(
+  msg: ToCommonMsgData<K, T>[M],
+  send: (data: string) => void,
+  recieve: ComsumableEvent<
+    ToCommonMsgItem<K, T> | RemoteHeartbeat | _TypeJsonData<K>
+  >,
+  jsonMore: _TypeJsonMore<K>,
+  heartBeat: boolean,
+  timeout = uiMsgTimeout
+) => {
+  return new Promise<ToCommonMsgResult<K, T>[M]>((res, rej) => {
+    const tag = msg.tag
+      ? String(msg.tag)
+      : Math.random().toString(36) + Date.now().toString(36);
+    msg.tag = tag;
+    if (heartBeat)
+      hearHeartBeat<K>(
+        () => rej("executeRemoteMsg timeout:" + jsonMore.stringify(msg)),
+        tag,
+        recieve,
+        timeout
+      );
+    recieve.subscribe({
+      next: (data) => {
+        if (isCommonMsgResult<K, T, M>(data)) {
+          if (data.cmd === msg.cmd && data.tag === msg.tag) {
+            res(data);
+            return true;
+          }
+        }
+      },
+      destory: () => {
+        rej(
+          "executeRemoteMsg event completed before result: " +
+            jsonMore.stringify(msg)
+        );
+      },
+    });
+    send(jsonMore.stringify(msg));
+  });
 };

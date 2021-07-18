@@ -44,6 +44,30 @@ export const useBehaviorSubjectValue = <T>(subject: BehaviorSubject<T>) => {
   ];
 };
 
+export const usePickBehaviorSubjectValue = <T, V>(
+  subject: BehaviorSubject<T>,
+  pick: (value: T) => V
+) => {
+  const update = useUpdate();
+  const timestamp = useRef<number>(Date.now());
+  const oldValue = useRef(pick(subject.value));
+  useEffect(() => {
+    const sub = subject.subscribe((value) => {
+      const newValue = pick(value);
+      if (newValue === oldValue.current) return;
+      oldValue.current = newValue;
+      timestamp.current = Date.now();
+      update();
+    });
+    return () => sub.unsubscribe();
+  }, []);
+  return [oldValue.current, subject, timestamp.current] as [
+    V,
+    typeof subject,
+    number
+  ];
+};
+
 export const useSubjectCallback = <T>(
   subject: Subject<T>,
   cb: (value: T) => void,

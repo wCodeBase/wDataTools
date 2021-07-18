@@ -106,6 +106,7 @@ export class FileInfo extends BaseDbInfoEntity {
               finderRoot,
               dbPath,
               readOnly: true,
+              isSubDb: true,
             },
             async () => {
               res = res.concat(await FileInfo.queryAllDbIncluded(doQuery));

@@ -1,11 +1,13 @@
 import {
   TypeDefaultSpecialJsonType,
   TypeJsonData,
+  TypeSimpleData,
   _TypeJsonData,
 } from "./../../tools/json";
 import { FileInfo } from "../entities/FileInfo";
 import { ScanPath } from "../entities/ScanPath";
 import { ConfigLine } from "../entities/ConfigLine";
+import { TypeDbInfo } from "../types";
 
 export enum FinderStatus {
   idle,
@@ -104,8 +106,12 @@ type TypeMsgConfigLineManage = {
     data: Pick<TypeMsgConfigItem, "dbInfo" | "type" | "content">;
   } & TypeMsgConfigLineDef;
   listConfig: {
-    data: Pick<TypeMsgConfigItem, "type">;
-  } & TypeMsgConfigLineDef;
+    data: Partial<TypeMsgConfigItem>;
+  } & {
+    result: TypeMsgConfigLineDef["result"] & {
+      oriData: Partial<TypeMsgConfigItem>;
+    };
+  };
   saveConfig: {
     data: Pick<TypeMsgConfigItem, "type" | "dbInfo"> &
       Partial<TypeMsgConfigItem>;
@@ -134,13 +140,31 @@ type TypeMsgRequestUiAction = {
       finderRoot: string;
     };
   };
+  requestPickLocalPath: {
+    data: {
+      cwd?: string;
+      title?: string;
+    };
+    result: {
+      path?: string;
+    };
+  };
 };
 
-// type TypeMsgDbManage = {
-//   switchDb: {
-//     data: ;
-//   }
-// }; tttt
+type TypeMsgCoreManage = {
+  switchGlobalDb: {
+    data: TypeDbInfo;
+    result: {
+      error?: string;
+    };
+  };
+  getThumbnail: {
+    data: {
+      notSubDb: boolean;
+    };
+    result: string;
+  };
+};
 
 type TypeCmdUiMsgDefMap = TypeMsgScan &
   TypeMsgSearch &
@@ -148,7 +172,8 @@ type TypeCmdUiMsgDefMap = TypeMsgScan &
   TypeMsgStopScan &
   TypeMsgConfigLineManage &
   TypeMsgRequestUiAction &
-  TypeQueryForInfo;
+  TypeQueryForInfo &
+  TypeMsgCoreManage;
 
 export type TypeCmdUiMsgMap = {
   [key in keyof TypeCmdUiMsgDefMap]: TypeCmdUiMsgDefMap[key] & {
@@ -197,10 +222,10 @@ export type GatewayMessage = {
   fromMaster: boolean;
 };
 
-export type RemoteMessage = {
+export type RemoteMessage<K> = {
   label: "RemoteMessage";
   tag: string | number;
-  data: TypeJsonData;
+  data: _TypeJsonData<K>;
   type: "cmd" | "res";
 };
 
@@ -209,20 +234,26 @@ export type RemoteHeartbeat = {
   tag: string | number;
 };
 
+export const isRemoteHeartBeat = (data: any): data is RemoteHeartbeat =>
+  data?.label === "RemoteHeartbeat";
+
 export type RemoteError = {
   label: "RemoteError";
   tag: string | number;
   error: string;
 };
 
-export type TypeCommonMsgResultDef<T> = {
+export const isRemoteError = (data: any): data is RemoteError =>
+  data?.label === "RemoteError";
+
+export type TypeCommonMsgContentDef<T> = {
   tag?: string | number;
-  data: _TypeJsonData<T | TypeDefaultSpecialJsonType>;
-  result: _TypeJsonData<T | TypeDefaultSpecialJsonType>;
+  data: _TypeJsonData<T>;
+  result: _TypeJsonData<T>;
 };
 
 export type TypeCommonMsgDef<T> = {
-  [key: string]: TypeCommonMsgResultDef<T>;
+  [key: string]: TypeCommonMsgContentDef<T>;
 };
 
 export type ToCommonMsgData<K, T extends TypeCommonMsgDef<K>> = {
@@ -231,8 +262,45 @@ export type ToCommonMsgData<K, T extends TypeCommonMsgDef<K>> = {
   } & Omit<T[key], "result">;
 };
 
+export type ToCommonMsgDataItem<
+  K,
+  T extends TypeCommonMsgDef<K>
+> = ToCommonMsgData<K, T>[keyof ToCommonMsgData<K, T>];
+
 export type ToCommonMsgResult<K, T extends TypeCommonMsgDef<K>> = {
   [key in keyof T]: {
     cmd: key;
   } & Omit<T[key], "data">;
+};
+
+export type ToCommonMsgResultItem<
+  K,
+  T extends TypeCommonMsgDef<K>
+> = ToCommonMsgResult<K, T>[keyof ToCommonMsgResult<K, T>];
+export type ToCommonMsgItem<K, T extends TypeCommonMsgDef<K>> =
+  | ToCommonMsgResultItem<K, T>
+  | ToCommonMsgDataItem<K, T>;
+
+export const isCommonMsgData = <K, T extends TypeCommonMsgDef<K>>(
+  data: ToCommonMsgItem<K, T> | TypeSimpleData | Record<string, any>
+): data is ToCommonMsgDataItem<K, T> =>
+  typeof data === "object" && !!data && "data" in data;
+export const isCommonMsgResult = <
+  K,
+  T extends TypeCommonMsgDef<K>,
+  M extends keyof ToCommonMsgData<K, T> = keyof ToCommonMsgData<K, T>
+>(
+  data: ToCommonMsgData<K, T>[M] | TypeSimpleData | Record<string, any>
+): data is ToCommonMsgResult<K, T>[M] =>
+  typeof data === "object" && !!data && "result" in data;
+
+export type TypeTransferRemoteStatus = "linking" | "linked" | "broken";
+
+export type TypeTransferRemoteStatusMap = {
+  [thumnail: string]: TypeTransferRemoteStatus;
+};
+
+export type TypeTransferRemote = {
+  dbInfo: TypeDbInfo;
+  status: TypeTransferRemoteStatus;
 };

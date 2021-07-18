@@ -19,7 +19,12 @@ export type TypeDbInfo = {
   dbPath: string;
   readOnly: boolean;
   remoteUrls?: string[];
+  thumbnail?: string;
+  isSubDb?: boolean;
 };
+
+export const getDbInfoId = (info: TypeDbInfo) =>
+  !info ? "" : info.thumbnail + "|" + info.dbPath;
 
 export type HttpServerOption = {
   port: number;

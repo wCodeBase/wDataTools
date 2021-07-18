@@ -58,3 +58,7 @@ export const EvConfigLineChange = new JsonSubject<null>();
 export const EvScanPathChange = new JsonSubject<null>();
 
 export const EvFinderReady = new JsonBehaviorSubject<boolean>(false);
+
+export const EvFinderState = new ShallowJsonBehaviorSubject({
+  config: undefined as TypeDbInfo | undefined,
+});

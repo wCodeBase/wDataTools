@@ -125,6 +125,7 @@ export const getConnection = (() => {
                     "requestChooseFinderRoot",
                     {
                       cmd: "requestChooseFinderRoot",
+                      tag: Math.random(),
                       data: {
                         cwd: process.cwd(),
                         userDataDir,
@@ -152,6 +153,15 @@ export const getConnection = (() => {
               }
             }
             const newConfig = genConfig(newDbPath);
+            const stackedConfig = cEvFinderState.value.configStack.find(
+              (v) => v.dbPath === Config.dbPath
+            );
+            if (stackedConfig) {
+              Object.assign(stackedConfig, newConfig);
+              cEvFinderState.next({
+                configStack: [...cEvFinderState.value.configStack],
+              });
+            }
             Object.assign(Config, newConfig);
             return await getConnection(
               Config,
@@ -189,6 +199,15 @@ export const getConnection = (() => {
       const con = connection;
       blockingResolveMap.get(dbPath)?.forEach((v) => v(con));
       blockingResolveMap.delete(dbPath);
+      if (config === Config && !config.thumbnail) {
+        connectionLockMap.delete(dbPath);
+        try {
+          const coreInfo = await getFinderCoreInfo();
+          config.thumbnail = coreInfo.thumnail;
+        } catch (e) {
+          console.warn("Failed to get thumbnail of  global database");
+        }
+      }
       return connection;
     } finally {
       connectionLockMap.delete(dbPath);
@@ -219,9 +238,17 @@ export const { switchDb, getSwitchedDbConfig } = (() => {
 })();
 
 let coreInfo: TypeFinderCoreInfo | undefined;
-export const getFinderCoreInfo = async () => {
-  if (!coreInfo) {
-    coreInfo = await switchDb(Config, async () => {
+let coreInfoDbPath = "";
+export const getFinderCoreInfo = async (notSubDb = false) => {
+  const config =
+    (notSubDb
+      ? cEvFinderState.value.configStack
+          .slice(0, cEvFinderState.value.configIndex)
+          .reverse()
+          .find((v) => !v.isSubDb)
+      : Config) || Config;
+  if (!coreInfo || config?.dbPath !== coreInfoDbPath) {
+    coreInfo = await switchDb(config || Config, async () => {
       const info =
         (
           await ConfigLine.find({ where: { type: ConfigLineType.coreInfo } })
@@ -238,6 +265,7 @@ export const getFinderCoreInfo = async () => {
       }
       return json;
     });
+    coreInfoDbPath = config.dbPath;
   }
   return coreInfo;
 };

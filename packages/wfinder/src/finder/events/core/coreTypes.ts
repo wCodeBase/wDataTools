@@ -27,7 +27,7 @@ export const JsonMoreEntity = buildJsonMoreWithDefaultPackers([
   },
 ]);
 
-export type cTypeJsonMoreEntitySpecial = FileInfo;
+export type cTypeJsonMoreEntitySpecial = FileInfo | TypeDefaultSpecialJsonType;
 export type cTypeImplementedOrmCall = "countByMatchName" | "findByMatchName";
 export type cTypeOrmCallDef = {
   callOrmMethod: {
@@ -37,8 +37,6 @@ export type cTypeOrmCallDef = {
       args: TypeJsonData[];
       queryLimit: TypeQueryLimit;
     };
-    result: _TypeJsonData<
-      cTypeJsonMoreEntitySpecial | TypeDefaultSpecialJsonType
-    >;
+    result: _TypeJsonData<cTypeJsonMoreEntitySpecial>;
   };
 };

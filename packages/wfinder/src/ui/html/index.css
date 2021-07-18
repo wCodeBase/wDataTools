@@ -2,3 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 @tailwind screens;
+
+.hide-popover-padding .ant-popover-inner-content {
+    padding: 0 !important;
+}

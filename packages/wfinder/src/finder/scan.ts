@@ -143,6 +143,7 @@ export const scanPath = async (
                 ...config,
                 dbPath: testDbPath,
                 finderRoot: chilPath,
+                isSubDb: true,
               });
             } else {
               scanStack.push({

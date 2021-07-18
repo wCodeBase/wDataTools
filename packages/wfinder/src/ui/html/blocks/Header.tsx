@@ -1,11 +1,16 @@
 import React from "react";
 import { SettingOutlined } from "@ant-design/icons";
-import { Button } from "antd";
+import { Button, Tooltip } from "antd";
 import { Modal, Drawer } from "antd";
-import { useStableState } from "../../hooks/hooks";
+import {
+  useBehaviorSubjectValue,
+  usePickBehaviorSubjectValue,
+  useStableState,
+} from "../../hooks/hooks";
 import { Setting } from "../widgets/Setting";
 import { ConnectionLight } from "../components/ConnectionLight";
 import { isElectron } from "../../../finder/events/webEventTools";
+import { ContextIndicator } from "../widgets/Contexts";
 
 const SettingButton = React.memo(() => {
   const [state, setState] = useStableState(() => ({
@@ -24,7 +29,7 @@ const SettingButton = React.memo(() => {
       >
         <div className="flex items-center">
           <SettingOutlined />
-          <div className="sm:hidden pl-1">Settings</div>
+          <div className="sm:block hidden pl-1">Settings</div>
         </div>
       </Button>
 
@@ -50,13 +55,13 @@ const SettingButton = React.memo(() => {
 
 export const Header = () => {
   return (
-    <div className="flex bg-gradient-to-br from-blueGray-500 to-blueGray-700 shadow-sm text-white p-2">
-      <div>Header</div>
-      <div className="flex-grow" />
+    <div className="flex flex-row w-full truncate bg-gradient-to-br from-blueGray-500 to-blueGray-700 shadow-sm text-white p-2">
+      <ContextIndicator />
+      <div className="flex-grow mx-2" />
       <div className="lg:hidden">
         <SettingButton />
       </div>
-      {!isElectron && <ConnectionLight />}
+      {!isElectron && <ConnectionLight className="pl-1" />}
     </div>
   );
 };

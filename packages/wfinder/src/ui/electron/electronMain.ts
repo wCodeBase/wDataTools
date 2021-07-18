@@ -2,7 +2,7 @@ import { getUserPreference, setUserPreference } from "./preference";
 import { USE_IPC_SERVER } from "./ipcServer";
 import { switchEvent } from "./../../finder/events/eventGateway";
 import { loadHtml } from "./common";
-import { app, BrowserWindow, Menu } from "electron";
+import { app, BrowserWindow, dialog, Menu } from "electron";
 import { initFinder } from "../../finder";
 import net from "net";
 import { packetTool } from "../../tools/streamTool";
@@ -57,7 +57,7 @@ import { APP_DATA_FOLDER_NAME } from "../../constants";
       }
     });
     socket.on("close", () => {
-      gateway?.unsubscribe();
+      gateway?.destory();
     });
   } else {
     EvUiLaunched.next({ electron: true });
@@ -77,8 +77,8 @@ EvUiCmd.subscribe((msg) => {
 
 Menu.setApplicationMenu(null);
 
-app.whenReady().then(() => {
-  const preference = getUserPreference();
+app.whenReady().then(async () => {
+  const preference = await getUserPreference();
   const win = new BrowserWindow({
     width: preference.windowWidth,
     height: preference.windowHeight,
@@ -93,18 +93,23 @@ app.whenReady().then(() => {
   });
   if (preference.maximize) win.maximize();
   const updateWindowPreference = throttle(() => {
-    const [windowWidth, windowHeight] = win.getSize();
-    const { x, y } = win.getBounds();
-    setUserPreference({ windowWidth, windowHeight, windowX: x, windowY: y });
+    if (win.isMaximized()) {
+      setUserPreference({ maximize: true });
+    } else {
+      const [windowWidth, windowHeight] = win.getSize();
+      const { x, y } = win.getBounds();
+      setUserPreference({
+        windowWidth,
+        windowHeight,
+        windowX: x,
+        windowY: y,
+        maximize: false,
+      });
+    }
   }, 500);
   win.addListener("resize", updateWindowPreference);
   win.addListener("move", updateWindowPreference);
-  win.addListener(
-    "maximize",
-    throttle(() => {
-      setUserPreference({ maximize: true });
-    }, 500)
-  );
+  win.addListener("maximize", updateWindowPreference);
   win.webContents.openDevTools();
   (() => {
     let clientReady = false;
@@ -112,7 +117,7 @@ app.whenReady().then(() => {
     win.webContents.addListener("ipc-message", (ev, channel, data) => {
       if (channel === GATEWAY_CHANNEL) {
         if (data === CLIENT_READY) {
-          if (clientReady) gateway?.unsubscribe();
+          if (clientReady) gateway?.destory();
           gateway = switchEvent((data) => {
             win.webContents.send(GATEWAY_CHANNEL, data);
           }, true);
@@ -122,7 +127,22 @@ app.whenReady().then(() => {
         }
       }
     });
-    win.addListener("close", () => gateway?.unsubscribe());
+    win.addListener("close", () => gateway?.destory());
   })();
   loadHtml(win);
+
+  EvUiCmd.subscribe(async (msg) => {
+    if (msg?.cmd === "requestPickLocalPath") {
+      const res = await dialog.showOpenDialog(win, {
+        defaultPath: msg.data.cwd || process.cwd(),
+        title: msg.data.title,
+        properties: ["openDirectory"],
+      });
+      EvUiCmdResult.next({
+        cmd: "requestPickLocalPath",
+        tag: msg.tag,
+        result: { path: res.filePaths[0] },
+      });
+    }
+  });
 });

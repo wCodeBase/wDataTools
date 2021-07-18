@@ -102,17 +102,21 @@ EvUiCmd.subscribe(async (msg) => {
       cmdResult = { cmd, result: { results, error } };
     } else if (msg.cmd === "listConfig") {
       const { cmd } = msg;
-      const { result } = await exListConfigLine(msg.data.type);
+      const { result } = await exListConfigLine(msg.data);
       cmdResult = {
         cmd,
-        result: { results: result.map((v) => v.toItem()), error: "" },
+        result: {
+          results: result.map((v) => v.toItem()),
+          oriData: msg.data,
+          error: "",
+        },
       };
     } else if (msg.cmd === "saveConfig" || msg.cmd === "saveOrCreateConfig") {
       const { cmd } = msg;
       let { result, error = "" } = await exSaveConfigLine(msg.data);
-      if (!error && !result?.length) {
-        const res = await exSaveConfigLine(msg.data);
-        result = res.result;
+      if ((error || !result?.length) && msg.cmd === "saveOrCreateConfig") {
+        const res = await exAddConfigLine(msg.data);
+        result = res.result ? [res.result] : [];
         error = res.error || "";
       }
       cmdResult = {

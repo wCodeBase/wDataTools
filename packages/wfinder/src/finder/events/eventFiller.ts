@@ -1,10 +1,23 @@
+import { last } from "lodash";
 import { getConnection } from "../db";
 import { FileInfo } from "../entities/FileInfo";
-import { EvDatabaseInfos, EvFileInfoChange } from "./events";
+import { cEvFinderState } from "./core/coreEvents";
+import {
+  EvDatabaseInfos,
+  EvFileInfoChange,
+  EvFinderState,
+  EvUiCmdResult,
+} from "./events";
 
 EvFileInfoChange.subscribe(async () => {
   await getConnection();
   EvDatabaseInfos.next({
     fileInfoCount: await FileInfo.count(),
+  });
+});
+
+cEvFinderState.subscribe((state) => {
+  EvFinderState.next({
+    config: last(state.configStack),
   });
 });

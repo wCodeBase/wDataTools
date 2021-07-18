@@ -34,6 +34,7 @@ module.exports = {
                       "@babel/plugin-proposal-class-properties",
                       { loose: true },
                     ],
+                    "@babel/plugin-proposal-optional-chaining",
                     // "react-hot-loader/babel"  this line will make hmr not work in some custom hook.
                   ],
                 },

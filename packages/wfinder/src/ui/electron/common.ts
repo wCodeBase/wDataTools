@@ -1,7 +1,6 @@
 import { BrowserWindow } from "electron";
 import path from "path";
-
-export const isDev = process.env.NODE_ENV === "development";
+import { isDev } from "../../finder/common";
 
 export const htmlFileRoot = isDev
   ? `http://localhost:${

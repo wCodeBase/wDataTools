@@ -1,15 +1,18 @@
-import { EVENT_ORM_METHOD_WEBSOCKET_ROUTE } from "./../../constants";
+import {
+  EVENT_ORM_METHOD_WEBSOCKET_ROUTE,
+  EVENT_TRANSFER_WEBSOCKET_ROUTE,
+} from "./../../constants";
 import * as express from "express";
-import * as WebSocket from "ws";
+import WebSocket from "ws";
 import * as http from "http";
 import * as path from "path";
 import { HttpServerOption } from "../types";
-import { isDev } from "../../ui/electron/common";
+import { isDev } from "../common";
 import { localhost } from "../../constants";
 import { EVENT_WEBSOCKET_ROUTE } from "../../constants";
-import { switchEvent } from "../events/eventGateway";
+import { joinContextPipe, switchEvent } from "../events/eventGateway";
 import { cEvFinderState } from "../events/core/coreEvents";
-import { genRemoteExector } from "../events/eventTools";
+import { genRemoteExector, TypeGateway } from "../events/eventTools";
 import {
   cTypeJsonMoreEntitySpecial,
   cTypeOrmCallDef,
@@ -17,6 +20,8 @@ import {
 } from "../events/core/coreTypes";
 import { getFinderCoreInfo } from "../db";
 import { EvUiLaunched } from "../events/events";
+import { Config } from "../common";
+import { waitWsConnected } from "../events/core/coreState";
 
 export const createHttpServer = async (options: HttpServerOption) => {
   const app = express.default();
@@ -60,7 +65,78 @@ export const createHttpServer = async (options: HttpServerOption) => {
       wss.handleUpgrade(request, socket, head, (socket, request) => {
         const gateway = switchEvent((data) => socket.send(data), true);
         socket.on("message", gateway.receive);
-        socket.onclose = gateway.unsubscribe;
+        socket.onclose = gateway.destory;
+      });
+    } else if (request.url === EVENT_TRANSFER_WEBSOCKET_ROUTE) {
+      let nextSocket: WebSocket | undefined;
+      wss.handleUpgrade(request, socket, head, (socket, request) => {
+        let gateway: TypeGateway | undefined;
+        const joint = joinContextPipe({
+          isStartJoint: false,
+          currentConfig: Config,
+          onData: async (data) => {
+            gateway?.receive(data);
+            return "";
+          },
+          forward: (data) => {
+            nextSocket?.send(data);
+          },
+          sendToClient: (data) => {
+            socket.send(data);
+          },
+          switchContext: async (url) => {
+            if (
+              nextSocket &&
+              ([nextSocket.CLOSED, nextSocket.CLOSING] as number[]).includes(
+                nextSocket.readyState
+              )
+            ) {
+              const toClose = nextSocket;
+              nextSocket = undefined;
+              toClose.close();
+            }
+            if (gateway) {
+              gateway.destory();
+              gateway = undefined;
+            }
+            if (url) {
+              const doConnect = async () => {
+                const newNext = new WebSocket(
+                  url + EVENT_TRANSFER_WEBSOCKET_ROUTE
+                );
+                await waitWsConnected(newNext, true);
+                nextSocket = newNext;
+                const close = nextSocket.close.bind(nextSocket);
+                nextSocket.close = () => {
+                  if (nextSocket === newNext) nextSocket = undefined;
+                  close();
+                };
+                newNext.onclose = () => {
+                  setTimeout(() => {
+                    if (nextSocket === newNext) doConnect();
+                  }, 500);
+                };
+                newNext.onmessage = (ev) => {
+                  joint.recieveFromNext(String(ev.data));
+                };
+              };
+              await doConnect();
+            } else {
+              gateway = switchEvent((data) => {
+                joint.sendData(data).catch((e) => {
+                  console.warn("Joint sendData failed:", e);
+                });
+              }, true);
+            }
+          },
+        });
+        socket.on("message", joint.recieveFromClient);
+        socket.onclose = () => {
+          gateway?.destory();
+          gateway = undefined;
+          joint.destory();
+          nextSocket?.close();
+        };
       });
     } else if (request.url === EVENT_ORM_METHOD_WEBSOCKET_ROUTE) {
       wss.handleUpgrade(request, socket, head, (socket, request) => {
@@ -104,6 +180,10 @@ export const createHttpServer = async (options: HttpServerOption) => {
           });
           socket.on("message", executor.recieve);
         }
+      });
+    } else {
+      wss.handleUpgrade(request, socket, head, (socket, request) => {
+        socket.close();
       });
     }
   });

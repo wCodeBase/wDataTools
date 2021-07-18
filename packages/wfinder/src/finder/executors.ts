@@ -38,11 +38,11 @@ export const exListScanPath = async (config = Config) => {
 };
 
 export const exAddConfigLine = async (
-  data: Pick<TypeMsgConfigItem, "type" | "content" | "dbInfo"> &
+  data: Pick<TypeMsgConfigItem, "type" | "content"> &
     Partial<TypeMsgConfigItem>,
   config = Config
 ) => {
-  return await switchDb(config, async () => {
+  return await switchDb(data.dbInfo || config, async () => {
     const { content, type } = data;
     if (await ConfigLine.count({ where: { content, type } })) {
       const error = `Content already exist: ${ConfigLineType[type]}-${content}.`;
@@ -58,11 +58,13 @@ export const exAddConfigLine = async (
 };
 
 export const exSaveConfigLine = async (
-  item: Pick<TypeMsgConfigItem, "type" | "dbInfo"> & Partial<TypeMsgConfigItem>
+  item: Pick<TypeMsgConfigItem, "type"> & Partial<TypeMsgConfigItem>
 ) => {
   return await switchDb(item.dbInfo || Config, async () => {
     const { content, type, id } = item;
-    const configs = await ConfigLine.find({ where: { content, type, id } });
+    const configs = await ConfigLine.find({
+      where: id === undefined ? { content, type } : { id },
+    });
     if (!configs.length) {
       const error = `Content not found: ${ConfigLineType[type]}-${content}.`;
       return { error };
@@ -91,12 +93,12 @@ export const exDeleteConfigLine = async (
 };
 
 export const exListConfigLine = async (
-  type: ConfigLineType,
+  item: Partial<TypeMsgConfigItem>,
   config = Config
 ) => {
-  return await switchDb(config, async () => {
+  return await switchDb(item.dbInfo || config, async () => {
     const configLines = await ConfigLine.find({
-      where: { type },
+      where: item,
       order: { createdAt: "DESC" },
     });
     return { result: configLines };

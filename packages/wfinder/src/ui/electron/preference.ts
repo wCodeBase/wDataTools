@@ -2,7 +2,7 @@ import { JsonMore } from "./../../tools/json";
 import fs from "fs";
 import { executeUiCmd } from "../../finder/events/eventTools";
 import { ConfigLineType } from "../../finder/types";
-import { EvFinderReady } from "../../finder/events/events";
+import { EvFinderReady, EvUiCmd } from "../../finder/events/events";
 import { Config } from "../../finder/common";
 import { TypeMsgConfigItem } from "../../finder/events/types";
 
@@ -16,8 +16,9 @@ const userPreference = {
 };
 
 let preferenceConfig: TypeMsgConfigItem | undefined;
+let preferenceResolves: ((v: typeof userPreference) => void)[] = [];
 
-const subscribe = EvFinderReady.subscribe(async (ready) => {
+EvFinderReady.subscribe(async (ready) => {
   if (!ready) return;
   try {
     const info = await (
@@ -27,17 +28,26 @@ const subscribe = EvFinderReady.subscribe(async (ready) => {
       })
     ).result.results[0];
     if (info?.jsonStr) {
-      Object.assign(
-        userPreference,
-        JsonMore.parse(String(fs.readFileSync(info.jsonStr)))
-      );
+      Object.assign(userPreference, JsonMore.parse(info.jsonStr));
     }
+    preferenceResolves.forEach((r) => r(userPreference));
+    preferenceResolves = [];
   } catch (e) {
     console.error("Faile to read user preference", String(e));
   }
 });
 
-export const getUserPreference = () => userPreference;
+EvUiCmd.subscribe((msg) => {
+  if (msg?.cmd === "requestChooseFinderRoot") {
+    preferenceResolves.forEach((r) => r(userPreference));
+    preferenceResolves = [];
+  }
+});
+
+export const getUserPreference = () =>
+  EvFinderReady.value
+    ? userPreference
+    : new Promise<typeof userPreference>((res) => preferenceResolves.push(res));
 
 export const setUserPreference = async (p: Partial<typeof userPreference>) => {
   Object.assign(userPreference, p);
@@ -48,7 +58,6 @@ export const setUserPreference = async (p: Partial<typeof userPreference>) => {
       data: {
         content: "userPreference",
         type: ConfigLineType.userPreference,
-        dbInfo: Config,
         ...(preferenceConfig || {}),
         jsonStr: JsonMore.stringify(userPreference),
       },

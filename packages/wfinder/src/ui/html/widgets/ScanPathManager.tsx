@@ -16,7 +16,7 @@ import {
 } from "../components/ManagerTable";
 import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
-import { useEventReady, useFinderReady } from "../../hooks/webHooks";
+import { useFinderReady } from "../../hooks/webHooks";
 
 const SearchButton = React.memo((props: TypeManagerTableAddonButtonProps) => {
   const [finderStatus] = useFinderStatus();
