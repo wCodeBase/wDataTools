@@ -16,9 +16,10 @@ import {
 } from "../components/ManagerTable";
 import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
-import { ConfigLineType } from "../../../finder/types";
+import { ConfigLineType, getDbInfoId } from "../../../finder/types";
 import { useFinderReady } from "../../hooks/webHooks";
 import { isEqual } from "lodash";
+import { getLocalContext } from "../../../finder/events/webEvent";
 
 const genTypedConfigmanager = (
   type: ConfigLineType,
@@ -41,7 +42,7 @@ const genTypedConfigmanager = (
   );
   const listConfigData = { type };
   return defaultPropsFc(
-    { className: "", titleClassName: "" },
+    { className: "", titleClassName: "", contexted: true },
     (props) => {
       const [state, setState] = useStableState(() => {
         const res = {
@@ -61,6 +62,7 @@ const genTypedConfigmanager = (
             const res = await executeUiCmd("addConfig", {
               cmd: "addConfig",
               data: v,
+              context: props.contexted ? getLocalContext() : undefined,
             }).catch((e) => {
               message.error(String(e));
               return null;
@@ -72,6 +74,7 @@ const genTypedConfigmanager = (
             const res = await executeUiCmd("saveConfig", {
               cmd: "saveConfig",
               data: v,
+              context: props.contexted ? getLocalContext() : undefined,
             }).catch((e) => {
               message.error(String(e));
               return null;
@@ -80,14 +83,14 @@ const genTypedConfigmanager = (
             return !!res;
           },
           listConfig: async () => {
-            const res = await executeUiCmd("listConfig", {
+            await executeUiCmd("listConfig", {
               cmd: "listConfig",
               data: listConfigData,
+              context: props.contexted ? getLocalContext() : undefined,
             }).catch((e) => {
               message.error(String(e));
               return null;
             });
-            if (res) setState({ configs: res.result.results });
           },
           checkBusy: () => {
             if (state.waitingForCmdResult)
@@ -106,7 +109,8 @@ const genTypedConfigmanager = (
         if (
           res.cmd === "listConfig" &&
           !res.result.error &&
-          isEqual(listConfigData, res.result.oriData)
+          isEqual(listConfigData, res.result.oriData) &&
+          getDbInfoId(res.context) === getDbInfoId(getLocalContext())
         ) {
           setState({ configs: res.result.results });
         }

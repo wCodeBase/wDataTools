@@ -21,7 +21,9 @@ export const scanPath = async (
   config = Config
 ) => {
   await switchDb(config, async () => {
-    pathToScan = path.resolve(pathToScan);
+    pathToScan = path.isAbsolute(pathToScan)
+      ? pathToScan
+      : path.join(config.finderRoot, pathToScan);
     const { finderRoot } = config;
     if (!fs.existsSync(pathToScan))
       throw new FileScanError("Path to scan is not exist.");

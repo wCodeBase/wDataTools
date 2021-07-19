@@ -1,6 +1,6 @@
 import { DEFAULT_QUERY_LIMIT } from "./../common";
 import { BaseDbInfoEntity } from "./BaseDbInfoEntity";
-import { getSwitchedDbConfig, switchDb } from "./../db";
+import { getConfig, switchDb } from "./../db";
 import { DbIncluded } from "./DbIncluded";
 import {
   BaseEntity,
@@ -88,11 +88,11 @@ export class FileInfo extends BaseDbInfoEntity {
   }
 
   private static async queryAllDbIncluded<T>(
-    doQuery: (rep: Repository<FileInfo>) => Promise<T[]>
+    doQuery: (handle: typeof FileInfo) => Promise<T[]>
   ) {
-    let res: T[] = await doQuery(this.getRepository());
+    let res: T[] = await doQuery(this);
     const includedDbs = await DbIncluded.find();
-    const config = getSwitchedDbConfig();
+    const config = getConfig();
     for (const db of includedDbs) {
       const finderRoot = path.join(config.finderRoot, db.path);
       try {
@@ -124,31 +124,33 @@ export class FileInfo extends BaseDbInfoEntity {
     onlyCurrentDb = false,
     queryLimit = DEFAULT_QUERY_LIMIT
   ) {
-    const query = (rep: Repository<FileInfo>) =>
+    const query = (rep: typeof FileInfo) =>
       rep.query(
         `select count(1) as count from ${IndexTableName} where name match ?`,
         [processQueryText(keywords.join(" "))]
       );
     const res: any[] = await (onlyCurrentDb
-      ? query(this.getRepository())
+      ? query(this)
       : this.queryAllDbIncluded(query));
-    const remoteQuery = this.callRemoteStaticMethod(
-      "countByMatchName",
-      [keywords, onlyCurrentDb],
-      queryLimit
-    );
-    let rRes = await remoteQuery.next();
     let rTotal = 0;
-    while (!rRes.done) {
-      const { result } = rRes.value.rRes;
-      if (typeof result === "number") rTotal += result;
-      else {
-        EvLog(
-          `Error: remote call countByMatchName return invalid value: `,
-          result
-        );
+    if (!getConfig().isSubDb) {
+      const remoteQuery = this.callRemoteStaticMethod(
+        "countByMatchName",
+        [keywords, onlyCurrentDb],
+        queryLimit
+      );
+      let rRes = await remoteQuery.next();
+      while (!rRes.done) {
+        const { result } = rRes.value.rRes;
+        if (typeof result === "number") rTotal += result;
+        else {
+          EvLog(
+            `Error: remote call countByMatchName return invalid value: `,
+            result
+          );
+        }
+        rRes = await remoteQuery.next();
       }
-      rRes = await remoteQuery.next();
     }
     return sumBy(res, "count") + rTotal;
   }
@@ -161,15 +163,16 @@ export class FileInfo extends BaseDbInfoEntity {
   ) {
     const end = take + skip;
     let pos = 0;
-    let res = await this.queryAllDbIncluded(async (rep) => {
+    let res: FileInfo[] = await this.queryAllDbIncluded(async (handle) => {
       if (pos > end) return [];
-      const count = await this.countByMatchName(keywords, true);
+      const count = await handle.countByMatchName(keywords, true);
       const mSkip = Math.max(0, skip - pos);
       const mEnd = Math.min(end - pos, count);
       const mTake = Math.max(0, mEnd - mSkip);
       pos += count;
       if (!mTake) return [];
-      return await rep
+      return await handle
+        .getRepository()
         .query(
           `select rowid from ${IndexTableName} where name match ? limit ?,?`,
           [processQueryText(keywords.join(" ")), mSkip, mTake]
@@ -178,7 +181,7 @@ export class FileInfo extends BaseDbInfoEntity {
           return this.findByIds(ids.map((v: any) => v.rowid));
         });
     });
-    if (pos < end) {
+    if (pos < end && !getConfig().isSubDb) {
       const remoteQuery = this.callRemoteStaticMethod(
         "findByMatchName",
         [keywords, take, skip],

@@ -6,7 +6,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { getSwitchedDbConfig } from "../db";
+import { getConfig } from "../db";
 import { TypeMsgPathItem } from "../events/types";
 
 @Entity()

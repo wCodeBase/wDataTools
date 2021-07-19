@@ -1,11 +1,13 @@
-import { Config } from "./common";
-import { switchDb } from "./db";
+import { last } from "lodash";
+import { waitMilli } from "../tools/tool";
+import { getConfig, switchDb } from "./db";
 import { ConfigLine } from "./entities/ConfigLine";
+import { DbIncluded } from "./entities/DbIncluded";
 import { ScanPath } from "./entities/ScanPath";
 import { TypeMsgConfigItem } from "./events/types";
-import { ConfigLineType } from "./types";
+import { ConfigLineType, TypeDbInfo } from "./types";
 
-export const exAddScanPath = async (scanPath: string, config = Config) => {
+export const exAddScanPath = async (scanPath: string, config = getConfig()) => {
   return await switchDb(config, async () => {
     if (await ScanPath.count({ where: { path: scanPath } })) {
       const error = `Path already exist: ${scanPath}`;
@@ -17,7 +19,10 @@ export const exAddScanPath = async (scanPath: string, config = Config) => {
   });
 };
 
-export const exDeleteScanPath = async (scanPath: string, config = Config) => {
+export const exDeleteScanPath = async (
+  scanPath: string,
+  config = getConfig()
+) => {
   return await switchDb(config, async () => {
     const scanPaths = await ScanPath.find({ path: scanPath });
     if (!scanPaths.length) {
@@ -30,7 +35,7 @@ export const exDeleteScanPath = async (scanPath: string, config = Config) => {
   });
 };
 
-export const exListScanPath = async (config = Config) => {
+export const exListScanPath = async (config = getConfig()) => {
   return await switchDb(config, async () => {
     const scanPaths = await ScanPath.find();
     return { result: scanPaths };
@@ -40,7 +45,7 @@ export const exListScanPath = async (config = Config) => {
 export const exAddConfigLine = async (
   data: Pick<TypeMsgConfigItem, "type" | "content"> &
     Partial<TypeMsgConfigItem>,
-  config = Config
+  config = getConfig()
 ) => {
   return await switchDb(data.dbInfo || config, async () => {
     const { content, type } = data;
@@ -60,7 +65,7 @@ export const exAddConfigLine = async (
 export const exSaveConfigLine = async (
   item: Pick<TypeMsgConfigItem, "type"> & Partial<TypeMsgConfigItem>
 ) => {
-  return await switchDb(item.dbInfo || Config, async () => {
+  return await switchDb(item.dbInfo || getConfig(), async () => {
     const { content, type, id } = item;
     const configs = await ConfigLine.find({
       where: id === undefined ? { content, type } : { id },
@@ -79,7 +84,7 @@ export const exSaveConfigLine = async (
 export const exDeleteConfigLine = async (
   item: Pick<TypeMsgConfigItem, "type" | "content" | "dbInfo">
 ) => {
-  return await switchDb(item.dbInfo || Config, async () => {
+  return await switchDb(item.dbInfo || getConfig(), async () => {
     const { content, type } = item;
     const configLine = await ConfigLine.find({ content, type });
     if (!configLine.length) {
@@ -94,7 +99,7 @@ export const exDeleteConfigLine = async (
 
 export const exListConfigLine = async (
   item: Partial<TypeMsgConfigItem>,
-  config = Config
+  config = getConfig()
 ) => {
   return await switchDb(item.dbInfo || config, async () => {
     const configLines = await ConfigLine.find({
@@ -102,5 +107,12 @@ export const exListConfigLine = async (
       order: { createdAt: "DESC" },
     });
     return { result: configLines };
+  });
+};
+
+export const exListDbIncluded = async (config = getConfig()) => {
+  return await switchDb(config, async () => {
+    const dbIncludes = await DbIncluded.find();
+    return { result: dbIncludes };
   });
 };

@@ -6,3 +6,10 @@
 .hide-popover-padding .ant-popover-inner-content {
     padding: 0 !important;
 }
+.ant-message-custom-content{
+    display: flex;
+    align-items: center;
+}
+.text-rtl{
+    direction: rtl;
+}

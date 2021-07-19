@@ -22,9 +22,10 @@ import {
   EvUiCmd,
   EvUiLaunched,
 } from "./events/events";
-import { ConfigLineType, TypeFinderCoreInfo } from "./types";
+import { ConfigLineType, TypeDbInfo, TypeFinderCoreInfo } from "./types";
 import { STR_FINDER_CORE_INFO } from "../constants";
 import { executeUiCmd } from "./events/eventTools";
+import { createNamespace, getNamespace } from "cls-hooked";
 
 const dbType = "better-sqlite3";
 const initDb = async (dbPath: string) => {
@@ -215,25 +216,25 @@ export const getConnection = (() => {
   };
 })();
 
-export const { switchDb, getSwitchedDbConfig } = (() => {
-  const dbConfigStack: typeof Config[] = [];
-  const switchConfig = async (config = Config) => {
-    const connection = await getConnection(config);
-    AUTO_CONNECT_ENTITIES.forEach((v) => v.useConnection(connection));
-  };
+export const { switchDb, getConfig } = (() => {
+  const dbSession = (() => {
+    const session = createNamespace("wfinderDbSession");
+    const KEY_CONFIG = "key_config";
+    return {
+      get: () => (session.get(KEY_CONFIG) || Config) as TypeDbInfo,
+      run: async <T>(config: TypeDbInfo, cb: () => Promise<T>) => {
+        const connection = await getConnection(config);
+        AUTO_CONNECT_ENTITIES.forEach((v) => v.useConnection(connection));
+        return session.runAndReturn(async () => {
+          session.set(KEY_CONFIG, config);
+          return await cb();
+        });
+      },
+    };
+  })();
   return {
-    switchDb: async <T>(config: typeof Config, executor: () => Promise<T>) => {
-      await switchConfig(config);
-      dbConfigStack.push(config);
-      try {
-        return await executor();
-      } finally {
-        dbConfigStack.pop();
-        switchConfig(dbConfigStack[dbConfigStack.length - 1] || Config);
-      }
-    },
-    getSwitchedDbConfig: () =>
-      dbConfigStack[dbConfigStack.length - 1] || Config,
+    switchDb: dbSession.run,
+    getConfig: dbSession.get,
   };
 })();
 

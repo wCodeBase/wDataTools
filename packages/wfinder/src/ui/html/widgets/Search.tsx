@@ -20,6 +20,7 @@ import { debounce } from "lodash";
 import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import { useFinderReady } from "../../hooks/webHooks";
+import { getLocalContext } from "../../../finder/events/webEvent";
 
 const Columns: ColumnsType<TypeMsgSearchResultItem> = [
   { title: "name", key: "name", dataIndex: "name" },
@@ -57,6 +58,7 @@ export const Search = ({ className = "" }) => {
         const res = await executeUiCmd("search", {
           cmd: "search",
           data: { ...state },
+          context: getLocalContext(),
         }).catch((e) => {
           message.error(String(e));
           return null;

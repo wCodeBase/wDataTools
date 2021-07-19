@@ -12,64 +12,51 @@ import {
   wEvEventStatus,
   wEvFinderReady,
   wEvGlobalState,
+  wEvLocalDbContextChange,
 } from "../../../finder/events/webEvent";
 import { webInitEvent } from "../../../finder/events/webEventTools";
-import { getDbInfoId } from "../../../finder/types";
+import {
+  getDbInfoId,
+  getLocalDbInfoStackId,
+  TypeDbInfo,
+} from "../../../finder/types";
 import { usePickBehaviorSubjectValue } from "../../hooks/hooks";
+import { SubDatabaseHint } from "../components/SubDatabaseHint";
+
+const switchContext = async (
+  context: WebContext,
+  fromContext: WebContext,
+  isNew: boolean
+) => {
+  const { remoteUrls } = context;
+  const { contextStack } = wEvGlobalState.value;
+  const contextPos = contextStack.findIndex((v) => v === fromContext);
+  const isCurrentContext = contextPos === contextStack.length - 1;
+  const newContexts = contextStack.slice(0, contextPos + (isNew ? 1 : 0));
+  newContexts.push(context);
+  const msg = isCurrentContext
+    ? "Refresh current context"
+    : "Switch database context";
+  try {
+    EvFinderState.value.config = undefined;
+    wEvFinderReady.next(false);
+    if (!remoteUrls) {
+      await webInitEvent(undefined, true);
+    } else {
+      const res = await webInitEvent(remoteUrls, true);
+      if (!context.localContexts.length) context.localContexts = [res];
+    }
+    wEvGlobalState.next({ contextStack: newContexts });
+    message.success(msg + " success");
+  } catch (e) {
+    message.error(`${msg} failed: ${e}`);
+  }
+};
 
 export const ContextPannel = React.memo(() => {
   const [contexts] = usePickBehaviorSubjectValue(
     wEvGlobalState,
     (v) => v.contextStack
-  );
-
-  const isCurrent = useMemo(() => {
-    const lastContext = last(contexts);
-    if (!lastContext) return () => false;
-    return (remoteUrls?: string[]) => {
-      // TODO: support sub-database context.
-      if (!remoteUrls && !lastContext.remoteUrls) return true;
-      else if (!!remoteUrls !== !!lastContext.remoteUrls) return false;
-      return isEqual(remoteUrls, lastContext.remoteUrls);
-    };
-  }, [contexts]);
-
-  // TODO: support sub-database context.
-  const switchContext = useCallback(
-    async (remoteUrls?: string[]) => {
-      const isCurrentContext = isCurrent(remoteUrls);
-      if (isCurrentContext && !remoteUrls) {
-        message.warn("Already in root database context");
-        return;
-      }
-      const msg = isCurrentContext
-        ? "Refresh current context"
-        : "Switch database context";
-      try {
-        let contexts = wEvGlobalState.value.contextStack;
-        EvFinderState.value.config = undefined;
-        wEvFinderReady.next(false);
-        if (!remoteUrls) {
-          await webInitEvent(undefined, true);
-          wEvGlobalState.next({ contextStack: contexts.slice(0, 1) });
-        } else {
-          const res = await webInitEvent(remoteUrls, true);
-          const newContext = {
-            localContexts: [res],
-            remoteUrls,
-          };
-          const theSamePos = contexts.findIndex((v) =>
-            isEqual(v.remoteUrls, newContext.remoteUrls)
-          );
-          if (theSamePos > 0) contexts = contexts.slice(0, theSamePos);
-          wEvGlobalState.next({ contextStack: contexts.concat(newContext) });
-        }
-        message.success(msg + " success");
-      } catch (e) {
-        message.error(`${msg} failed: ${e}`);
-      }
-    },
-    [isCurrent]
   );
 
   return (
@@ -80,7 +67,7 @@ export const ContextPannel = React.memo(() => {
           return (
             <div
               key={
-                getDbInfoId(context.localContexts[0]) +
+                getLocalDbInfoStackId(context.localContexts) +
                 context.remoteUrls?.join("|")
               }
               className={
@@ -90,12 +77,17 @@ export const ContextPannel = React.memo(() => {
             >
               <div
                 onClick={() => {
-                  switchContext(context.remoteUrls);
+                  switchContext(context, context, false);
                 }}
                 className="cursor-pointer text-white bg-gradient-to-br from-lightBlue-600 to-lightBlue-700 hover:from-lightBlue-700 hover:to-lightBlue-700"
               >
                 <div className="text-sm px-2 py-1">
-                  {context.localContexts[0].finderRoot}
+                  <div className="">
+                    <span>{last(context.localContexts)?.finderRoot}</span>
+                    {last(context.localContexts)?.isSubDb && (
+                      <SubDatabaseHint className="ml-0.5" />
+                    )}
+                  </div>
                   {!!context.localContexts[0].remoteUrls && (
                     <div>
                       <div className="flex flex-row overflow-x-auto text-amber-400 font-bold">
@@ -107,34 +99,49 @@ export const ContextPannel = React.memo(() => {
                 </div>
               </div>
               <div>
-                {!!context.remoteOptionUrls && (
-                  <div>
-                    {context.remoteOptionUrls.map((url) => {
-                      return (
-                        <div
-                          className="p-1 hover:bg-gray-300 cursor-pointer"
-                          onClick={() => {
-                            switchContext(
-                              (context.remoteUrls || []).concat([url])
-                            );
-                          }}
-                          key={url}
-                        >
-                          {url}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                {/* TODO: support sub-database context. */}
-                {/* {context.localContexts.slice(1).map(db => {
-              return <div
-                className="p-1 hover:bg-gray-300 cursor-pointer"
-                onClick={() => {
-                  // TODO:
-                }}
-                key={db.finderRoot}>{db.finderRoot}</div>
-            })} */}
+                {context.remoteOptionUrls?.map((url) => {
+                  return (
+                    <div
+                      className="p-1 hover:bg-gray-300 cursor-pointer"
+                      onClick={() => {
+                        switchContext(
+                          {
+                            localContexts: [],
+                            remoteUrls: (context.remoteUrls || []).concat([
+                              url,
+                            ]),
+                          },
+                          context,
+                          true
+                        );
+                      }}
+                      key={url}
+                    >
+                      {url}
+                    </div>
+                  );
+                })}
+                {context.localOptions?.map((db) => {
+                  return (
+                    <div
+                      className="p-1 hover:bg-gray-300 cursor-pointer"
+                      onClick={() => {
+                        const { remoteUrls, localContexts } = context;
+                        switchContext(
+                          {
+                            remoteUrls,
+                            localContexts: localContexts.concat([db]),
+                          },
+                          context,
+                          true
+                        );
+                      }}
+                      key={db.finderRoot}
+                    >
+                      {db.finderRoot}
+                    </div>
+                  );
+                })}
                 {!context.remoteOptionUrls?.length &&
                   !context.localOptions?.length && (
                     <div className="p-1">Empty</div>
@@ -180,9 +187,8 @@ export const ContextIndicator = React.memo(() => {
     (v) => v.contextStack
   );
   const lastContext = last(contexts);
-  const finderRoot = lastContext
-    ? last(lastContext.localContexts)?.finderRoot
-    : "";
+  const lastLocal = last(lastContext?.localContexts);
+  const finderRoot = lastLocal?.finderRoot;
   const popoverMouter = useRef<HTMLDivElement>(null);
   return (
     <div className="hide-popover-padding flex flex-row truncate">
@@ -200,8 +206,16 @@ export const ContextIndicator = React.memo(() => {
           {!!contexts.length && (
             <>
               <IndicatorArrows contexts={contexts} arrowClassName="w-2.5" />
+              {lastLocal?.isSubDb && (
+                <SubDatabaseHint hint="This database context is included by it's parent context." />
+              )}
               <Tooltip title={finderRoot}>
-                <div className="flex-shrink truncate ml-1 ">{finderRoot}</div>
+                <div className="flex flex-row flex-shrink truncate ml-1">
+                  <span>{finderRoot?.slice(0, 15)}</span>
+                  <div className="truncate text-rtl flex-shrink">
+                    {finderRoot?.slice(15)}
+                  </div>
+                </div>
               </Tooltip>
             </>
           )}

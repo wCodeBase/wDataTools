@@ -9,7 +9,7 @@ import {
 } from "typeorm";
 import { TypeJsonData } from "../../tools/json";
 import { entityChangeWatchingSubjectMap } from "../common";
-import { getFinderCoreInfo, getSwitchedDbConfig } from "../db";
+import { getConnection, getFinderCoreInfo, getConfig } from "../db";
 import { cEvFinderState } from "../events/core/coreEvents";
 import { cTypeImplementedOrmCall } from "../events/core/coreTypes";
 import { EvLog } from "../events/events";
@@ -57,7 +57,7 @@ export class BaseDbInfoEntity extends BaseEntity {
     return res;
   }
 
-  dbInfo = getSwitchedDbConfig();
+  dbInfo = getConfig();
 
   static async *callRemoteStaticMethod(
     method: cTypeImplementedOrmCall,
@@ -100,3 +100,56 @@ export class BaseDbInfoEntity extends BaseEntity {
     }
   }
 }
+
+(
+  [
+    "save",
+    "remove",
+    "softRemove",
+    "reload",
+    "recover",
+  ] as (keyof BaseDbInfoEntity)[]
+).forEach((p) => {
+  const old = BaseDbInfoEntity.prototype[p];
+  if (typeof old === "function") {
+    // @ts-ignore
+    BaseDbInfoEntity.prototype[p] = async function (...args: any) {
+      // @ts-ignore
+      this.constructor.useConnection(await getConnection(getConfig()));
+      // @ts-ignore
+      return old.apply(this, args);
+    };
+  }
+});
+
+(
+  [
+    "createQueryBuilder",
+    "create",
+    "preload",
+    "save",
+    "remove",
+    "softRemove",
+    "insert",
+    "update",
+    "delete",
+    "count",
+    "find",
+    "findAndCount",
+    "findByIds",
+    "findOne",
+    "findOneOrFail",
+    "query",
+    "clear",
+  ] as (keyof typeof BaseDbInfoEntity)[]
+).forEach((p) => {
+  const old = BaseDbInfoEntity[p];
+  if (typeof old === "function") {
+    // @ts-ignore
+    BaseDbInfoEntity[p] = async function (...args: any) {
+      this.useConnection(await getConnection(getConfig()));
+      // @ts-ignore
+      return old.apply(this, args);
+    };
+  }
+});

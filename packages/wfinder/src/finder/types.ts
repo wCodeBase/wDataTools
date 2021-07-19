@@ -23,8 +23,17 @@ export type TypeDbInfo = {
   isSubDb?: boolean;
 };
 
-export const getDbInfoId = (info: TypeDbInfo) =>
+export const getDbInfoId = (info?: TypeDbInfo) =>
   !info ? "" : info.thumbnail + "|" + info.dbPath;
+
+export const getLocalDbInfoStackId = (infos: TypeDbInfo[]) =>
+  !infos.length
+    ? ""
+    : getDbInfoId(infos[0]) +
+      infos
+        .slice(1)
+        .map((v) => v.dbPath)
+        .join("|");
 
 export type HttpServerOption = {
   port: number;

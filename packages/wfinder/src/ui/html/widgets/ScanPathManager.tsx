@@ -17,6 +17,7 @@ import {
 import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import { useFinderReady } from "../../hooks/webHooks";
+import { getLocalContext } from "../../../finder/events/webEvent";
 
 const SearchButton = React.memo((props: TypeManagerTableAddonButtonProps) => {
   const [finderStatus] = useFinderStatus();
@@ -24,7 +25,7 @@ const SearchButton = React.memo((props: TypeManagerTableAddonButtonProps) => {
     <div className="pl-2">
       <Button
         onClick={() => {
-          EvUiCmd.next({ cmd: "scan", data: null });
+          EvUiCmd.next({ cmd: "scan", data: null, context: getLocalContext() });
         }}
         loading={finderStatus === FinderStatus.scanning}
         type="primary"
@@ -52,7 +53,7 @@ const PathTable = genManagerTable<TypeMsgPathItem>(
 );
 
 export const ScanPathManager = defaultPropsFc(
-  { className: "", titleClassName: "" },
+  { className: "", titleClassName: "", contexted: true },
   (props) => {
     const [state, setState] = useStableState(() => ({
       paths: [] as TypeMsgPathItem[],
@@ -60,6 +61,7 @@ export const ScanPathManager = defaultPropsFc(
         const res = await executeUiCmd("deletePath", {
           cmd: "deletePath",
           data: [v.path],
+          context: v.dbInfo,
         }).catch((e) => {
           message.error(String(e));
           return null;
@@ -70,6 +72,7 @@ export const ScanPathManager = defaultPropsFc(
         const res = await executeUiCmd("addPath", {
           cmd: "addPath",
           data: [v.path],
+          context: props.contexted ? getLocalContext() : undefined,
         }).catch((e) => {
           message.error(String(e));
           return null;
@@ -81,6 +84,7 @@ export const ScanPathManager = defaultPropsFc(
         const res = await executeUiCmd("listPath", {
           cmd: "listPath",
           data: [],
+          context: props.contexted ? getLocalContext() : undefined,
         }).catch((e) => {
           message.error(String(e));
           return null;

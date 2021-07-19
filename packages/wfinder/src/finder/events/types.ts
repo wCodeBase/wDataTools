@@ -8,6 +8,7 @@ import { FileInfo } from "../entities/FileInfo";
 import { ScanPath } from "../entities/ScanPath";
 import { ConfigLine } from "../entities/ConfigLine";
 import { TypeDbInfo } from "../types";
+import { DbIncluded } from "../entities/DbIncluded";
 
 export enum FinderStatus {
   idle,
@@ -70,7 +71,6 @@ export type TypeMsgPathItem = Pick<ScanPath, "id" | "path" | "createdAt"> &
   Partial<Pick<ScanPath, "dbInfo">>;
 
 type TypeMsgPathManageDef = {
-  // FIXME: TODO: verify dbInfo and remove scanPath on sub databases or remote databases.
   data: string[];
   result: {
     results: TypeMsgPathItem[];
@@ -152,17 +152,22 @@ type TypeMsgRequestUiAction = {
 };
 
 type TypeMsgCoreManage = {
-  switchGlobalDb: {
-    data: TypeDbInfo;
-    result: {
-      error?: string;
-    };
-  };
   getThumbnail: {
     data: {
       notSubDb: boolean;
     };
     result: string;
+  };
+};
+
+export type TypeDbIncludedItem = Pick<DbIncluded, "path" | "dbName" | "dbInfo">;
+
+type TypeMsgSubDbManage = {
+  listDbIncluded: {
+    result: {
+      data: TypeDbIncludedItem[];
+      error?: string;
+    };
   };
 };
 
@@ -173,12 +178,14 @@ type TypeCmdUiMsgDefMap = TypeMsgScan &
   TypeMsgConfigLineManage &
   TypeMsgRequestUiAction &
   TypeQueryForInfo &
-  TypeMsgCoreManage;
+  TypeMsgCoreManage &
+  TypeMsgSubDbManage;
 
 export type TypeCmdUiMsgMap = {
   [key in keyof TypeCmdUiMsgDefMap]: TypeCmdUiMsgDefMap[key] & {
     cmd: key;
     tag?: string | number;
+    context?: TypeDbInfo;
   };
 };
 export type TypeUiMsgDataMap = {
