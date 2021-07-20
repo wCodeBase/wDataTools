@@ -20,6 +20,8 @@ export const genConfig = (finderRoot: string) => {
 
 export const Config = genConfig(path.resolve("./"));
 
+export const MAX_PATH_DEPTH = 1000;
+
 export const entityChangeWatchingSubjectMap = new Map<
   ObjectType<BaseDbInfoEntity>,
   Subject<null>

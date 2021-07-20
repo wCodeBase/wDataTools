@@ -1,5 +1,5 @@
 import React from "react";
-import { Empty, Input, message, Table } from "antd";
+import { Button, Empty, Input, message, Table } from "antd";
 import "antd/lib/message/style/css";
 import {
   EvFinderReady,
@@ -21,6 +21,65 @@ import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import { useFinderReady } from "../../hooks/webHooks";
 import { getLocalContext } from "../../../finder/events/webEvent";
+import { useState } from "react";
+import { showModal } from "../uiTools";
+
+const DetailButton = React.memo(
+  (props: { record: TypeMsgSearchResultItem }) => {
+    return (
+      <Button
+        size="small"
+        type="primary"
+        onClick={async () => {
+          const { record } = props;
+          const handle = showModal(() => ({
+            footer: null,
+            title: (
+              <div>
+                Details of <span className="font-bold">{record.name}</span>
+              </div>
+            ),
+            render: () => (
+              <div>
+                <div className="pb-1">
+                  <span className="text-sm font-bold">Absolute Path:</span>{" "}
+                  {record.absPath}
+                </div>
+                <div className="pb-1">
+                  <span className="text-sm font-bold">File type: </span>
+                  {FileType[record.type]}
+                </div>
+                {record.type === FileType.file && (
+                  <div className="pb-1">
+                    <span className="text-sm font-bold">File size: </span>
+                    {record.size}
+                  </div>
+                )}
+                <div className="pb-1">
+                  <span className="text-sm font-bold">Stored in database:</span>{" "}
+                  {record.dbInfo.dbPath}
+                </div>
+                {props.record.dbInfo.remoteUrls && (
+                  <div className="pb-1">
+                    <div className="text-sm font-bold">Remote context: </div>
+                    <div>{props.record.dbInfo.remoteUrls.join(" >> ")}</div>
+                  </div>
+                )}
+                <div className="mt-3 flex flex-row-reverse">
+                  <Button type="primary" onClick={() => handle.destory()}>
+                    OK
+                  </Button>
+                </div>
+              </div>
+            ),
+          }));
+        }}
+      >
+        detail
+      </Button>
+    );
+  }
+);
 
 const Columns: ColumnsType<TypeMsgSearchResultItem> = [
   { title: "name", key: "name", dataIndex: "name" },
@@ -31,6 +90,14 @@ const Columns: ColumnsType<TypeMsgSearchResultItem> = [
     render: (val) => FileType[val],
   },
   { title: "size", key: "size", dataIndex: "size" },
+  {
+    title: "operation",
+    key: "operation",
+    dataIndex: "operation",
+    render: (_, record) => {
+      return <DetailButton record={record} />;
+    },
+  },
 ];
 
 export const Search = ({ className = "" }) => {

@@ -17,19 +17,21 @@ export class ScanPath extends BaseDbInfoEntity {
   @Column()
   path: string;
 
+  /** If scan path is outside of current finderRoot, database file can be store under either current finderRoot or scan path. */
+  @Column({ nullable: true })
+  dbPath?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
 
   @Column({ nullable: true })
   lastScanedAt?: Date;
 
+  @Column({ nullable: true, type: "text" })
+  lastScanError?: string;
+
   constructor(path: string) {
     super();
     this.path = path;
-  }
-
-  toItem(): TypeMsgPathItem {
-    const { id, path, createdAt, dbInfo } = this;
-    return { id, path, createdAt, dbInfo };
   }
 }

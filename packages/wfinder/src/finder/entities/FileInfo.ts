@@ -1,3 +1,4 @@
+import { createFtsTable, getConnection } from "../db";
 import { DEFAULT_QUERY_LIMIT } from "./../common";
 import { BaseDbInfoEntity } from "./BaseDbInfoEntity";
 import { getConfig, switchDb } from "./../db";
@@ -13,11 +14,18 @@ import {
 } from "typeorm";
 import * as path from "path";
 import { EvLog } from "../events/events";
-import { sumBy } from "lodash";
+import { last, sumBy } from "lodash";
 import * as fs from "fs";
 import { interactYield } from "../../tools/tool";
 import { BehaviorSubject } from "rxjs";
 import { FileType } from "../types";
+import {
+  isPathEqual,
+  isPathInclude,
+  joinToAbsolute,
+  splitPath,
+} from "../../tools/nodeTool";
+import { ScanPath } from "./ScanPath";
 
 export const IndexTableName = "fileindex";
 
@@ -45,6 +53,8 @@ export class FileInfo extends BaseDbInfoEntity {
 
   @Column({ default: 0 })
   ctime!: Date;
+
+  absPath?: string;
 
   constructor(
     name: string,
@@ -95,6 +105,7 @@ export class FileInfo extends BaseDbInfoEntity {
     const config = getConfig();
     for (const db of includedDbs) {
       const finderRoot = path.join(config.finderRoot, db.path);
+      if (isPathEqual(config.finderRoot, finderRoot)) continue;
       try {
         const dbPath = path.join(finderRoot, db.dbName);
         if (!fs.existsSync(dbPath)) {
@@ -116,7 +127,50 @@ export class FileInfo extends BaseDbInfoEntity {
         console.error("Query sub database failed: ", finderRoot, e);
       }
     }
+    const scanPaths = await ScanPath.find();
+    for (const scanPath of scanPaths) {
+      if (!scanPath.dbPath) continue;
+      const absDbPath = joinToAbsolute(config.finderRoot, scanPath.dbPath);
+      const absFinderRoot = joinToAbsolute(config.finderRoot, scanPath.path);
+      if (
+        !isPathInclude(config.finderRoot, absFinderRoot) &&
+        fs.existsSync(absDbPath)
+      ) {
+        try {
+          await switchDb(
+            {
+              dbName: path.parse(absDbPath).name,
+              finderRoot: absFinderRoot,
+              dbPath: absDbPath,
+              readOnly: true,
+              isSubDb: true,
+            },
+            async () => {
+              res = res.concat(await FileInfo.queryAllDbIncluded(doQuery));
+            }
+          );
+        } catch (e) {
+          console.error("Query external scan path failed: ", absFinderRoot, e);
+        }
+      }
+    }
     return res;
+  }
+
+  static async removeAllIndexedData() {
+    await this.queryAllDbIncluded(async (handle) => {
+      await handle.clear();
+      await handle
+        .getRepository()
+        .query(`drop table ${IndexTableName}`)
+        .catch((e) => {
+          console.error("Clear fts table failed: ", e);
+        });
+      await createFtsTable(await getConnection()).catch((e) => {
+        console.error("Create fts table failed: ", e);
+      });
+      return [];
+    });
   }
 
   static async countByMatchName(
@@ -178,7 +232,14 @@ export class FileInfo extends BaseDbInfoEntity {
           [processQueryText(keywords.join(" ")), mSkip, mTake]
         )
         .then((ids) => {
-          return this.findByIds(ids.map((v: any) => v.rowid));
+          return handle.findByIds(ids.map((v: any) => v.rowid)).then((infos) =>
+            Promise.all(
+              infos.map(async (v) => {
+                v.absPath = await handle.getPath(v.id);
+                return v;
+              })
+            )
+          );
         });
     });
     if (pos < end && !getConfig().isSubDb) {
@@ -283,6 +344,60 @@ export class FileInfo extends BaseDbInfoEntity {
       await interactYield();
     }
     if (!brake?.value && toRemoveIds.length) await this.delete(toRemoveIds);
+  }
+
+  /**
+   * Remove a given path and it's children.
+   * @param path relative path to this finderRoot
+   */
+  static async removePath(path: string, brake?: BehaviorSubject<boolean>) {
+    const pathSegs = splitPath(path);
+    const fileInfos: FileInfo[] = [];
+    for (const seg of pathSegs) {
+      const parentId = last(fileInfos)?.id || -1;
+      const fileInfo = await FileInfo.find({
+        where: { parentId, name: processText(seg) },
+      });
+      if (fileInfo.length > 1) {
+        throw new Error(
+          `Faile to remove path, more than one file have thesame name in folder(ID: ${parentId}): ${seg}`
+        );
+      } else if (!fileInfo.length) break;
+      else {
+        fileInfos.push(fileInfo[0]);
+      }
+    }
+    const lastFile = last(fileInfos);
+    if (!lastFile) return;
+    if (restoreText(lastFile.name) === last(pathSegs)) {
+      await FileInfo.removeChildren(lastFile.id);
+    }
+    fileInfos.reverse();
+    for (const info of fileInfos) {
+      if (!(await FileInfo.find({ where: { parentId: info.id } })).length) {
+        await info.remove();
+      }
+    }
+  }
+
+  static async getPath(id: number, config = getConfig()) {
+    return await switchDb(config, async () => {
+      let fileInfo = await this.findOne(id);
+      if (!fileInfo) throw new Error("FileInfo id not exist");
+      const fileInfos = [fileInfo];
+      while (fileInfo && fileInfo.parentId !== -1) {
+        fileInfo = await this.findOne(fileInfo?.parentId);
+        if (!fileInfo)
+          throw new Error("Get FileInfo path failed, broken parentId chain.");
+        fileInfos.push(fileInfo);
+      }
+      return fileInfos
+        .reverse()
+        .reduce(
+          (res, v) => path.join(res, restoreText(v.name)),
+          config.finderRoot
+        );
+    });
   }
 
   static async getOrInsert(

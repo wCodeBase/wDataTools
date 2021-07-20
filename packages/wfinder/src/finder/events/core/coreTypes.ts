@@ -8,7 +8,7 @@ import {
   _TypeJsonData,
   TypeDefaultSpecialJsonType,
 } from "./../../../tools/json";
-import { TypeQueryLimit } from "../../types";
+import { TypeDbInfo, TypeQueryLimit } from "../../types";
 
 export const JsonMoreEntity = buildJsonMoreWithDefaultPackers([
   {
@@ -36,6 +36,7 @@ export type cTypeOrmCallDef = {
       method: cTypeImplementedOrmCall;
       args: TypeJsonData[];
       queryLimit: TypeQueryLimit;
+      context?: TypeDbInfo;
     };
     result: _TypeJsonData<cTypeJsonMoreEntitySpecial>;
   };

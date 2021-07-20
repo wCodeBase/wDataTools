@@ -56,6 +56,7 @@ export const EvUiLaunched = new ShallowJsonBehaviorSubject<TypeUiStatus>({});
 export const EvConfigLineChange = new JsonSubject<null>();
 
 export const EvScanPathChange = new JsonSubject<null>();
+export const EvDbIncludedChange = new JsonSubject<null>();
 
 export const EvFinderReady = new JsonBehaviorSubject<boolean>(false);
 

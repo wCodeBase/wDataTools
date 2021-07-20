@@ -1,6 +1,7 @@
 import {
   exAddConfigLine,
   exAddScanPath,
+  exClearIndexedData,
   exDeleteConfigLine,
   exDeleteScanPath,
   exListConfigLine,
@@ -56,12 +57,18 @@ EvUiCmd.subscribe(async (msg) => {
         const records = (
           await FileInfo.findByMatchName(data.keywords, data.take, data.skip)
         ).map((v) => {
-          const { size, type, id, dbInfo } = v;
-          return { name: v.getName(), size, type, id, dbInfo };
+          const { size, type, id, dbInfo, absPath } = v;
+          return { name: v.getName(), size, type, id, dbInfo, absPath };
         });
         cmdResult = { cmd, result: { ...data, total, records } };
         EvFinderStatus.next(FinderStatus.idle);
+      } else if (msg.cmd === "clearIndexedData") {
+        triggerHeartBeat();
+        const { cmd, data } = msg;
+        await exClearIndexedData(msg.context);
+        cmdResult = { cmd, result: "done" };
       } else if (msg.cmd === "addPath" || msg.cmd === "deletePath") {
+        triggerHeartBeat();
         const { cmd, data } = msg;
         let error = "";
         const results: TypeMsgPathItem[] = [];
@@ -70,7 +77,7 @@ EvUiCmd.subscribe(async (msg) => {
         for (const scanPath of data) {
           const res = await executor(scanPath);
           if (res.error === undefined) {
-            results.push(res.result.toItem());
+            results.push(res.result);
           } else {
             error = res.error;
             break;
@@ -82,7 +89,7 @@ EvUiCmd.subscribe(async (msg) => {
         const { result } = await exListScanPath();
         cmdResult = {
           cmd,
-          result: { results: result.map((v) => v.toItem()), error: "" },
+          result: { results: result, error: "" },
         };
       } else if (msg.cmd === "addConfig") {
         const { cmd, data } = msg;

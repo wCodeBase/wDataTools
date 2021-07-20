@@ -22,7 +22,7 @@ export const ConnectionLight = defaultPropsFc(
 
     return (
       <div className={"flex justify-center items-center " + props.className}>
-        {status === WebEventStatus.failed && (
+        {status !== WebEventStatus.connected && (
           <div className="text-red-500">Not Connected</div>
         )}
         <Tooltip title={hintMap[status] || failedHint}>

@@ -1,5 +1,7 @@
 import Modal, { ModalProps } from "antd/lib/modal/Modal";
 import React, { useEffect } from "react";
+import { useMemo } from "react";
+import { useCallback } from "react";
 import { ReactNode } from "react";
 import ReactDOM from "react-dom";
 import { useStableState, useUpdate } from "../hooks/hooks";
@@ -10,7 +12,10 @@ export type TypeShowModalHandle = {
 };
 
 export const showModal = (
-  getProps: () => Omit<ModalProps, "visible"> & { render: () => ReactNode }
+  getProps: () => Omit<ModalProps, "visible" | "onCancel"> & {
+    render: () => ReactNode;
+    onCancel?: () => void;
+  }
 ): TypeShowModalHandle => {
   const root = document.createElement("div");
   document.body.appendChild(root);
@@ -23,18 +28,22 @@ export const showModal = (
   const Item = () => {
     update = useUpdate();
     const [state, setState] = useStableState(() => ({ visible: true }));
-    useEffect(() => {
-      close = () => setState({ visible: false });
-    }, [setState]);
+    const props = getProps();
+    const onCancel = useMemo(() => {
+      close = () => {
+        setState({ visible: false });
+        props.onCancel?.();
+      };
+      return close;
+    }, [props.onCancel]);
 
     useEffect(() => {
       window.addEventListener("resize", update);
       return () => window.removeEventListener("resize", update);
     }, []);
-    const props = getProps();
     return (
       <div>
-        <Modal {...props} visible={state.visible}>
+        <Modal {...props} visible={state.visible} onCancel={onCancel}>
           {props.render()}
         </Modal>
       </div>

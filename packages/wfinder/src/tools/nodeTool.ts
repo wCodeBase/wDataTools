@@ -13,6 +13,18 @@ export const exit = (reason: string) => {
 export const isPathInclude = (absParentPath: string, absSubPath: string) =>
   path.relative(absParentPath, absSubPath).slice(0, 2) !== "..";
 
+export const isPathEqual = (pathA: string, pathB: string) =>
+  path.resolve(pathA) === path.resolve(pathB);
+
+/**
+ * @param absParentPath absolute path
+ * @param pathB absolute or relative path
+ */
+export const joinToAbsolute = (absParentPath: string, pathB: string) => {
+  if (path.isAbsolute(pathB)) return pathB;
+  return path.join(absParentPath, pathB);
+};
+
 export const splitPath = (pathStr: string) => {
   const paths: string[] = [];
   let rest = pathStr;

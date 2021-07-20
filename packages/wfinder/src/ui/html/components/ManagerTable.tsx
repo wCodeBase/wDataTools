@@ -17,6 +17,8 @@ import { GetRowKey } from "antd/lib/table/interface";
 import { useCallback } from "react";
 import { PlusOutlined } from "@ant-design/icons";
 import { Empty } from "./Empty";
+import { isElectron } from "../../../finder/events/webEventTools";
+import { executeUiCmd } from "../../../finder/events/eventTools";
 
 const TEXT_OPERATION = "operation";
 type TypeTableEditRenderProps<T> = {
@@ -40,6 +42,44 @@ export const SimpleTextEdit: TypeTableEditRender<string> = (props) => {
   return <Input value={props.value} onChange={onChange} />;
 };
 
+export const SimplePathEdit: TypeTableEditRender<string> = (props) => {
+  const onChange: React.ChangeEventHandler<HTMLInputElement> = useCallback(
+    (ev) => {
+      props.onChange(ev.target.value);
+    },
+    [props.onChange]
+  );
+  return (
+    <div className="flex flex-row">
+      <Input value={props.value} onChange={onChange} />
+      {isElectron && (
+        <Button
+          type="primary"
+          onClick={async () => {
+            const res = await executeUiCmd(
+              "requestPickLocalPath",
+              {
+                cmd: "requestPickLocalPath",
+                data: {
+                  title: "Add one path to scan list.",
+                  properties: ["createDirectory"],
+                  toShotestAbsOrRel: true,
+                },
+              },
+              Infinity
+            );
+            if (res.result.path) {
+              props.onChange(res.result.path);
+            }
+          }}
+        >
+          Pick
+        </Button>
+      )}
+    </div>
+  );
+};
+
 export const SimpleBooleanEdit: TypeTableEditRender<boolean | undefined> = (
   props
 ) => {
@@ -53,7 +93,7 @@ export type TypeManagerTableAddonButtonProps = {
 };
 
 export const genManagerTable = <T extends Record<string, unknown>>(
-  showProperties: (keyof T)[],
+  showProperties: (keyof T | { prop: keyof T; title: string })[],
   editableProperties: TypeTableEditProps<T>,
   newRecordProperties: TypeTableEditProps<T>,
   rowKey: string | GetRowKey<T>,
@@ -82,40 +122,42 @@ export const genManagerTable = <T extends Record<string, unknown>>(
           const isEdit = (record: T) =>
             record === state.newRecord || record === state.editRecord;
           const plainRender: ColumnType<T>["render"] = (v) => {
-            const content = (
-              <div className="truncate">
-                {v instanceof Date
-                  ? dayjs(v).format("YYYY-MM-DD hh:mm:ss")
-                  : typeof v === "number"
-                  ? String(v)
-                  : typeof v === "string"
-                  ? v
-                  : !v
-                  ? ""
-                  : String(v)}
-              </div>
+            const content =
+              v instanceof Date
+                ? dayjs(v).format("YYYY-MM-DD hh:mm:ss")
+                : typeof v === "number"
+                ? String(v)
+                : typeof v === "string"
+                ? v
+                : !v
+                ? ""
+                : String(v);
+            return (
+              <Tooltip title={content}>
+                <div className="truncate max-w-xl">{content}</div>
+              </Tooltip>
             );
-            return <Tooltip title={content}>{content}</Tooltip>;
           };
           const columns: ColumnsType<T> = props.showProperties.map((p) => {
-            const prop = String(p);
-            const editRender = editableProperties[p];
-            const newRender = newRecordProperties[p];
-            const onChange = (val: T[typeof p]) => {
+            const prop = p instanceof Object ? p.prop : String(p);
+            const title = p instanceof Object ? p.title : String(p);
+            const editRender = editableProperties[prop];
+            const newRender = newRecordProperties[prop];
+            const onChange = (val: T[typeof prop]) => {
               const record = state.editRecord || state.newRecord;
               if (record) {
-                record[p] = val;
+                record[prop] = val;
                 update();
               }
             };
             return {
-              title: prop,
+              title,
               key: prop,
               dataIndex: prop,
               render:
                 !editRender && !newRender
                   ? plainRender
-                  : (v: T[typeof p], record, index) => {
+                  : (v: T[typeof prop], record, index) => {
                       const Render =
                         record === state.editRecord
                           ? editRender

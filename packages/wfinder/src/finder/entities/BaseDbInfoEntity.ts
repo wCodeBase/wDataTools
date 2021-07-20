@@ -9,7 +9,12 @@ import {
 } from "typeorm";
 import { TypeJsonData } from "../../tools/json";
 import { entityChangeWatchingSubjectMap } from "../common";
-import { getConnection, getFinderCoreInfo, getConfig } from "../db";
+import {
+  getConnection,
+  getFinderCoreInfo,
+  getConfig,
+  getCachedConnection,
+} from "../db";
 import { cEvFinderState } from "../events/core/coreEvents";
 import { cTypeImplementedOrmCall } from "../events/core/coreTypes";
 import { EvLog } from "../events/events";
@@ -113,9 +118,11 @@ export class BaseDbInfoEntity extends BaseEntity {
   const old = BaseDbInfoEntity.prototype[p];
   if (typeof old === "function") {
     // @ts-ignore
-    BaseDbInfoEntity.prototype[p] = async function (...args: any) {
-      // @ts-ignore
-      this.constructor.useConnection(await getConnection(getConfig()));
+    BaseDbInfoEntity.prototype[p] = function (...args: any) {
+      const connection = getCachedConnection(getConfig());
+      if (connection)
+        // @ts-ignore
+        this.constructor.useConnection(getCachedConnection(getConfig()));
       // @ts-ignore
       return old.apply(this, args);
     };
@@ -124,6 +131,7 @@ export class BaseDbInfoEntity extends BaseEntity {
 
 (
   [
+    "getRepository",
     "createQueryBuilder",
     "create",
     "preload",
@@ -146,8 +154,9 @@ export class BaseDbInfoEntity extends BaseEntity {
   const old = BaseDbInfoEntity[p];
   if (typeof old === "function") {
     // @ts-ignore
-    BaseDbInfoEntity[p] = async function (...args: any) {
-      this.useConnection(await getConnection(getConfig()));
+    BaseDbInfoEntity[p] = function (...args: any) {
+      const connection = getCachedConnection(getConfig());
+      if (connection) this.useConnection(connection);
       // @ts-ignore
       return old.apply(this, args);
     };

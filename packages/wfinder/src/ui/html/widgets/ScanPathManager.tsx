@@ -11,6 +11,7 @@ import { FinderStatus, TypeMsgPathItem } from "../../../finder/events/types";
 import { Button, message } from "antd";
 import {
   genManagerTable,
+  SimplePathEdit,
   SimpleTextEdit,
   TypeManagerTableAddonButtonProps,
 } from "../components/ManagerTable";
@@ -18,20 +19,59 @@ import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import { useFinderReady } from "../../hooks/webHooks";
 import { getLocalContext } from "../../../finder/events/webEvent";
+import { useState } from "react";
 
 const SearchButton = React.memo((props: TypeManagerTableAddonButtonProps) => {
   const [finderStatus] = useFinderStatus();
   return (
+    <div className="flex flex-row">
+      <div className="pl-2">
+        <Button
+          onClick={() => {
+            EvUiCmd.next({
+              cmd: "scan",
+              data: null,
+              context: getLocalContext(),
+            });
+          }}
+          loading={finderStatus === FinderStatus.scanning}
+          type="primary"
+          size="small"
+        >
+          Scan
+        </Button>
+      </div>
+      <ClearIndexButton />
+    </div>
+  );
+});
+
+const ClearIndexButton = React.memo(() => {
+  const [lodaing, setLodaing] = useState(false);
+  return (
     <div className="pl-2">
       <Button
-        onClick={() => {
-          EvUiCmd.next({ cmd: "scan", data: null, context: getLocalContext() });
+        onClick={async () => {
+          setLodaing(true);
+          const res = await executeUiCmd("clearIndexedData", {
+            cmd: "clearIndexedData",
+            data: null,
+            context: getLocalContext(),
+          }).catch((e) => {
+            message.error(String(e));
+            return null;
+          });
+          if (res) {
+            message.success("Clear scan data success");
+          }
+          setLodaing(false);
         }}
-        loading={finderStatus === FinderStatus.scanning}
+        loading={lodaing}
         type="primary"
+        danger
         size="small"
       >
-        Scan
+        Clear Data
       </Button>
     </div>
   );
@@ -39,9 +79,9 @@ const SearchButton = React.memo((props: TypeManagerTableAddonButtonProps) => {
 
 const PathTable = genManagerTable<TypeMsgPathItem>(
   // FIXME: TODO: support dbInfo.
-  ["path", "createdAt"],
-  { path: SimpleTextEdit },
-  { path: SimpleTextEdit },
+  ["path", { prop: "dbPath", title: "isolated db file" }, "createdAt"],
+  { path: SimplePathEdit },
+  { path: SimplePathEdit },
   simpleGetKey,
   () => ({
     id: -1,

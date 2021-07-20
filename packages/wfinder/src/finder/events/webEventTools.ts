@@ -30,7 +30,7 @@ export const webInitEvent = (() => {
     throwError = false
   ): Promise<TypeDbInfo | void> {
     gatewaySend.destory();
-    const currentGatewaySend = (gatewaySend = new ComsumableEvent<string>());
+    let currentGatewaySend = (gatewaySend = new ComsumableEvent<string>());
     wEvEventStatus.next(WebEventStatus.connecting);
     if (isElectron && !remoteContext) {
       try {
@@ -124,7 +124,8 @@ export const webInitEvent = (() => {
                 wEvEventStatus.next(WebEventStatus.broken);
                 if (!currentGatewaySend.isDestoried()) {
                   currentGatewaySend.destory();
-                  gatewaySend = new ComsumableEvent<string>();
+                  currentGatewaySend = gatewaySend =
+                    new ComsumableEvent<string>();
                   tryReconnect();
                 }
               };

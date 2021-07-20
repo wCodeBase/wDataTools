@@ -20,6 +20,7 @@ export type TypeDbInfo = {
   readOnly: boolean;
   remoteUrls?: string[];
   thumbnail?: string;
+  /** Is info from ScanPath or DbIncluded */
   isSubDb?: boolean;
 };
 

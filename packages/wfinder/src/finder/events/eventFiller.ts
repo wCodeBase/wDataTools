@@ -1,4 +1,5 @@
 import { last } from "lodash";
+import { debounceTime } from "rxjs/operators";
 import { getConnection } from "../db";
 import { FileInfo } from "../entities/FileInfo";
 import { cEvFinderState } from "./core/coreEvents";
@@ -6,6 +7,8 @@ import {
   EvDatabaseInfos,
   EvFileInfoChange,
   EvFinderState,
+  EvScanPathChange,
+  EvUiCmd,
   EvUiCmdResult,
 } from "./events";
 

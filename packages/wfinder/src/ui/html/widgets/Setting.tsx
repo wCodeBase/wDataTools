@@ -23,6 +23,7 @@ const Segments = {
 };
 
 const SubDbSegments = {
+  ScanPathManager,
   FileNameToExcludeManager,
   FileNameToExcludeChildrenManager,
 };

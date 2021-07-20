@@ -3,9 +3,13 @@ import { waitMilli } from "../tools/tool";
 import { getConfig, switchDb } from "./db";
 import { ConfigLine } from "./entities/ConfigLine";
 import { DbIncluded } from "./entities/DbIncluded";
+import { FileInfo } from "./entities/FileInfo";
 import { ScanPath } from "./entities/ScanPath";
 import { TypeMsgConfigItem } from "./events/types";
 import { ConfigLineType, TypeDbInfo } from "./types";
+import path from "path";
+import { isPathEqual, isPathInclude, joinToAbsolute } from "../tools/nodeTool";
+import fs from "fs";
 
 export const exAddScanPath = async (scanPath: string, config = getConfig()) => {
   return await switchDb(config, async () => {
@@ -29,8 +33,25 @@ export const exDeleteScanPath = async (
       const error = `No path exist, you need to add path first.`;
       return { error };
     } else {
-      const result = await ScanPath.remove(scanPaths);
-      return { result: result[0] };
+      const scanPath = scanPaths[0];
+      const absPath = joinToAbsolute(config.finderRoot, scanPath.path);
+      const isIncluded = isPathInclude(config.finderRoot, absPath);
+      if (isIncluded) {
+        await FileInfo.removePath(scanPath.path);
+        await DbIncluded.remove(
+          await DbIncluded.find({
+            where: { path: path.relative(config.finderRoot, absPath) },
+          })
+        );
+      } else {
+        if (scanPath.dbPath) {
+          const absDbPath = joinToAbsolute(config.finderRoot, scanPath.dbPath);
+          if (isPathInclude(config.finderRoot, absDbPath)) {
+            fs.unlinkSync(absDbPath);
+          }
+        }
+      }
+      return { result: await scanPath.remove() };
     }
   });
 };
@@ -112,7 +133,18 @@ export const exListConfigLine = async (
 
 export const exListDbIncluded = async (config = getConfig()) => {
   return await switchDb(config, async () => {
-    const dbIncludes = await DbIncluded.find();
+    const dbIncludes = await (
+      await DbIncluded.find()
+    ).filter(
+      (v) =>
+        !isPathEqual(path.join(config.finderRoot, v.path), config.finderRoot)
+    );
     return { result: dbIncludes };
+  });
+};
+
+export const exClearIndexedData = async (config = getConfig()) => {
+  return await switchDb(config, async () => {
+    await FileInfo.removeAllIndexedData();
   });
 };

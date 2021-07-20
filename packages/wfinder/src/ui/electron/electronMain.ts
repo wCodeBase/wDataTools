@@ -133,11 +133,19 @@ app.whenReady().then(async () => {
 
   EvUiCmd.subscribe(async (msg) => {
     if (msg?.cmd === "requestPickLocalPath") {
+      const cwd = msg.data.cwd || process.cwd();
       const res = await dialog.showOpenDialog(win, {
-        defaultPath: msg.data.cwd || process.cwd(),
+        defaultPath: cwd,
         title: msg.data.title,
-        properties: ["openDirectory"],
+        properties: ["openDirectory", ...(msg.data.properties || [])],
       });
+      if (msg.data.toShotestAbsOrRel) {
+        res.filePaths = res.filePaths.map((v) => {
+          const relative = path.relative(cwd, v);
+          if (relative.length < v.length) return relative;
+          return v;
+        });
+      }
       EvUiCmdResult.next({
         cmd: "requestPickLocalPath",
         tag: msg.tag,

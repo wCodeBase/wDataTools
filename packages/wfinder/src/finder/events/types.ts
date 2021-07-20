@@ -34,7 +34,7 @@ export type TypeUiCmd = keyof typeof UI_CMD_DEF;
 
 export type TypeMsgSearchResultItem = Pick<
   FileInfo,
-  "size" | "type" | "id" | "dbInfo"
+  "size" | "type" | "id" | "dbInfo" | "absPath"
 > & { name: string };
 
 type TypeMsgSearch = {
@@ -61,13 +61,17 @@ type TypeSimpleMsgDef = {
 
 type TypeMsgScan = {
   scan: TypeSimpleMsgDef;
+  clearIndexedData: TypeSimpleMsgDef;
 };
 
 type TypeMsgStopScan = {
   stopScan: TypeSimpleMsgDef;
 };
 
-export type TypeMsgPathItem = Pick<ScanPath, "id" | "path" | "createdAt"> &
+export type TypeMsgPathItem = Pick<
+  ScanPath,
+  "id" | "path" | "dbPath" | "createdAt"
+> &
   Partial<Pick<ScanPath, "dbInfo">>;
 
 type TypeMsgPathManageDef = {
@@ -144,6 +148,8 @@ type TypeMsgRequestUiAction = {
     data: {
       cwd?: string;
       title?: string;
+      properties?: ("showHiddenFiles" | "createDirectory")[];
+      toShotestAbsOrRel?: boolean;
     };
     result: {
       path?: string;
@@ -203,8 +209,9 @@ export const judgeUiMsgResultType = <T extends keyof TypeCmdUiMsgMap>(
 ): msg is TypeUiMsgResultMap[T] => msg.cmd === cmd;
 
 export type TypeUiMsgMessage = {
-  message: string;
+  message?: string;
   error?: string;
+  warn?: string;
 };
 
 export type MsgHeartbeat = {

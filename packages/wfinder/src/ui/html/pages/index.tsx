@@ -8,6 +8,7 @@ import {
   EvFinderReady,
   EvFinderState,
   EvUiCmd,
+  EvUiCmdMessage,
   EvUiCmdResult,
 } from "../../../finder/events/events";
 import { isElectron, webInitEvent } from "../../../finder/events/webEventTools";
@@ -51,6 +52,9 @@ export const FinderUi = () => {
     const subscribes = [
       EvConsole.subscribe((val) => {
         console.warn(val);
+      }),
+      EvUiCmdMessage.subscribe((msg) => {
+        console.log("UiCmdMessage", msg);
       }),
       EvFinderReady.subscribe((ready) => {
         if (ready && handle) {
@@ -141,6 +145,7 @@ export const FinderUi = () => {
                                   cmd: "requestPickLocalPath",
                                   data: {
                                     title: "Choose wfinder initialization path",
+                                    properties: ["createDirectory"],
                                   },
                                 },
                                 Infinity

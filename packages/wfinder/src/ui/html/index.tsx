@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import React from "react";
 import { FinderUi } from "./pages";
 import "./index.css";
+import "./tailwind.css";
 import "antd/dist/antd.css";
 
 const Root = hot(() => <FinderUi />);
