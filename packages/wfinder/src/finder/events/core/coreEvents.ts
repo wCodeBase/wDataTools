@@ -10,7 +10,7 @@ import { BehaviorSubject } from "rxjs";
 import { TypeDbInfo } from "../../types";
 import { genRemoteCaller, genRemoteExector, TypeGateway } from "../eventTools";
 import { BaseDbInfoEntity } from "../../entities/BaseDbInfoEntity";
-import { ShallowBehaviorSubject } from "../eventLib";
+import { JsonSubject, ShallowBehaviorSubject } from "../eventLib";
 import {
   TypeTransferRemoteStatusMap,
   TypeTransferRemote,
@@ -65,3 +65,8 @@ const emptyFinderState = {
 export type CoreFinderState = typeof emptyFinderState;
 
 export const cEvFinderState = new ShallowBehaviorSubject(emptyFinderState);
+
+export const cEvConfigLineChange = new JsonSubject<TypeDbInfo | null>();
+
+export const cEvScanPathChange = new JsonSubject<TypeDbInfo | null>();
+export const cEvDbIncludedChange = new JsonSubject<TypeDbInfo | null>();

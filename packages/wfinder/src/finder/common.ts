@@ -24,7 +24,7 @@ export const MAX_PATH_DEPTH = 1000;
 
 export const entityChangeWatchingSubjectMap = new Map<
   ObjectType<BaseDbInfoEntity>,
-  Subject<null>
+  Subject<TypeDbInfo | null>
 >();
 
 EvDefaultDbInfo.next(Config);

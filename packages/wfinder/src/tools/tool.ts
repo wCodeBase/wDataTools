@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { isUndefined, omitBy } from "lodash";
 
 export const interactYield = (() => {
@@ -23,3 +24,8 @@ export function waitMilli(timeMilli: number) {
     setTimeout(() => r(undefined), timeMilli);
   });
 }
+
+export const formatDate = (date: Date) => {
+  if (!date) return "";
+  return dayjs(date).format("YYYY-MM-DD hh:mm:ss");
+};

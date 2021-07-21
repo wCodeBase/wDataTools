@@ -17,9 +17,9 @@ export const Header = () => {
       <Box>
         <Text>WFinder state: </Text>
         <Box>
-          <Text color="blueBright">{FinderStatus[finderStatus]}</Text>
+          <Text color="blueBright">{FinderStatus[finderStatus.status]}</Text>
           {[FinderStatus.searching, FinderStatus.scanning].includes(
-            finderStatus
+            finderStatus.status
           ) && <Spinner />}
         </Box>
         <Box marginLeft={2}>

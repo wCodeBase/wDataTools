@@ -71,7 +71,7 @@ const Search = () => {
 
   useCliKeyPress((key) => {
     if (state.keywords && state.records?.length) {
-      if (subject.value === FinderStatus.searching)
+      if (subject.value.status === FinderStatus.searching)
         EvLog("Busy searching now, try page up or down later.");
       else if (key === KEY_ARROW_UP) {
         if (state.skip) {
@@ -107,7 +107,7 @@ const Search = () => {
           )}
         </Box>
       )}
-      {finderStatus === FinderStatus.idle && (
+      {finderStatus.status === FinderStatus.idle && (
         <CmdInput
           label="search"
           placeholder="Type keywords here"
@@ -121,7 +121,7 @@ const Search = () => {
 const Scan = () => {
   const [finderStatus, subject] = useFinderStatus();
   const [state, setState] = useStableState(() => ({
-    confirmed: finderStatus === FinderStatus.scanning,
+    confirmed: finderStatus.status === FinderStatus.scanning,
     goingBack: false,
     scanMessages: [] as (TypeUiMsgMessage & { number: number })[],
     scanMsgShowLines: 5,
@@ -129,18 +129,18 @@ const Scan = () => {
       if (state.goingBack) return;
       if (option.value.includes("goback")) setState({ goingBack: true });
       if (option.value.includes("stop"))
-        EvUiCmd.next({ cmd: "stopScan", data: null });
+        EvUiCmd.next({ cmd: "stopScan", data: {} });
       if (option.value.includes("scan again"))
-        EvUiCmd.next({ cmd: "scan", data: null });
+        EvUiCmd.next({ cmd: "scan", data: {} });
     },
   }));
   const items = useMemo(() => {
     const options =
-      finderStatus === FinderStatus.scanning
+      finderStatus.status === FinderStatus.scanning
         ? ["stop", "stop and goback"]
         : ["goback", "scan again"];
     return options.map((v) => ({ label: v, value: v }));
-  }, [finderStatus]);
+  }, [finderStatus.status]);
 
   useSubjectCallback(EvUiCmdMessage, (msg) =>
     setState({
@@ -151,13 +151,13 @@ const Scan = () => {
   );
 
   useCliEscape(() => {
-    if (subject.value === FinderStatus.scanning) return true;
+    if (subject.value.status === FinderStatus.scanning) return true;
   });
 
   useEffect(() => {
-    if (state.goingBack && finderStatus === FinderStatus.idle)
+    if (state.goingBack && finderStatus.status === FinderStatus.idle)
       triggerCliKeyCallback(KEY_ESCAPE);
-  }, [finderStatus, state.goingBack]);
+  }, [finderStatus.status, state.goingBack]);
 
   if (!state.confirmed)
     return (
@@ -166,7 +166,7 @@ const Scan = () => {
         message="Start scanning?"
         onSelect={(confim) => {
           if (confim) {
-            EvUiCmd.next({ cmd: "scan", data: null });
+            EvUiCmd.next({ cmd: "scan", data: {} });
             setState({ confirmed: true });
           } else triggerCliKeyCallback(KEY_ESCAPE);
         }}
@@ -195,7 +195,7 @@ const Scan = () => {
       }
       <Text>
         Usable options{" "}
-        {finderStatus === FinderStatus.scanning
+        {finderStatus.status === FinderStatus.scanning
           ? "(scaning)"
           : state.confirmed
           ? "(scan done)"

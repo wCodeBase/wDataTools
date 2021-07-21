@@ -69,15 +69,16 @@ export const exAddConfigLine = async (
   config = getConfig()
 ) => {
   return await switchDb(data.dbInfo || config, async () => {
-    const { content, type } = data;
+    const { id, content, type, ...rest } = data;
     if (await ConfigLine.count({ where: { content, type } })) {
-      const error = `Content already exist: ${ConfigLineType[type]}-${content}.`;
+      const error = `Content already exist: ${content}.`;
       return { error };
     } else {
-      const result = await Object.assign(
-        new ConfigLine(content, type),
-        data
-      ).save();
+      const result = await Object.assign(new ConfigLine(content, type), {
+        content,
+        type,
+        ...rest,
+      }).save();
       return { result };
     }
   });

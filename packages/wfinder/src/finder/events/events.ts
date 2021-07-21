@@ -3,6 +3,7 @@ import {
   FinderStatus,
   MsgHeartbeat,
   TypeDatabaseInfos,
+  TypeFinderStatus,
   TypeUiMsgData,
   TypeUiMsgMessage,
   TypeUiMsgResult,
@@ -16,9 +17,11 @@ import {
 } from "./eventLib";
 import { useBehaviorSubjectValue } from "../../ui/hooks/hooks";
 
-export const EvFinderStatus = new JsonBehaviorSubject<FinderStatus>(
-  FinderStatus.idle
-);
+export const EvFinderStatus = new ShallowJsonBehaviorSubject<TypeFinderStatus>({
+  status: FinderStatus.idle,
+  scanContextIdAndPathSet: new Set(),
+  searchContextIdSet: new Set(),
+});
 
 export const EvDefaultDbInfo = new JsonBehaviorSubject<TypeDbInfo | undefined>(
   undefined
@@ -28,9 +31,9 @@ export const useFinderStatus = () => useBehaviorSubjectValue(EvFinderStatus);
 
 /** Triggered when FileInfo inserted or deleted */
 export const EvFileInfoChange = (() => {
-  const subject = new JsonBehaviorSubject(null);
+  const subject = new JsonBehaviorSubject<TypeDbInfo | null>(null);
   const observer = subject.pipe(debounceTime(500));
-  return Object.assign(new JsonBehaviorSubject(null), {
+  return Object.assign(new JsonBehaviorSubject<TypeDbInfo | null>(null), {
     next: subject.next.bind(subject),
     subscribe: observer.subscribe.bind(observer),
     pipe: subject.pipe.bind(subject),
@@ -52,11 +55,6 @@ export const EvUiCmdResult = new JsonSubject<TypeUiMsgResult | MsgHeartbeat>();
 export const EvUiCmdMessage = new JsonSubject<TypeUiMsgMessage>();
 
 export const EvUiLaunched = new ShallowJsonBehaviorSubject<TypeUiStatus>({});
-
-export const EvConfigLineChange = new JsonSubject<null>();
-
-export const EvScanPathChange = new JsonSubject<null>();
-export const EvDbIncludedChange = new JsonSubject<null>();
 
 export const EvFinderReady = new JsonBehaviorSubject<boolean>(false);
 

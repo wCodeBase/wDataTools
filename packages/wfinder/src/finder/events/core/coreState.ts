@@ -8,7 +8,7 @@ import {
   cTypeLinkedRemote,
   cTypeTransferRemote,
 } from "./coreEvents";
-import { EvConfigLineChange } from "../events";
+import { cEvConfigLineChange } from "./coreEvents";
 import { ConfigLine } from "../../entities/ConfigLine";
 import { debounceTime } from "rxjs/operators";
 import { ConfigLineType } from "../../types";
@@ -115,7 +115,7 @@ export const linkRemotes = () => {
       });
     }
   };
-  EvConfigLineChange.pipe(debounceTime(500)).subscribe(sync);
+  cEvConfigLineChange.pipe(debounceTime(500)).subscribe(sync);
   sync();
 };
 

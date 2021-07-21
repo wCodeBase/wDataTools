@@ -32,7 +32,7 @@ export class DbIncluded extends BaseDbInfoEntity {
     const { finderRoot } = getConfig();
     const subDbs = await this.find();
     for (const db of subDbs) {
-      if (!fs.existsSync(path.join(finderRoot, db.path, db.dbName))) {
+      if (!fs.statSync(path.join(finderRoot, db.path, db.dbName))) {
         await db.remove();
       }
     }

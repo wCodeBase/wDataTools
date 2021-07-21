@@ -19,6 +19,7 @@ import { PlusOutlined } from "@ant-design/icons";
 import { Empty } from "./Empty";
 import { isElectron } from "../../../finder/events/webEventTools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
+import { formatDate } from "../../../tools/tool";
 
 const TEXT_OPERATION = "operation";
 type TypeTableEditRenderProps<T> = {
@@ -30,6 +31,9 @@ export type TypeTableEditRender<T> = (
 ) => JSX.Element;
 export type TypeTableEditProps<T> = {
   [index in keyof T]?: TypeTableEditRender<T[index]>;
+};
+export type TypeTableRenderProps<T> = {
+  [index in keyof T]?: ColumnType<T>["render"];
 };
 
 export const SimpleTextEdit: TypeTableEditRender<string> = (props) => {
@@ -86,19 +90,27 @@ export const SimpleBooleanEdit: TypeTableEditRender<boolean | undefined> = (
   return <Switch checked={props.value} onChange={props.onChange} />;
 };
 
-export type TypeManagerTableAddonButtonProps = {
-  isEdit: boolean;
-  isNew: boolean;
+export type TypeManagerTableAddonButtonProps<T> = {
+  isTableEdit: boolean;
+  isTableOnNew: boolean;
   isReadonly: boolean;
+  records: T[];
 };
+
+export type TypeManagerTableAddonOperationProps<T> = Omit<
+  TypeManagerTableAddonButtonProps<T>,
+  "records"
+> & { record: T; index: number };
 
 export const genManagerTable = <T extends Record<string, unknown>>(
   showProperties: (keyof T | { prop: keyof T; title: string })[],
+  renderProterties: TypeTableRenderProps<T>,
   editableProperties: TypeTableEditProps<T>,
   newRecordProperties: TypeTableEditProps<T>,
   rowKey: string | GetRowKey<T>,
   getEmptyRecord: () => T,
-  AddonButton?: React.FC<TypeManagerTableAddonButtonProps>
+  AddonButton?: React.FC<TypeManagerTableAddonButtonProps<T>>,
+  AddonOperation?: React.FC<TypeManagerTableAddonOperationProps<T>>
 ) => {
   return defaultPropsFc(
     {
@@ -119,12 +131,11 @@ export const genManagerTable = <T extends Record<string, unknown>>(
     (props) => {
       const [state, setState, update] = useStableState(() => {
         const genColumns = () => {
-          const isEdit = (record: T) =>
-            record === state.newRecord || record === state.editRecord;
+          const isEdit = (record: T) => record.id === state.editRecord?.id;
           const plainRender: ColumnType<T>["render"] = (v) => {
             const content =
               v instanceof Date
-                ? dayjs(v).format("YYYY-MM-DD hh:mm:ss")
+                ? formatDate(v)
                 : typeof v === "number"
                 ? String(v)
                 : typeof v === "string"
@@ -141,12 +152,13 @@ export const genManagerTable = <T extends Record<string, unknown>>(
           const columns: ColumnsType<T> = props.showProperties.map((p) => {
             const prop = p instanceof Object ? p.prop : String(p);
             const title = p instanceof Object ? p.title : String(p);
+            const showRender: ColumnType<T>["render"] =
+              renderProterties[prop] || plainRender;
             const editRender = editableProperties[prop];
             const newRender = newRecordProperties[prop];
             const onChange = (val: T[typeof prop]) => {
-              const record = state.editRecord || state.newRecord;
-              if (record) {
-                record[prop] = val;
+              if (state.editRecord) {
+                state.editRecord[prop] = val;
                 update();
               }
             };
@@ -156,23 +168,27 @@ export const genManagerTable = <T extends Record<string, unknown>>(
               dataIndex: prop,
               render:
                 !editRender && !newRender
-                  ? plainRender
+                  ? showRender
                   : (v: T[typeof prop], record, index) => {
                       const Render =
-                        record === state.editRecord
+                        isEdit(record) &&
+                        (state.editType === "edit"
                           ? editRender
-                          : record === state.newRecord
+                          : state.editType === "new"
                           ? newRender
-                          : null;
-                      if (Render) {
+                          : null);
+                      if (Render && state.editRecord) {
                         return (
                           <div>
                             {/* @ts-ignore */}
-                            <Render value={v} onChange={onChange} />
+                            <Render
+                              value={state.editRecord[prop]}
+                              onChange={onChange}
+                            />
                           </div>
                         );
                       }
-                      return plainRender(v, record, index);
+                      return showRender(v, record, index);
                     },
             } as ColumnType<T>;
           });
@@ -185,21 +201,21 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                     title: TEXT_OPERATION,
                     key: TEXT_OPERATION,
                     dataIndex: TEXT_OPERATION,
-                    render: (v, record) => {
+                    render: (v, record, index) => {
                       const { onRemove } = props;
                       return (
                         <div>
                           {isEdit(record) ? (
                             <>
-                              {record === state.newRecord ? (
+                              {state.editType === "new" ? (
                                 <a
                                   onClick={async () => {
-                                    const { newRecord } = state;
+                                    const { editRecord } = state;
                                     const { onNewRecord } = props;
-                                    if (!newRecord || !onNewRecord) return;
-                                    const data = { ...newRecord };
+                                    if (!editRecord || !onNewRecord) return;
+                                    const data = { ...editRecord };
                                     if (await onNewRecord(data))
-                                      setState({ newRecord: null });
+                                      setState({ editRecord: null });
                                   }}
                                   className=" p-1"
                                 >
@@ -213,32 +229,26 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                                     const { editRecord } = state;
                                     if (!onSave || !editRecord) return;
                                     const data = { ...editRecord };
-                                    if (await onSave(data))
-                                      setState({ editRecord: null });
+                                    if (await onSave(data)) state.clearEdit();
                                   }}
                                 >
                                   <a className="text-red-500 p-1">Save</a>
                                 </Popconfirm>
                               )}
-                              <a
-                                className="p-0.5"
-                                onClick={() =>
-                                  setState({
-                                    newRecord: null,
-                                    editRecord: null,
-                                  })
-                                }
-                              >
+                              <a className="p-0.5" onClick={state.clearEdit}>
                                 Cancel
                               </a>
                             </>
-                          ) : state.editRecord || state.newRecord ? null : (
+                          ) : state.editRecord ? null : (
                             <>
                               {hasEditProps && props.onSave && (
                                 <a
                                   className="p-0.5"
                                   onClick={() =>
-                                    setState({ editRecord: record })
+                                    setState({
+                                      editRecord: { ...record },
+                                      editType: "edit",
+                                    })
                                   }
                                 >
                                   Edit
@@ -254,6 +264,19 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                               )}
                             </>
                           )}
+                          {AddonOperation && (
+                            <AddonOperation
+                              isTableEdit={
+                                isEdit(record) && state.editType === "edit"
+                              }
+                              isTableOnNew={
+                                isEdit(record) && state.editType === "new"
+                              }
+                              isReadonly={props.readOnly}
+                              record={record}
+                              index={index}
+                            />
+                          )}
                         </div>
                       );
                     },
@@ -262,12 +285,21 @@ export const genManagerTable = <T extends Record<string, unknown>>(
           );
         };
         return {
-          newRecord: null as null | T,
+          editType: "" as "new" | "edit" | "",
           editRecord: null as null | T,
           dataSource: props.records,
           columns: genColumns(),
           genColumns,
-          addRecord: async () => setState({ newRecord: getEmptyRecord() }),
+          addRecord: async () =>
+            setState({ editRecord: getEmptyRecord(), editType: "new" }),
+          clearEdit: () =>
+            setState({
+              editType: "",
+              editRecord: null,
+              dataSource: state.dataSource.filter(
+                (v) => v !== state.editRecord
+              ),
+            }),
         };
       });
 
@@ -283,25 +315,22 @@ export const genManagerTable = <T extends Record<string, unknown>>(
       ]);
 
       useLaterEffect(() => {
-        if (state.newRecord || state.editRecord)
-          setState({ newRecord: null, editRecord: null });
-      }, [props.records]);
-
-      useLaterEffect(() => {
         setState({
           dataSource: [
-            ...(state.newRecord ? [state.newRecord] : []),
+            ...(state.editType === "new" && state.editRecord
+              ? [state.editRecord]
+              : []),
             ...props.records,
           ],
         });
-      }, [props.records, state.newRecord]);
+      }, [props.records, state.editRecord]);
 
       return (
         <div className={"flex flex-col " + props.className}>
           <div className={props.titleClassName + " flex flex-row items-center"}>
             {props.tableTitle}
             <div className="flex-grow" />
-            {!props.readOnly && !state.editRecord && !state.newRecord && (
+            {!props.readOnly && !state.editType && (
               <Button type="primary" size="small" onClick={state.addRecord}>
                 <div className="flex items-center">
                   <PlusOutlined />
@@ -311,9 +340,10 @@ export const genManagerTable = <T extends Record<string, unknown>>(
             )}
             {AddonButton && (
               <AddonButton
-                isEdit={!!state.editRecord}
-                isNew={!!state.newRecord}
+                isTableEdit={state.editType === "edit"}
+                isTableOnNew={state.editType === "new"}
                 isReadonly={props.readOnly}
+                records={props.records}
               />
             )}
           </div>

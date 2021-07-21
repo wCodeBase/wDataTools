@@ -56,13 +56,19 @@ const DetailButton = React.memo(
                   </div>
                 )}
                 <div className="pb-1">
-                  <span className="text-sm font-bold">Stored in database:</span>{" "}
+                  <span className="text-sm font-bold">
+                    Stored in database:{" "}
+                  </span>
                   {record.dbInfo.dbPath}
                 </div>
                 {props.record.dbInfo.remoteUrls && (
                   <div className="pb-1">
-                    <div className="text-sm font-bold">Remote context: </div>
-                    <div>{props.record.dbInfo.remoteUrls.join(" >> ")}</div>
+                    <div>
+                      <span className="text-sm font-bold">
+                        Remote context:{" "}
+                      </span>
+                      {props.record.dbInfo.remoteUrls.join(" >> ")}
+                    </div>
                   </div>
                 )}
                 <div className="mt-3 flex flex-row-reverse">
@@ -109,7 +115,7 @@ export const Search = ({ className = "" }) => {
     keywords: [] as string[],
     records: null as TypeMsgSearchResultItem[] | null,
     onSubmit: (str: string) => {
-      if (finderStatus === FinderStatus.searching) {
+      if (finderStatus.status === FinderStatus.searching) {
         message.warning("Busy searching now, please retry later.");
       } else if (str) {
         setState({ skip: 0, keywords: [str] });

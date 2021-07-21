@@ -18,7 +18,7 @@ import { simpleGetKey } from "../../tools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import { ConfigLineType, getDbInfoId } from "../../../finder/types";
 import { useFinderReady } from "../../hooks/webHooks";
-import { isEqual } from "lodash";
+import { isEmpty, isEqual } from "lodash";
 import { getLocalContext } from "../../../finder/events/webEvent";
 
 const genTypedConfigmanager = (
@@ -28,6 +28,7 @@ const genTypedConfigmanager = (
 ) => {
   const TypedConfigTable = genManagerTable<TypeMsgConfigItem>(
     ["content", "updatedAt", ...moreColumns],
+    {},
     { content: SimpleTextEdit, disabled: SimpleBooleanEdit },
     { content: SimpleTextEdit, disabled: SimpleBooleanEdit },
     simpleGetKey,
@@ -56,7 +57,7 @@ const genTypedConfigmanager = (
               message.error(String(e));
               return null;
             });
-            if (res) await state.listConfig();
+            if (res?.result.error) message.error(res?.result.error);
           },
           addNew: async (v: TypeMsgConfigItem) => {
             const res = await executeUiCmd("addConfig", {
@@ -67,7 +68,7 @@ const genTypedConfigmanager = (
               message.error(String(e));
               return null;
             });
-            if (res) await state.listConfig();
+            if (res?.result.error) message.error(res?.result.error);
             return !!res;
           },
           save: async (v: TypeMsgConfigItem) => {
@@ -79,11 +80,11 @@ const genTypedConfigmanager = (
               message.error(String(e));
               return null;
             });
-            if (res) await state.listConfig();
+            if (res?.result.error) message.error(res?.result.error);
             return !!res;
           },
           listConfig: async () => {
-            await executeUiCmd("listConfig", {
+            const res = await executeUiCmd("listConfig", {
               cmd: "listConfig",
               data: listConfigData,
               context: props.contexted ? getLocalContext() : undefined,
@@ -91,6 +92,7 @@ const genTypedConfigmanager = (
               message.error(String(e));
               return null;
             });
+            if (res?.result.error) message.error(res?.result.error);
           },
           checkBusy: () => {
             if (state.waitingForCmdResult)
@@ -109,10 +111,13 @@ const genTypedConfigmanager = (
         if (
           res.cmd === "listConfig" &&
           !res.result.error &&
-          isEqual(listConfigData, res.result.oriData) &&
+          (isEqual(listConfigData, res.result.oriData) ||
+            isEmpty(res.result.oriData)) &&
           getDbInfoId(res.context) === getDbInfoId(getLocalContext())
         ) {
-          setState({ configs: res.result.results });
+          setState({
+            configs: res.result.results.filter((v) => v.type === type),
+          });
         }
       });
 

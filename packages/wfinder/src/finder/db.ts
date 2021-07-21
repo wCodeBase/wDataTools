@@ -1,28 +1,21 @@
 import { JsonMore } from "./../tools/json";
 import path from "path";
-import { cEvFinderState } from "./events/core/coreEvents";
+import {
+  cEvConfigLineChange,
+  cEvDbIncludedChange,
+  cEvFinderState,
+  cEvScanPathChange,
+} from "./events/core/coreEvents";
 import { ConfigLine } from "./entities/ConfigLine";
 import inquirer from "inquirer";
 import { Connection, createConnection } from "typeorm";
-import {
-  exit,
-  exitNthTodo,
-  genDbThumnail,
-  getPathPermission,
-} from "../tools/nodeTool";
+import { exit, exitNthTodo, genDbThumnail, pathPem } from "../tools/nodeTool";
 import { FileInfo, IndexTableName } from "./entities/FileInfo";
 import * as fs from "fs";
 import { Config, entityChangeWatchingSubjectMap, genConfig } from "./common";
 import { ScanPath } from "./entities/ScanPath";
 import { DbIncluded } from "./entities/DbIncluded";
-import {
-  EvConfigLineChange,
-  EvDbIncludedChange,
-  EvFileInfoChange,
-  EvScanPathChange,
-  EvUiCmd,
-  EvUiLaunched,
-} from "./events/events";
+import { EvFileInfoChange, EvUiCmd, EvUiLaunched } from "./events/events";
 import { ConfigLineType, TypeDbInfo, TypeFinderCoreInfo } from "./types";
 import { STR_FINDER_CORE_INFO } from "../constants";
 import { executeUiCmd } from "./events/eventTools";
@@ -80,9 +73,9 @@ export const AUTO_CONNECT_ENTITIES = [
 // TODO: FIXME: support different database context, auto refresh.
 // Register entity to trigger change event.
 entityChangeWatchingSubjectMap.set(FileInfo, EvFileInfoChange);
-entityChangeWatchingSubjectMap.set(ConfigLine, EvConfigLineChange);
-entityChangeWatchingSubjectMap.set(ScanPath, EvScanPathChange);
-entityChangeWatchingSubjectMap.set(DbIncluded, EvDbIncludedChange);
+entityChangeWatchingSubjectMap.set(ConfigLine, cEvConfigLineChange);
+entityChangeWatchingSubjectMap.set(ScanPath, cEvScanPathChange);
+entityChangeWatchingSubjectMap.set(DbIncluded, cEvDbIncludedChange);
 
 // Register entity to serve remote orm method.
 cEvFinderState.next({ remoteMethodServeEntityMap: { FileInfo } });
@@ -117,7 +110,7 @@ export const { getConnection, getCachedConnection } = (() => {
             throw new Error("DbPath not exist: " + dbPath);
           if (
             (!forceCreate && !config.isSubDb) ||
-            !getPathPermission(path.parse(dbPath).dir).write
+            !pathPem.canWrite(path.parse(dbPath).dir)
           ) {
             // Only global database config be initialed.
             if (config !== Config)
@@ -141,7 +134,7 @@ export const { getConnection, getCachedConnection } = (() => {
               let newDbPath = "";
               if (
                 userDataDir &&
-                getPathPermission(path.join(userDataDir, config.dbName)).write
+                pathPem.canWrite(path.join(userDataDir, config.dbName))
               ) {
                 newDbPath = userDataDir;
               } else {
@@ -171,7 +164,7 @@ export const { getConnection, getCachedConnection } = (() => {
                       fs.mkdirSync(userDataDir);
                     if (!fs.existsSync(newPath))
                       message = `Error: path "${newPath}" dosen't exist.`;
-                    else if (!getPathPermission(newPath).write)
+                    else if (!pathPem.canWrite(newPath))
                       message = `Error: path "${newPath}" is not writable.`;
                     else {
                       newDbPath = newPath;

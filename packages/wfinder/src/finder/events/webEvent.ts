@@ -40,25 +40,30 @@ export const wEvFinderReady = new BehaviorSubject<boolean>(false);
 export const wEvLocalDbContextChange = new Subject<void>();
 
 EvUiCmdResult.subscribe((msg) => {
+  // Update remote context options
   if (msg.cmd === "listConfig" && !msg.result.error) {
     const { type, ...rest } = msg.result.oriData;
-    if (type === ConfigLineType.remoteUrl && isEmpty(rest)) {
+    if (!type || (type === ConfigLineType.remoteUrl && isEmpty(rest))) {
       if (!wEvFinderReady.value || !EvFinderState.value.config) return;
       const dbId = getDbInfoId(msg.context);
       const context = wEvGlobalState.value.contextStack.find(
         (v) => getDbInfoId(last(v.localContexts)) === dbId
       );
       if (context) {
-        const newRemotes = msg.result.results.map((v) => v.content);
+        const newRemotes = msg.result.results
+          .filter((v) => v.type === ConfigLineType.remoteUrl)
+          .map((v) => v.content);
         if (!isEqual(newRemotes, context.remoteOptionUrls)) {
-          context.remoteOptionUrls = msg.result.results.map((v) => v.content);
+          context.remoteOptionUrls = newRemotes;
           wEvGlobalState.next({
             contextStack: [...wEvGlobalState.value.contextStack],
           });
         }
       }
     }
-  } else if (msg.cmd === "listDbIncluded" && !msg.result.error) {
+  }
+  // Update sub-database context options
+  else if (msg.cmd === "listDbIncluded" && !msg.result.error) {
     if (wEvEventStatus.value !== WebEventStatus.connected) return;
     const context = last(wEvGlobalState.value.contextStack);
     if (!context) return;
@@ -87,25 +92,27 @@ EvFinderReady.subscribe((ready) => {
     EvUiCmd.next({
       cmd: "listConfig",
       data: { type: ConfigLineType.remoteUrl },
+      context: getLocalContext(),
     });
 
     EvUiCmd.next({
       cmd: "listDbIncluded",
-      context: last(
-        last(wEvGlobalState.value.contextStack)?.localContexts || []
-      ),
+      context: getLocalContext(),
     });
   }
 });
 
-merge(EvFinderReady, EvFinderState, wEvEventStatus).subscribe(() => {
-  if (
-    !EvFinderReady.value ||
-    !EvFinderState.value.config ||
-    wEvEventStatus.value !== WebEventStatus.connected
-  ) {
-    if (wEvFinderReady.value) wEvFinderReady.next(false);
-  } else if (!wEvFinderReady.value) {
-    wEvFinderReady.next(true);
+merge(EvFinderReady, EvFinderState, wEvEventStatus, wEvGlobalState).subscribe(
+  () => {
+    if (
+      !EvFinderReady.value ||
+      !EvFinderState.value.config ||
+      wEvEventStatus.value !== WebEventStatus.connected ||
+      !getLocalContext()
+    ) {
+      if (wEvFinderReady.value) wEvFinderReady.next(false);
+    } else if (!wEvFinderReady.value) {
+      wEvFinderReady.next(true);
+    }
   }
-});
+);

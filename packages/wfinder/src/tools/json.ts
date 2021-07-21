@@ -135,7 +135,8 @@ export const buildJsonMore = <T>(
           }
         } else if (srcValue instanceof Object) {
           const [first, ...rest] = Object.keys(srcValue);
-          pathStack.push({ path: [...path, first], rest });
+          if (first !== undefined)
+            pathStack.push({ path: [...path, first], rest });
           value = {};
         } else {
           throw new Error(
@@ -171,7 +172,7 @@ export const buildJsonMore = <T>(
 export class ErrorSpecialDataUnpack extends Error {}
 export class ErrorSpecialDatapack extends Error {}
 
-export type TypeDefaultSpecialJsonType = Date | BigInt;
+export type TypeDefaultSpecialJsonType = Date | BigInt | Set<TypeJsonData>;
 
 export const defaultPackers: TypeSpecialJsonPacker<TypeDefaultSpecialJsonType>[] =
   [
@@ -195,6 +196,17 @@ export const defaultPackers: TypeSpecialJsonPacker<TypeDefaultSpecialJsonType>[]
       unpack: (data) => {
         if (typeof data !== "string") throw new ErrorSpecialDataUnpack();
         return BigInt(data);
+      },
+    },
+    {
+      constructor: Set,
+      pack: (data) => {
+        if (!data || !(data instanceof Set)) throw new ErrorSpecialDatapack();
+        return JsonMore.stringify(Array.from(data));
+      },
+      unpack: (data) => {
+        if (typeof data !== "string") throw new ErrorSpecialDataUnpack();
+        return new Set(JsonMore.parse(data) as any[]);
       },
     },
   ];

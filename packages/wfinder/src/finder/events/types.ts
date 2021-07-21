@@ -16,6 +16,13 @@ export enum FinderStatus {
   searching,
 }
 
+export type TypeFinderStatus = {
+  status: FinderStatus;
+  scanContextIdAndPathSet: Set<string>;
+  /** TODO: display this status */
+  searchContextIdSet: Set<string>;
+};
+
 export const BUSY_FINDER_STATES = [
   FinderStatus.scanning,
   FinderStatus.searching,
@@ -54,23 +61,26 @@ type TypeMsgSearch = {
   };
 };
 
-type TypeSimpleMsgDef = {
-  data: null;
+type TypeScanMsgDef = {
+  data: {
+    path?: string[];
+  };
   result: "done";
 };
 
 type TypeMsgScan = {
-  scan: TypeSimpleMsgDef;
-  clearIndexedData: TypeSimpleMsgDef;
+  scan: TypeScanMsgDef;
+  clearIndexedData: TypeScanMsgDef;
 };
 
 type TypeMsgStopScan = {
-  stopScan: TypeSimpleMsgDef;
+  /** TODO: stop scanning on partical path */
+  stopScan: TypeScanMsgDef;
 };
 
 export type TypeMsgPathItem = Pick<
   ScanPath,
-  "id" | "path" | "dbPath" | "createdAt"
+  "id" | "path" | "dbPath" | "createdAt" | "lastScanedAt" | "lastScanError"
 > &
   Partial<Pick<ScanPath, "dbInfo">>;
 

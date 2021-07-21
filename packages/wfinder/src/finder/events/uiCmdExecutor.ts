@@ -17,6 +17,7 @@ import {
   FinderStatus,
   TypeMsgConfigItem,
   TypeMsgPathItem,
+  TypeUiMsgData,
   TypeUiMsgResult,
 } from "./types";
 import { waitMilli } from "../../tools/tool";
@@ -24,7 +25,7 @@ import { uiMsgTimeout } from "./eventTools";
 import { DbIncluded } from "../entities/DbIncluded";
 import { getConfig, switchDb } from "../db";
 
-EvUiCmd.subscribe(async (msg) => {
+export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
   if (!msg) return;
   let finished = false;
   try {
@@ -41,10 +42,10 @@ EvUiCmd.subscribe(async (msg) => {
       let cmdResult: TypeUiMsgResult;
       if (msg.cmd === "scan") {
         const { cmd } = msg;
-        EvFinderStatus.next(FinderStatus.scanning);
-        await doScan();
+        EvFinderStatus.next({ status: FinderStatus.scanning });
+        await doScan(msg.context, true, false, 0, msg.data.path);
         cmdResult = { cmd, result: "done" };
-        EvFinderStatus.next(FinderStatus.idle);
+        EvFinderStatus.next({ status: FinderStatus.idle });
       } else if (msg.cmd === "stopScan") {
         stopScan();
         const { cmd } = msg;
@@ -52,7 +53,7 @@ EvUiCmd.subscribe(async (msg) => {
       } else if (msg.cmd === "search") {
         triggerHeartBeat();
         const { cmd, data } = msg;
-        EvFinderStatus.next(FinderStatus.searching);
+        EvFinderStatus.next({ status: FinderStatus.searching });
         const total = await FileInfo.countByMatchName(data.keywords);
         const records = (
           await FileInfo.findByMatchName(data.keywords, data.take, data.skip)
@@ -61,7 +62,7 @@ EvUiCmd.subscribe(async (msg) => {
           return { name: v.getName(), size, type, id, dbInfo, absPath };
         });
         cmdResult = { cmd, result: { ...data, total, records } };
-        EvFinderStatus.next(FinderStatus.idle);
+        EvFinderStatus.next({ status: FinderStatus.idle });
       } else if (msg.cmd === "clearIndexedData") {
         triggerHeartBeat();
         const { cmd, data } = msg;
@@ -164,4 +165,6 @@ EvUiCmd.subscribe(async (msg) => {
   } finally {
     finished = true;
   }
-});
+};
+
+EvUiCmd.subscribe(uiCmdExecutor);

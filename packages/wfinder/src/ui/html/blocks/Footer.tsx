@@ -8,8 +8,8 @@ export const Footer = () => {
   return (
     <div className="flex justify-start bg-gradient-to-br from-blueGray-700 to-blueGray-500 shadow-sm text-white p-0.5 px-1">
       <div className="flex items-center">
-        Finder state: {FinderStatus[finderStatus]}
-        {BUSY_FINDER_STATES.includes(finderStatus) && (
+        Finder state: {FinderStatus[finderStatus.status]}
+        {BUSY_FINDER_STATES.includes(finderStatus.status) && (
           <LoadingOutlined className="m-1" />
         )}
       </div>

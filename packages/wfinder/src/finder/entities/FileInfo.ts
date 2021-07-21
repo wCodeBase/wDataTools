@@ -108,7 +108,7 @@ export class FileInfo extends BaseDbInfoEntity {
       if (isPathEqual(config.finderRoot, finderRoot)) continue;
       try {
         const dbPath = path.join(finderRoot, db.dbName);
-        if (!fs.existsSync(dbPath)) {
+        if (!fs.statSync(dbPath)) {
           EvLog(`It's time to rescan, sub database file not exist: ${dbPath}.`);
         } else
           await switchDb(
@@ -134,7 +134,7 @@ export class FileInfo extends BaseDbInfoEntity {
       const absFinderRoot = joinToAbsolute(config.finderRoot, scanPath.path);
       if (
         !isPathInclude(config.finderRoot, absFinderRoot) &&
-        fs.existsSync(absDbPath)
+        fs.statSync(absDbPath)
       ) {
         try {
           await switchDb(
@@ -326,7 +326,7 @@ export class FileInfo extends BaseDbInfoEntity {
   ) {
     let skip = 0;
     const take = 100;
-    const existSet = new Set(existChildNames);
+    const existSet = new Set(existChildNames.map((v) => processText(v)));
     let toRemoveIds: number[] = [];
     while (!brake?.value) {
       const children = await this.find({ where: { parentId: id }, skip, take });
@@ -415,7 +415,7 @@ export class FileInfo extends BaseDbInfoEntity {
 }
 
 /** TODO: support searching for special characters like ".[]" */
-const processText = (() => {
+export const processText = (() => {
   const regs = [
     /([^\d/ ])(\d+)/g,
     /(\d+)([^\d/ ])/g,

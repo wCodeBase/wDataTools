@@ -23,15 +23,13 @@ import { TypeQueryLimit } from "../types";
 export class BaseDbInfoEntity extends BaseEntity {
   async save(options?: SaveOptions) {
     const res = await super.save(options);
-    // @ts-ignore
-    entityChangeWatchingSubjectMap.get(this.constructor)?.next(null);
+    entityChangeWatchingSubjectMap.get(this.constructor)?.next(getConfig());
     return res;
   }
 
   async remove(options?: RemoveOptions) {
     const res = await super.remove(options);
-    // @ts-ignore
-    entityChangeWatchingSubjectMap.get(this.constructor)?.next(null);
+    entityChangeWatchingSubjectMap.get(this.constructor)?.next(getConfig());
     return res;
   }
   static async remove<T extends BaseEntity>(
@@ -39,8 +37,15 @@ export class BaseDbInfoEntity extends BaseEntity {
     options?: RemoveOptions
   ) {
     const res = await super.remove(entities, options);
-    // @ts-ignore
-    entityChangeWatchingSubjectMap.get(this.constructor)?.next(null);
+    entityChangeWatchingSubjectMap.get(this)?.next(getConfig());
+    return res as T[];
+  }
+  static async save<T extends BaseEntity>(
+    entities: T[],
+    options?: SaveOptions
+  ) {
+    const res = await super.save(entities, options);
+    entityChangeWatchingSubjectMap.get(this)?.next(getConfig());
     return res as T[];
   }
   static async delete<T extends BaseEntity>(
@@ -57,8 +62,7 @@ export class BaseDbInfoEntity extends BaseEntity {
     options?: RemoveOptions
   ) {
     const res = await super.delete(criteria, options);
-    // @ts-ignore
-    entityChangeWatchingSubjectMap.get(this.constructor)?.next(null);
+    entityChangeWatchingSubjectMap.get(this)?.next(null);
     return res;
   }
 
@@ -124,10 +128,23 @@ export class BaseDbInfoEntity extends BaseEntity {
         // @ts-ignore
         this.constructor.useConnection(getCachedConnection(getConfig()));
       // @ts-ignore
-      return old.apply(this, args);
+      const res = old.apply(this, args);
+      entityChangeWatchingSubjectMap.get(this.constructor)?.next(getConfig());
+      return res;
     };
   }
 });
+
+const triggerChangeMethods = new Set([
+  "save",
+  "remove",
+  "softRemove",
+  "insert",
+  "update",
+  "delete",
+  "query",
+  "clear",
+] as (keyof typeof BaseDbInfoEntity)[]);
 
 (
   [
@@ -160,5 +177,16 @@ export class BaseDbInfoEntity extends BaseEntity {
       // @ts-ignore
       return old.apply(this, args);
     };
+    if (triggerChangeMethods.has(p)) {
+      // @ts-ignore
+      BaseDbInfoEntity[p] = function (...args: any) {
+        const connection = getCachedConnection(getConfig());
+        if (connection) this.useConnection(connection);
+        // @ts-ignore
+        const res = old.apply(this, args);
+        entityChangeWatchingSubjectMap.get(this)?.next(getConfig());
+        return res;
+      };
+    }
   }
 });
