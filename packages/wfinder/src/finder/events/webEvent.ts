@@ -8,6 +8,7 @@ import {
 import { BehaviorSubject, merge, Subject } from "rxjs";
 import { ShallowBehaviorSubject } from "./eventLib";
 import { isEmpty, isEqual, last } from "lodash";
+import { joinToAbsolute } from "../../tools/pathTool";
 
 export enum WebEventStatus {
   none,
@@ -62,8 +63,11 @@ EvUiCmdResult.subscribe((msg) => {
       }
     }
   }
-  // Update sub-database context options
-  else if (msg.cmd === "listDbIncluded" && !msg.result.error) {
+  // Update sub-database or ScanPath external database context options
+  else if (
+    (msg.cmd === "listDbIncluded" || msg.cmd === "listPath") &&
+    !msg.result.error
+  ) {
     if (wEvEventStatus.value !== WebEventStatus.connected) return;
     const context = last(wEvGlobalState.value.contextStack);
     if (!context) return;
@@ -71,15 +75,34 @@ EvUiCmdResult.subscribe((msg) => {
     if (!lastLocal) return;
     if (getDbInfoId(lastLocal) === getDbInfoId(msg.context)) {
       const parentPath = lastLocal.dbPath.slice(0, -lastLocal.dbName.length);
-      context.localOptions = msg.result.data.map((v) => {
-        const finderRoot = parentPath + v.path;
-        return {
-          finderRoot,
-          dbName: v.dbName,
-          dbPath: finderRoot + "/" + v.dbName,
-          isSubDb: true,
-        } as TypeDbInfo;
-      });
+      const localOptions = context.localOptions || [];
+      if (msg.cmd === "listDbIncluded") {
+        msg.result.data.forEach((v) => {
+          const finderRoot = parentPath + v.path;
+          if (localOptions.find((v) => v.finderRoot === finderRoot)) return;
+          localOptions.push({
+            finderRoot,
+            dbName: v.dbName,
+            dbPath: finderRoot + "/" + v.dbName,
+            isSubDb: true,
+          } as TypeDbInfo);
+        });
+      } else if (msg.cmd === "listPath") {
+        msg.result.results.forEach((v) => {
+          const { dbPath } = v;
+          if (dbPath) {
+            const finderRoot = joinToAbsolute(parentPath, v.path);
+            if (localOptions.find((v) => v.finderRoot === finderRoot)) return;
+            localOptions.push({
+              finderRoot,
+              dbName: lastLocal.dbName,
+              dbPath: joinToAbsolute(parentPath, dbPath),
+              isSubDb: true,
+            } as TypeDbInfo);
+          }
+        });
+      }
+      context.localOptions = localOptions;
       wEvGlobalState.next({
         contextStack: [...wEvGlobalState.value.contextStack],
       });

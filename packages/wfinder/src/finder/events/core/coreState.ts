@@ -15,115 +15,170 @@ import { ConfigLineType } from "../../types";
 import Websocket from "ws";
 import { JsonMoreEntity } from "./coreTypes";
 import { switchEvent } from "../eventGateway";
+import { isEqual } from "lodash";
+import { Subject, Subscription } from "rxjs";
 
-export const waitWsConnected = (
-  socket: Websocket,
-  throwError = false,
+export function waitWsConnected(
+  url: string,
+  throwError: true,
+  silent?: boolean,
+  timeout?: number
+): Promise<Websocket>;
+export function waitWsConnected(
+  url: string,
+  throwError: false,
+  silent?: boolean,
+  timeout?: number
+): Promise<Websocket | false>;
+export function waitWsConnected(
+  url: string,
+  throwError: boolean,
+  silent?: boolean,
   timeout = uiMsgTimeout
-) => {
-  return new Promise((res, rej) => {
+): Promise<Websocket | false> {
+  return new Promise<Websocket | false>((res, rej) => {
+    let _socket: Websocket | undefined;
+    const tHandle = setTimeout(() => {
+      onFailed({ error: "waitWsConnected timeout" });
+    }, timeout);
     const onFailed = (ev: any) => {
       clearTimeout(tHandle);
       const error =
         ev.error || `waitWsConnected websocket closed: ${ev.reason}`;
       if (throwError) rej(error);
-      console.warn(error);
+      if (!silent) console.warn(error);
       res(false);
       if (
-        socket.readyState !== socket.CLOSED &&
-        socket.readyState !== socket.CLOSING
+        _socket &&
+        _socket.readyState !== _socket.CLOSED &&
+        _socket.readyState !== _socket.CLOSING
       )
-        socket.close();
+        _socket.close();
     };
-    const tHandle = setTimeout(() => {
-      onFailed({ error: "waitWsConnected timeout" });
-    }, timeout);
+    try {
+      _socket = new Websocket(url);
+    } catch (e) {
+      onFailed({ error: `Create  websocket failed: ${e}` });
+    }
+    if (!_socket) {
+      res(false);
+      return;
+    }
+    const socket = _socket;
     socket.addEventListener("error", onFailed);
     socket.addEventListener("close", onFailed);
     socket.once("open", () => {
-      socket.removeEventListener("error", onFailed);
-      socket.removeEventListener("close", onFailed);
+      socket?.removeEventListener("error", onFailed);
+      socket?.removeEventListener("close", onFailed);
       clearTimeout(tHandle);
-      res(true);
+      res(socket);
     });
   });
-};
+}
 
-export const linkRemotes = () => {
-  const sync = async () => {
-    const { linkedRemote } = cEvFinderState.value;
-    const remotes = await ConfigLine.find({
-      where: { type: ConfigLineType.remoteUrl },
-    });
-    const toLinkRemotes = remotes.filter(
-      (v) => !v.disabled && !linkedRemote[v.content]
-    );
-    const urlRemoteMap = new Map(remotes.map((v) => [v.content, v]));
-    const toDestoryLinks = Object.entries(linkedRemote).filter(
-      ([url]) => !urlRemoteMap.get(url) || urlRemoteMap.get(url)?.disabled
-    );
-    if (toLinkRemotes.length || toDestoryLinks.length) {
-      toDestoryLinks.forEach(([url, link]) => {
-        delete linkedRemote[url];
-        if (link.reconnectTimeout) {
-          clearTimeout(link.reconnectTimeout);
-          link.reconnectTimeout = undefined;
-        }
-        link.broken = true;
-        link.caller = undefined;
-        link.socket?.close();
-      });
-      const doLink = async (v: ConfigLine) => {
-        const socket = new Websocket(
-          v.content + EVENT_ORM_METHOD_WEBSOCKET_ROUTE
-        );
-        const status = await waitWsConnected(socket);
-        if (!status) {
-          socket.close();
-          cEvFinderState.value.linkedRemote[v.content] = { unavailable: true };
-        } else {
-          const caller = genRemoteCaller(
-            (data) => socket.send(data),
-            JsonMoreEntity
-          );
-          socket.on("message", (msg) => caller.recieve(String(msg)));
-          socket.on("close", () => {
-            if (!res.broken) {
-              res.broken = true;
-              res.caller = undefined;
-              if (res.reconnectTimeout) clearTimeout(res.reconnectTimeout);
-              if (!cEvFinderState.value.linkedRemote[v.content]) return;
-              res.reconnectTimeout = setTimeout(() => {
-                doLink(v).then(() => {
-                  cEvFinderState.next({
-                    linkedRemote: { ...cEvFinderState.value.linkedRemote },
-                  });
-                });
-              }, 10000);
-              cEvFinderState.next({
-                linkedRemote: { ...cEvFinderState.value.linkedRemote },
-              });
-            }
-          });
-          const res: cTypeLinkedRemote = { socket, caller };
-          cEvFinderState.value.linkedRemote[v.content] = res;
-        }
-      };
-      await Promise.all(toLinkRemotes.map((v) => doLink(v)));
-      cEvFinderState.next({
-        linkedRemote: { ...cEvFinderState.value.linkedRemote },
-      });
+export const { linkRemotes, unlinkRemotes } = (() => {
+  let interval: NodeJS.Timeout | undefined;
+  let subscribe: Subscription | undefined;
+  const doClear = () => {
+    if (interval) {
+      clearInterval(interval);
+      interval = undefined;
+    }
+    if (subscribe) {
+      subscribe.unsubscribe;
+      subscribe = undefined;
     }
   };
-  cEvConfigLineChange.pipe(debounceTime(500)).subscribe(sync);
-  sync();
-};
+  const linkRemotes = (retryInterval = 60000) => {
+    doClear();
+    const sync = async (retry = false) => {
+      const { linkedRemote } = cEvFinderState.value;
+      const newLinkedRemote: typeof linkedRemote = { ...linkRemotes };
+      const remotes = await ConfigLine.find({
+        where: { type: ConfigLineType.remoteUrl },
+      });
+      const toLinkRemotes = remotes.filter(
+        (v) =>
+          !v.disabled &&
+          (!linkedRemote[v.content] ||
+            (retry && linkedRemote[v.content].unavailable))
+      );
+      const urlRemoteMap = new Map(remotes.map((v) => [v.content, v]));
+      const toDestoryLinks = Object.entries(linkedRemote).filter(
+        ([url]) => !urlRemoteMap.get(url) || urlRemoteMap.get(url)?.disabled
+      );
+      if (toLinkRemotes.length || toDestoryLinks.length) {
+        toDestoryLinks.forEach(([url, link]) => {
+          delete linkedRemote[url];
+          if (link.reconnectTimeout) {
+            clearTimeout(link.reconnectTimeout);
+            link.reconnectTimeout = undefined;
+          }
+          link.broken = true;
+          link.caller = undefined;
+          link.socket?.close();
+        });
+        const doLink = async (v: ConfigLine) => {
+          const socket = await waitWsConnected(
+            v.content + EVENT_ORM_METHOD_WEBSOCKET_ROUTE,
+            false,
+            retry
+          );
+          if (!socket) {
+            newLinkedRemote[v.content] = { unavailable: true };
+          } else {
+            const caller = genRemoteCaller(
+              (data) => socket.send(data),
+              JsonMoreEntity
+            );
+            socket.on("message", (msg) => caller.recieve(String(msg)));
+            socket.on("close", () => {
+              if (!res.broken) {
+                res.broken = true;
+                res.caller = undefined;
+                if (res.reconnectTimeout) clearTimeout(res.reconnectTimeout);
+                if (!cEvFinderState.value.linkedRemote[v.content]) return;
+                res.reconnectTimeout = setTimeout(() => {
+                  doLink(v).then(() => {
+                    cEvFinderState.next({
+                      linkedRemote: { ...cEvFinderState.value.linkedRemote },
+                    });
+                  });
+                }, 10000);
+                cEvFinderState.next({
+                  linkedRemote: { ...cEvFinderState.value.linkedRemote },
+                });
+              }
+            });
+            const res: cTypeLinkedRemote = { socket, caller };
+            newLinkedRemote[v.content] = res;
+          }
+        };
+        await Promise.all(toLinkRemotes.map((v) => doLink(v)));
+        if (!isEqual(linkRemotes, newLinkedRemote))
+          cEvFinderState.next({
+            linkedRemote: {
+              ...cEvFinderState.value.linkedRemote,
+              ...newLinkedRemote,
+            },
+          });
+      }
+    };
+    subscribe = cEvConfigLineChange
+      .pipe(debounceTime(500))
+      .subscribe(() => sync());
+    interval = setInterval(() => sync(true), retryInterval);
+    sync();
+  };
 
-export const unlinkRemotes = () => {
-  const { linkedRemote } = cEvFinderState.value;
-  cEvFinderState.next({ linkedRemote: {} });
-  Object.values(linkedRemote).forEach((v) => v.socket?.close());
-};
+  const unlinkRemotes = () => {
+    doClear();
+    const { linkedRemote } = cEvFinderState.value;
+    cEvFinderState.next({ linkedRemote: {} });
+    Object.values(linkedRemote).forEach((v) => v.socket?.close());
+  };
+  return { linkRemotes, unlinkRemotes };
+})();
 
 /**
  * Share-socket mode transferRemote, abandoned, maybe useful in the future.

@@ -86,6 +86,9 @@ module.exports = {
             "react-dom": "@hot-loader/react-dom",
           },
         }),
+    fallback: {
+      path: require.resolve("path-browserify"),
+    },
   },
   output: {
     filename: "[name].[contenthash].js",

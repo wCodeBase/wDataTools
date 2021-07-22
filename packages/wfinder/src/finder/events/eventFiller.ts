@@ -1,4 +1,4 @@
-import { last } from "lodash";
+import { last, pick } from "lodash";
 import { debounceTime } from "rxjs/operators";
 import { Config } from "../common";
 import { getConfig, getConnection } from "../db";
@@ -16,6 +16,7 @@ import {
   EvUiCmd,
   EvUiCmdResult,
 } from "./events";
+import { LinkedRemoteItemKeys, TypeLinkedRemote } from "./types";
 import { uiCmdExecutor } from "./uiCmdExecutor";
 
 EvFileInfoChange.subscribe(async () => {
@@ -28,6 +29,10 @@ EvFileInfoChange.subscribe(async () => {
 cEvFinderState.subscribe((state) => {
   EvFinderState.next({
     config: last(state.configStack),
+    remotes: Object.entries(state.linkedRemote).reduce((res, [key, value]) => {
+      res[key] = pick(value, LinkedRemoteItemKeys);
+      return res;
+    }, {} as TypeLinkedRemote),
   });
 });
 

@@ -9,7 +9,13 @@ import {
 import { ConfigLine } from "./entities/ConfigLine";
 import inquirer from "inquirer";
 import { Connection, createConnection } from "typeorm";
-import { exit, exitNthTodo, genDbThumnail, pathPem } from "../tools/nodeTool";
+import {
+  exit,
+  exitNthTodo,
+  genDbThumnail,
+  pathPem,
+  removeDbFiles,
+} from "../tools/nodeTool";
 import { FileInfo, IndexTableName } from "./entities/FileInfo";
 import * as fs from "fs";
 import { Config, entityChangeWatchingSubjectMap, genConfig } from "./common";
@@ -40,21 +46,25 @@ const initDb = async (config: TypeDbInfo) => {
       database: dbPath,
       synchronize: true,
       entities: [FileInfo, ConfigLine],
-      name: dbPath,
+      name: dbPath + Math.random().toString(36),
     });
     await createFtsTable(connection);
-    await new ConfigLine(
-      "^node_modules$",
-      ConfigLineType.excludeChildrenFolderName
-    ).save();
     await connection.close();
     connection = undefined;
+    setTimeout(async () => {
+      await switchDb(config, async () => {
+        await new ConfigLine(
+          "^node_modules$",
+          ConfigLineType.excludeChildrenFolderName
+        ).save();
+      });
+    }, 10);
   } catch (e) {
     if (
       fs.existsSync(dbPath) &&
       Date.now() - fs.statSync(dbPath).ctime.valueOf() < 20 * 1000
     )
-      fs.unlinkSync(dbPath);
+      removeDbFiles(dbPath);
     console.error(e);
     connection?.close();
     if (!config.isSubDb && !Object.values(EvUiLaunched.value).some((v) => v)) {
@@ -246,6 +256,9 @@ export const { switchDb, getConfig } = (() => {
     return {
       get: () => (session.get(KEY_CONFIG) || Config) as TypeDbInfo,
       run: async <T>(config: TypeDbInfo, cb: () => Promise<T>) => {
+        if (config.isSubDb && !fs.existsSync(config.dbPath)) {
+          await initDb(config);
+        }
         const connection = await getConnection(config);
         return session.runPromise(async () => {
           session.set(KEY_CONFIG, config);

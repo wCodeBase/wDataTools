@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Empty, Input, message, Table } from "antd";
+import { Button, Empty, Input, message, Popover, Table, Tooltip } from "antd";
 import "antd/lib/message/style/css";
 import {
   EvFinderReady,
@@ -90,6 +90,19 @@ const DetailButton = React.memo(
 const Columns: ColumnsType<TypeMsgSearchResultItem> = [
   { title: "name", key: "name", dataIndex: "name" },
   {
+    title: "parent",
+    key: "parent",
+    dataIndex: "parent",
+    render: (_, record) => {
+      const parent = record.absPath?.slice(0, -record.name.length);
+      return (
+        <Tooltip title={parent}>
+          <div className="break-all truncate text-rtl">{parent}</div>
+        </Tooltip>
+      );
+    },
+  },
+  {
     title: "type",
     key: "type",
     dataIndex: "type",
@@ -100,11 +113,13 @@ const Columns: ColumnsType<TypeMsgSearchResultItem> = [
     title: "operation",
     key: "operation",
     dataIndex: "operation",
+    fixed: "right",
     render: (_, record) => {
       return <DetailButton record={record} />;
     },
   },
 ];
+Columns.forEach((v) => (v.align = "center"));
 
 export const Search = ({ className = "" }) => {
   const [finderStatus, subject] = useFinderStatus();
@@ -191,6 +206,7 @@ export const Search = ({ className = "" }) => {
               pageSize: state.take,
               current: Math.floor(state.skip / state.take) + 1,
             }}
+            scroll={{ x: "100%" }}
             dataSource={state.records}
             columns={Columns}
             rowKey={simpleGetKey}

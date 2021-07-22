@@ -1,5 +1,6 @@
 const colors = require("tailwindcss/colors");
 const _ = require("lodash");
+const plugin = require("tailwindcss/plugin");
 
 const range = _.rangeRight(1, 11);
 const genPairs = (subffix = "%", fractionPrefix = "") =>
@@ -45,6 +46,14 @@ module.exports = {
         ...screenWidths,
         ...screenHeights,
       },
+      maxWidth: {
+        ...screenWidths,
+        ...screenHeights,
+      },
+      minWidth: (theme) => ({
+        auto: "auto",
+        ...theme("spacing"),
+      }),
       scale: {
         ...percent25,
       },
@@ -53,5 +62,20 @@ module.exports = {
   variants: {
     extend: {},
   },
-  plugins: [],
+  plugins: [
+    plugin(function ({ addUtilities }) {
+      const newUtilities = {
+        ".text-rtl": {
+          direction: "rtl",
+        },
+        ".hide-popover-padding": {
+          ".ant-popover-inner-content": {
+            padding: "0 !important",
+          },
+        },
+      };
+
+      addUtilities(newUtilities);
+    }),
+  ],
 };

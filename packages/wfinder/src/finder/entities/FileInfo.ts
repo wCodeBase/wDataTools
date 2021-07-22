@@ -24,7 +24,7 @@ import {
   isPathInclude,
   joinToAbsolute,
   splitPath,
-} from "../../tools/nodeTool";
+} from "../../tools/pathTool";
 import { ScanPath } from "./ScanPath";
 
 export const IndexTableName = "fileindex";
@@ -108,7 +108,7 @@ export class FileInfo extends BaseDbInfoEntity {
       if (isPathEqual(config.finderRoot, finderRoot)) continue;
       try {
         const dbPath = path.join(finderRoot, db.dbName);
-        if (!fs.statSync(dbPath)) {
+        if (!fs.existsSync(dbPath)) {
           EvLog(`It's time to rescan, sub database file not exist: ${dbPath}.`);
         } else
           await switchDb(
@@ -132,14 +132,15 @@ export class FileInfo extends BaseDbInfoEntity {
       if (!scanPath.dbPath) continue;
       const absDbPath = joinToAbsolute(config.finderRoot, scanPath.dbPath);
       const absFinderRoot = joinToAbsolute(config.finderRoot, scanPath.path);
-      if (
-        !isPathInclude(config.finderRoot, absFinderRoot) &&
-        fs.statSync(absDbPath)
-      ) {
+      if (!fs.existsSync(absDbPath)) {
+        EvLog(
+          `It's time to rescan, database file of scan path not exist: ${absDbPath}.`
+        );
+      } else if (!isPathInclude(config.finderRoot, absFinderRoot)) {
         try {
           await switchDb(
             {
-              dbName: path.parse(absDbPath).name,
+              dbName: config.dbName,
               finderRoot: absFinderRoot,
               dbPath: absDbPath,
               readOnly: true,
@@ -159,7 +160,9 @@ export class FileInfo extends BaseDbInfoEntity {
 
   static async removeAllIndexedData() {
     await this.queryAllDbIncluded(async (handle) => {
-      await handle.clear();
+      await handle.clear().catch((e) => {
+        console.error("Clear FileInfo table failed: ", e);
+      });
       await handle
         .getRepository()
         .query(`drop table ${IndexTableName}`)

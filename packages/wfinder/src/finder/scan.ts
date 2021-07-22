@@ -4,13 +4,13 @@ import { cEvScanBrake } from "./events/core/coreEvents";
 import { Config, MAX_PATH_DEPTH } from "./common";
 import * as path from "path";
 import * as fs from "fs";
+import { pathPem } from "../tools/nodeTool";
 import {
-  pathPem,
   isPathEqual,
   isPathInclude,
   joinToAbsolute,
   splitPath,
-} from "../tools/nodeTool";
+} from "../tools/pathTool";
 import { FileInfo, processText } from "./entities/FileInfo";
 import { switchDb, getConnection, getConfig } from "./db";
 import { ScanPath } from "./entities/ScanPath";
@@ -327,11 +327,14 @@ export const doScan = async (
                 Math.random().toString(36).slice(2) +
                 "-" +
                 config.dbName;
-              while (!dbPath || fs.statSync(dbPath)) {
-                dbPath = path.join(
-                  pathPerm.write ? absPath : config.finderRoot,
-                  getRandomSubDatabaseName()
-                );
+              if (pathPerm.write) dbPath = path.join(absPath, config.dbName);
+              else {
+                while (!dbPath || fs.existsSync(dbPath)) {
+                  dbPath = path.join(
+                    config.finderRoot,
+                    getRandomSubDatabaseName()
+                  );
+                }
               }
               pathToScan.dbPath = isPathToScanAbs
                 ? dbPath

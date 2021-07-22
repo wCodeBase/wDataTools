@@ -8,8 +8,8 @@ import { ScanPath } from "./entities/ScanPath";
 import { TypeMsgConfigItem } from "./events/types";
 import { ConfigLineType, TypeDbInfo } from "./types";
 import path from "path";
-import { isPathEqual, isPathInclude, joinToAbsolute } from "../tools/nodeTool";
-import fs from "fs";
+import { removeDbFiles } from "../tools/nodeTool";
+import { isPathEqual, isPathInclude, joinToAbsolute } from "../tools/pathTool";
 
 export const exAddScanPath = async (scanPath: string, config = getConfig()) => {
   return await switchDb(config, async () => {
@@ -47,7 +47,7 @@ export const exDeleteScanPath = async (
         if (scanPath.dbPath) {
           const absDbPath = joinToAbsolute(config.finderRoot, scanPath.dbPath);
           if (isPathInclude(config.finderRoot, absDbPath)) {
-            fs.unlinkSync(absDbPath);
+            removeDbFiles(absDbPath);
           }
         }
       }

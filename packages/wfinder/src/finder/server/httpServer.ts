@@ -101,10 +101,10 @@ export const createHttpServer = async (options: HttpServerOption) => {
             }
             if (url) {
               const doConnect = async () => {
-                const newNext = new WebSocket(
-                  url + EVENT_TRANSFER_WEBSOCKET_ROUTE
+                const newNext = await waitWsConnected(
+                  url + EVENT_TRANSFER_WEBSOCKET_ROUTE,
+                  true
                 );
-                await waitWsConnected(newNext, true);
                 nextSocket = newNext;
                 const close = nextSocket.close.bind(nextSocket);
                 nextSocket.close = () => {

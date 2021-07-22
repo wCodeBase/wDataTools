@@ -223,13 +223,20 @@ export const ScanPathManager = defaultPropsFc(
     }));
 
     useFinderReady(() => {
+      if (!props.context) state.context = getLocalContext();
       state.listPath();
-      if (!state.context) state.context = getLocalContext();
     });
 
     useSubjectCallback(
       EvUiCmdResult,
       (res) => {
+        if (res.cmd === "listPath" && !res.result.error) {
+          console.log(
+            getDbInfoId(res.context) === getDbInfoId(state.context),
+            res.context,
+            state.context
+          );
+        }
         if (
           res.cmd === "listPath" &&
           !res.result.error &&

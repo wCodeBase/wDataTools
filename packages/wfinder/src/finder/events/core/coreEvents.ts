@@ -15,6 +15,7 @@ import {
   TypeTransferRemoteStatusMap,
   TypeTransferRemote,
   TypeTransferRemoteStatus,
+  TypeLinkedRemoteItem,
 } from "../types";
 
 export const cEvScanBrake = new BehaviorSubject(false);
@@ -33,11 +34,9 @@ const executorTpl = genRemoteExector<
 }, JsonMoreEntity);
 export type cTypeExecutor = typeof executorTpl;
 
-export type cTypeLinkedRemote = {
+export type cTypeLinkedRemote = TypeLinkedRemoteItem & {
   socket?: WebSocket;
-  broken?: boolean;
   caller?: cTypeCaller;
-  unavailable?: boolean;
   reconnectTimeout?: NodeJS.Timeout;
 };
 

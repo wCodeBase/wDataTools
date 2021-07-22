@@ -43,7 +43,7 @@ export const SimpleTextEdit: TypeTableEditRender<string> = (props) => {
     },
     [props.onChange]
   );
-  return <Input value={props.value} onChange={onChange} />;
+  return <Input className="min-w-5" value={props.value} onChange={onChange} />;
 };
 
 export const SimplePathEdit: TypeTableEditRender<string> = (props) => {
@@ -55,7 +55,7 @@ export const SimplePathEdit: TypeTableEditRender<string> = (props) => {
   );
   return (
     <div className="flex flex-row">
-      <Input value={props.value} onChange={onChange} />
+      <Input className="min-w-5" value={props.value} onChange={onChange} />
       {isElectron && (
         <Button
           type="primary"
@@ -215,7 +215,10 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                                     if (!editRecord || !onNewRecord) return;
                                     const data = { ...editRecord };
                                     if (await onNewRecord(data))
-                                      setState({ editRecord: null });
+                                      setState({
+                                        editRecord: null,
+                                        editType: "",
+                                      });
                                   }}
                                   className=" p-1"
                                 >
@@ -235,7 +238,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                                   <a className="text-red-500 p-1">Save</a>
                                 </Popconfirm>
                               )}
-                              <a className="p-0.5" onClick={state.clearEdit}>
+                              <a className="p-1" onClick={state.clearEdit}>
                                 Cancel
                               </a>
                             </>
@@ -243,7 +246,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                             <>
                               {hasEditProps && props.onSave && (
                                 <a
-                                  className="p-0.5"
+                                  className="p-1"
                                   onClick={() =>
                                     setState({
                                       editRecord: { ...record },
@@ -259,7 +262,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                                   title="Remove this record?"
                                   onConfirm={() => onRemove(record)}
                                 >
-                                  <a className="text-red-500 px-0.5">Remove</a>
+                                  <a className="text-red-500 px-1">Remove</a>
                                 </Popconfirm>
                               )}
                             </>

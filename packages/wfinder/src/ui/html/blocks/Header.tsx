@@ -11,6 +11,7 @@ import { Setting } from "../widgets/Setting";
 import { ConnectionLight } from "../components/ConnectionLight";
 import { isElectron } from "../../../finder/events/webEventTools";
 import { ContextIndicator } from "../widgets/Contexts";
+import { LinkedRemoteIndicator } from "../components/LinkedRemote";
 
 const SettingButton = React.memo(() => {
   const [state, setState] = useStableState(() => ({
@@ -61,6 +62,7 @@ export const Header = () => {
       <div className="lg:hidden">
         <SettingButton />
       </div>
+      <LinkedRemoteIndicator />
       {!isElectron && <ConnectionLight className="pl-1" />}
     </div>
   );

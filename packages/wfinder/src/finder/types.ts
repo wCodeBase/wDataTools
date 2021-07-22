@@ -49,3 +49,8 @@ export type TypeQueryLimit = {
   dbThumnailStack: string[];
   remoteLimit: number;
 };
+
+export enum IncludeDbType {
+  subDatabase = 1,
+  scanPathExternal,
+}

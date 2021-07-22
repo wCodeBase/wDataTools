@@ -11,7 +11,7 @@ export const Body = defaultPropsFc({ className: "" }, (props) => {
         " overflow-auto bg-gradient-to-tr from-cyan-700 to-lightBlue-700 flex"
       }
     >
-      <Search className="my-2 mx-3 p-1" />
+      <Search className="my-2 mx-3 p-1 flex-shrink overflow-auto" />
       <div className="hidden lg:block  w-2/5 py-3 pr-4 h-full ">
         <Setting className="h-full" />
       </div>

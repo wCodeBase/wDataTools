@@ -26,7 +26,8 @@ import { SubDatabaseHint } from "../components/SubDatabaseHint";
 const switchContext = async (
   context: WebContext,
   fromContext: WebContext,
-  isNew: boolean
+  isNew: boolean,
+  isRestore = false
 ) => {
   const { remoteUrls } = context;
   const { contextStack } = wEvGlobalState.value;
@@ -34,7 +35,9 @@ const switchContext = async (
   const isCurrentContext = contextPos === contextStack.length - 1;
   const newContexts = contextStack.slice(0, contextPos + (isNew ? 1 : 0));
   newContexts.push(context);
-  const msg = isCurrentContext
+  const msg = isRestore
+    ? "Refresh to last context"
+    : isCurrentContext
     ? "Refresh current context"
     : "Switch database context";
   try {
@@ -43,13 +46,20 @@ const switchContext = async (
     if (!remoteUrls) {
       await webInitEvent(undefined, true);
     } else {
+      wEvGlobalState.next({ contextStack: newContexts });
       const res = await webInitEvent(remoteUrls, true);
       if (!context.localContexts.length) context.localContexts = [res];
     }
     wEvGlobalState.next({ contextStack: newContexts });
-    message.success(msg + " success");
+    if (isRestore) message.warn(msg + " success");
+    else message.success(msg + " success");
   } catch (e) {
     message.error(`${msg} failed: ${e}`);
+    const contextToRestore = last(contextStack);
+    if (contextToRestore) {
+      wEvGlobalState.next({ contextStack });
+      switchContext(contextToRestore, contextToRestore, false, true);
+    }
   }
 };
 
@@ -88,7 +98,7 @@ export const ContextPannel = React.memo(() => {
                       <SubDatabaseHint className="ml-0.5" />
                     )}
                   </div>
-                  {!!context.localContexts[0].remoteUrls && (
+                  {!!context.localContexts[0]?.remoteUrls && (
                     <div>
                       <div className="flex flex-row overflow-x-auto text-amber-400 font-bold">
                         Remote paths:

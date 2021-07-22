@@ -328,3 +328,16 @@ export type TypeTransferRemote = {
   dbInfo: TypeDbInfo;
   status: TypeTransferRemoteStatus;
 };
+
+export type TypeLinkedRemoteItem = {
+  broken?: boolean;
+  unavailable?: boolean;
+};
+export const LinkedRemoteItemKeys: (keyof TypeLinkedRemoteItem)[] = [
+  "broken",
+  "unavailable",
+];
+
+export type TypeLinkedRemote = {
+  [remoteUrl: string]: TypeLinkedRemoteItem;
+};
