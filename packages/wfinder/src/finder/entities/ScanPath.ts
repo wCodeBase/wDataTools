@@ -28,7 +28,7 @@ export class ScanPath extends BaseDbInfoEntity {
   lastScanedAt?: Date;
 
   @Column({ nullable: true, type: "text" })
-  lastScanError?: string;
+  lastMessage?: string;
 
   constructor(path: string) {
     super();

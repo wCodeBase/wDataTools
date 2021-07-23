@@ -5,6 +5,8 @@ import { useCallback } from "react";
 import { ReactNode } from "react";
 import ReactDOM from "react-dom";
 import { useStableState, useUpdate } from "../hooks/hooks";
+import { TypeUiMsgResult } from "../../finder/events/types";
+import { message } from "antd";
 
 export type TypeShowModalHandle = {
   update: () => void;
@@ -61,3 +63,17 @@ export const showModal = (
     },
   };
 };
+
+export const messageError = <T extends TypeUiMsgResult>(promise: Promise<T>) =>
+  promise
+    .then((res) => {
+      if (res.result.error) {
+        message.error(res.result.error);
+        return null;
+      }
+      return res;
+    })
+    .catch((e) => {
+      message.error(String(e));
+      return null;
+    });

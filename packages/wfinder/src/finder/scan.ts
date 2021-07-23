@@ -24,14 +24,17 @@ import { SUB_DATABASE_PREFIX } from "../constants";
 export class FileScanError extends Error {}
 
 export const scanPath = async (
-  pathToScan: string,
+  pathOrScanPath: string | ScanPath,
   ignoreCtime = false,
   config = Config,
   currentDepth = 0
 ) => {
   return await switchDb(config, async (): Promise<string[]> => {
     const errors: string[] = [];
-    pathToScan = joinToAbsolute(config.finderRoot, pathToScan);
+    const pathToScan = joinToAbsolute(
+      config.finderRoot,
+      pathOrScanPath instanceof ScanPath ? pathOrScanPath.path : pathOrScanPath
+    );
     const { finderRoot } = config;
     if (!fs.existsSync(pathToScan))
       throw new FileScanError("Path to scan is not exist.");
@@ -92,12 +95,17 @@ export const scanPath = async (
           ignoreCtime,
           currentDepth + 1
         );
-        return true;
+        return testDbPath;
       }
       return false;
     };
-    if (await testAndScanSubDb(pathToScan, currentDepth)) {
+    const testDbPath = await testAndScanSubDb(pathToScan, currentDepth);
+    if (testDbPath) {
       await FileInfo.removeChildren(parentId);
+      if (pathOrScanPath instanceof ScanPath) {
+        pathOrScanPath.dbPath = path.relative(config.finderRoot, testDbPath);
+        await pathOrScanPath.save();
+      }
     } else {
       const scanStack = [
         {
@@ -310,7 +318,7 @@ export const doScan = async (
       }
       EvUiCmdMessage.next({ message: `${scanPaths.length} path to scan.` });
       for (const pathToScan of scanPaths) {
-        pathToScan.lastScanError = "";
+        pathToScan.lastMessage = "";
         const isPathToScanAbs = path.isAbsolute(pathToScan.path);
         const absPath = isPathToScanAbs
           ? pathToScan.path
@@ -327,28 +335,12 @@ export const doScan = async (
             }
             clsScan.get().Scaned.add(absPath);
             errors = errors.concat(
-              await scanPath(pathToScan.path, ignoreCtime, config, currentDepth)
+              await scanPath(pathToScan, ignoreCtime, config, currentDepth)
             );
           } else {
             let dbPath = pathToScan.dbPath;
             if (!dbPath) {
-              const getRandomSubDatabaseName = () =>
-                SUB_DATABASE_PREFIX +
-                Math.random().toString(36).slice(2) +
-                "-" +
-                config.dbName;
-              if (pathPerm.write) dbPath = path.join(absPath, config.dbName);
-              else {
-                while (!dbPath || fs.existsSync(dbPath)) {
-                  dbPath = path.join(
-                    config.finderRoot,
-                    getRandomSubDatabaseName()
-                  );
-                }
-              }
-              pathToScan.dbPath = isPathToScanAbs
-                ? dbPath
-                : path.relative(config.finderRoot, dbPath);
+              dbPath = pathToScan.dbPath = genExternalSubDbPath(pathToScan);
             }
             const scanErrors = await doScan(
               {
@@ -362,14 +354,14 @@ export const doScan = async (
               ignoreCtime,
               currentDepth
             );
-            pathToScan.lastScanError = scanErrors.join("; \n");
+            pathToScan.lastMessage = scanErrors.join("; \n");
           }
           pathToScan.lastScanedAt = new Date();
           await pathToScan.save();
           EvUiCmdMessage.next({ message: `Path scan finished: ${absPath}` });
           if (cEvScanBrake.value) break;
         } catch (e) {
-          pathToScan.lastScanError = String(e);
+          pathToScan.lastMessage = String(e);
           pathToScan.lastScanedAt = new Date();
           await pathToScan.save().catch((e) => {
             console.log("Save scan path failed: ", e);
@@ -397,4 +389,29 @@ export const doScanCmd = async () => {
   });
   await doScan();
   subscribe.unsubscribe();
+};
+
+export const genExternalSubDbPath = (scanPath: ScanPath) => {
+  const config = getConfig();
+  let dbPath = scanPath.dbPath;
+  const absPath = joinToAbsolute(config.finderRoot, scanPath.path);
+  const pathPerm = pathPem.getPem(absPath);
+  const isPathToScanAbs = path.isAbsolute(scanPath.path);
+  if (!dbPath) {
+    const getRandomSubDatabaseName = () =>
+      SUB_DATABASE_PREFIX +
+      Math.random().toString(36).slice(2) +
+      "-" +
+      config.dbName;
+    if (pathPerm.write) dbPath = path.join(absPath, config.dbName);
+    else {
+      while (!dbPath || fs.existsSync(dbPath)) {
+        dbPath = path.join(config.finderRoot, getRandomSubDatabaseName());
+      }
+    }
+    dbPath = isPathToScanAbs
+      ? dbPath
+      : path.relative(config.finderRoot, dbPath);
+  }
+  return dbPath;
 };

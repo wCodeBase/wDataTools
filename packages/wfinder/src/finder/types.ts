@@ -17,7 +17,7 @@ export type TypeDbInfo = {
   dbName: string;
   /** Absolute path for database connection */
   dbPath: string;
-  readOnly: boolean;
+  readOnly?: boolean;
   remoteUrls?: string[];
   thumbnail?: string;
   /** Is info from ScanPath or DbIncluded */

@@ -9,13 +9,7 @@ import {
 import { ConfigLine } from "./entities/ConfigLine";
 import inquirer from "inquirer";
 import { Connection, createConnection } from "typeorm";
-import {
-  exit,
-  exitNthTodo,
-  genDbThumnail,
-  pathPem,
-  removeDbFiles,
-} from "../tools/nodeTool";
+import { exit, exitNthTodo, genDbThumnail, pathPem } from "../tools/nodeTool";
 import { FileInfo, IndexTableName } from "./entities/FileInfo";
 import * as fs from "fs";
 import { Config, entityChangeWatchingSubjectMap, genConfig } from "./common";
@@ -37,7 +31,7 @@ export const createFtsTable = async (connection: Connection) => {
 };
 
 const dbType = "better-sqlite3";
-const initDb = async (config: TypeDbInfo) => {
+export const initDb = async (config: TypeDbInfo) => {
   const { dbPath } = config;
   let connection: Connection | undefined;
   try {
@@ -64,7 +58,7 @@ const initDb = async (config: TypeDbInfo) => {
       fs.existsSync(dbPath) &&
       Date.now() - fs.statSync(dbPath).ctime.valueOf() < 20 * 1000
     )
-      removeDbFiles(dbPath);
+      await removeDbFiles(dbPath);
     console.error(e);
     connection?.close();
     if (!config.isSubDb && !Object.values(EvUiLaunched.value).some((v) => v)) {
@@ -90,164 +84,174 @@ entityChangeWatchingSubjectMap.set(DbIncluded, cEvDbIncludedChange);
 // Register entity to serve remote orm method.
 cEvFinderState.next({ remoteMethodServeEntityMap: { FileInfo } });
 
-export const { getConnection, getCachedConnection } = (() => {
-  const connectionMap = new Map<string, Connection>();
-  const blockingResolveMap = new Map<string, ((res: Connection) => void)[]>();
-  const connectionLockMap = new Map<string, boolean | undefined>();
-  return {
-    getCachedConnection: (config = getConfig()) => {
-      return connectionMap.get(config.dbPath);
-    },
-    getConnection: async (
-      config = getConfig(),
-      forceCreate = false,
-      ignoreLock = false
-    ): Promise<Connection> => {
-      const { dbPath } = config;
-      let connection = connectionMap.get(dbPath);
-      if (connection) return connection;
-      const lock = connectionLockMap.get(dbPath);
-      if (lock && !ignoreLock) {
-        return new Promise<Connection>((r) => {
-          const resolves = blockingResolveMap.get(dbPath) || [];
-          resolves.push(r);
-          blockingResolveMap.set(dbPath, resolves);
-        });
-      } else connectionLockMap.set(dbPath, true);
-      try {
-        if (!fs.existsSync(dbPath)) {
-          if (config.readOnly || EvUiLaunched.value.ink)
-            throw new Error("DbPath not exist: " + dbPath);
-          if (
-            (!forceCreate && !config.isSubDb) ||
-            !pathPem.canWrite(path.parse(dbPath).dir)
-          ) {
-            // Only global database config be initialed.
-            if (config !== Config)
-              throw new Error(
-                "Failed to create connection to config: " +
-                  JSON.stringify(config)
-              );
-            if (EvUiLaunched.value.electron || EvUiLaunched.value.web) {
-              let userDataDir: string | undefined;
-              if (EvUiLaunched.value.electron) {
-                try {
-                  userDataDir = (
-                    await executeUiCmd("queryUserDataDir", {
-                      cmd: "queryUserDataDir",
-                    })
-                  ).result;
-                } catch (e) {
-                  console.error("queryUserDataDir failed: ", e);
-                }
-              }
-              let newDbPath = "";
-              if (
-                userDataDir &&
-                pathPem.canWrite(path.join(userDataDir, config.dbName))
-              ) {
-                newDbPath = userDataDir;
-              } else {
-                let message = "";
-                while (true) {
+export const { getConnection, getCachedConnection, releaseConnection } =
+  (() => {
+    const connectionMap = new Map<string, Connection>();
+    const blockingResolveMap = new Map<string, ((res: Connection) => void)[]>();
+    const connectionLockMap = new Map<string, boolean | undefined>();
+    return {
+      getCachedConnection: (config = getConfig()) => {
+        return connectionMap.get(config.dbPath);
+      },
+      releaseConnection: async (dbPath: string) => {
+        if (connectionLockMap.has(dbPath) || blockingResolveMap.has(dbPath))
+          throw new Error("Database busy now.");
+        const connection = connectionMap.get(dbPath);
+        if (connection) {
+          connectionMap.delete(dbPath);
+          await connection.close();
+        }
+      },
+      getConnection: async (
+        config = getConfig(),
+        forceCreate = false,
+        ignoreLock = false
+      ): Promise<Connection> => {
+        const { dbPath } = config;
+        let connection = connectionMap.get(dbPath);
+        if (connection) return connection;
+        const lock = connectionLockMap.get(dbPath);
+        if (lock && !ignoreLock) {
+          return new Promise<Connection>((r) => {
+            const resolves = blockingResolveMap.get(dbPath) || [];
+            resolves.push(r);
+            blockingResolveMap.set(dbPath, resolves);
+          });
+        } else connectionLockMap.set(dbPath, true);
+        try {
+          if (!fs.existsSync(dbPath)) {
+            if (config.readOnly || EvUiLaunched.value.ink)
+              throw new Error("DbPath not exist: " + dbPath);
+            if (
+              (!forceCreate && !config.isSubDb) ||
+              !pathPem.canWrite(path.parse(dbPath).dir)
+            ) {
+              // Only global database config be initialed.
+              if (config !== Config)
+                throw new Error(
+                  "Failed to create connection to config: " +
+                    JSON.stringify(config)
+                );
+              if (EvUiLaunched.value.electron || EvUiLaunched.value.web) {
+                let userDataDir: string | undefined;
+                if (EvUiLaunched.value.electron) {
                   try {
-                    const res = await executeUiCmd(
-                      "requestChooseFinderRoot",
-                      {
-                        cmd: "requestChooseFinderRoot",
-                        tag: Math.random(),
-                        data: {
-                          cwd: process.cwd(),
-                          userDataDir,
-                          currentDatabaseDir: path.parse(dbPath).dir,
-                          message,
-                        },
-                      },
-                      Infinity
-                    );
-                    const { finderRoot } = res.result;
-                    const newPath = path.resolve(finderRoot);
-                    if (
-                      finderRoot === userDataDir &&
-                      !fs.existsSync(userDataDir)
-                    )
-                      fs.mkdirSync(userDataDir);
-                    if (!fs.existsSync(newPath))
-                      message = `Error: path "${newPath}" dosen't exist.`;
-                    else if (!pathPem.canWrite(newPath))
-                      message = `Error: path "${newPath}" is not writable.`;
-                    else {
-                      newDbPath = newPath;
-                      break;
-                    }
+                    userDataDir = (
+                      await executeUiCmd("queryUserDataDir", {
+                        cmd: "queryUserDataDir",
+                      })
+                    ).result;
                   } catch (e) {
-                    console.error("requestChooseFinderRoot failed: ", e);
+                    console.error("queryUserDataDir failed: ", e);
                   }
                 }
-              }
-              const newConfig = genConfig(newDbPath);
-              const stackedConfig = cEvFinderState.value.configStack.find(
-                (v) => v.dbPath === Config.dbPath
-              );
-              if (stackedConfig) {
-                Object.assign(stackedConfig, newConfig);
-                cEvFinderState.next({
-                  configStack: [...cEvFinderState.value.configStack],
+                let newDbPath = "";
+                if (
+                  userDataDir &&
+                  pathPem.canWrite(path.join(userDataDir, config.dbName))
+                ) {
+                  newDbPath = userDataDir;
+                } else {
+                  let message = "";
+                  while (true) {
+                    try {
+                      const res = await executeUiCmd(
+                        "requestChooseFinderRoot",
+                        {
+                          cmd: "requestChooseFinderRoot",
+                          tag: Math.random(),
+                          data: {
+                            cwd: process.cwd(),
+                            userDataDir,
+                            currentDatabaseDir: path.parse(dbPath).dir,
+                            message,
+                          },
+                        },
+                        Infinity
+                      );
+                      const { finderRoot } = res.result;
+                      const newPath = path.resolve(finderRoot);
+                      if (
+                        finderRoot === userDataDir &&
+                        !fs.existsSync(userDataDir)
+                      )
+                        fs.mkdirSync(userDataDir);
+                      if (!fs.existsSync(newPath))
+                        message = `Error: path "${newPath}" dosen't exist.`;
+                      else if (!pathPem.canWrite(newPath))
+                        message = `Error: path "${newPath}" is not writable.`;
+                      else {
+                        newDbPath = newPath;
+                        break;
+                      }
+                    } catch (e) {
+                      console.error("requestChooseFinderRoot failed: ", e);
+                    }
+                  }
+                }
+                const newConfig = genConfig(newDbPath);
+                const stackedConfig = cEvFinderState.value.configStack.find(
+                  (v) => v.dbPath === Config.dbPath
+                );
+                if (stackedConfig) {
+                  Object.assign(stackedConfig, newConfig);
+                  cEvFinderState.next({
+                    configStack: [...cEvFinderState.value.configStack],
+                  });
+                }
+                Object.assign(Config, newConfig);
+                return await getConnection(
+                  Config,
+                  true,
+                  newConfig.dbPath === dbPath
+                );
+              } else {
+                const answer = await inquirer.prompt({
+                  name: "dbCreate",
+                  message: "Index database dosent exist, create it now?",
+                  type: "confirm",
                 });
+                if (!answer.dbCreate) exitNthTodo();
               }
-              Object.assign(Config, newConfig);
-              return await getConnection(
-                Config,
-                true,
-                newConfig.dbPath === dbPath
-              );
-            } else {
-              const answer = await inquirer.prompt({
-                name: "dbCreate",
-                message: "Index database dosent exist, create it now?",
-                type: "confirm",
-              });
-              if (!answer.dbCreate) exitNthTodo();
+            }
+            console.log("Creating index database...");
+            await initDb(config);
+          }
+          connection = await createConnection({
+            type: dbType,
+            name:
+              dbPath === Config.dbPath
+                ? "default"
+                : `connection-${connectionMap.size}`,
+            synchronize: true,
+            database: dbPath,
+            entities: AUTO_CONNECT_ENTITIES,
+          });
+          connectionMap.set(dbPath, connection);
+          const close = connection.close;
+          connection.close = async () => {
+            connectionMap.delete(dbPath);
+            await close();
+          };
+          const con = connection;
+          blockingResolveMap.get(dbPath)?.forEach((v) => v(con));
+          blockingResolveMap.delete(dbPath);
+          if (config === Config && !config.thumbnail) {
+            connectionLockMap.delete(dbPath);
+            try {
+              const coreInfo = await getFinderCoreInfo();
+              config.thumbnail = coreInfo.thumnail;
+            } catch (e) {
+              console.warn("Failed to get thumbnail of  global database");
             }
           }
-          console.log("Creating index database...");
-          await initDb(config);
-        }
-        connection = await createConnection({
-          type: dbType,
-          name:
-            dbPath === Config.dbPath
-              ? "default"
-              : `connection-${connectionMap.size}`,
-          synchronize: true,
-          database: dbPath,
-          entities: AUTO_CONNECT_ENTITIES,
-        });
-        connectionMap.set(dbPath, connection);
-        const close = connection.close;
-        connection.close = async () => {
-          connectionMap.delete(dbPath);
-          await close();
-        };
-        const con = connection;
-        blockingResolveMap.get(dbPath)?.forEach((v) => v(con));
-        blockingResolveMap.delete(dbPath);
-        if (config === Config && !config.thumbnail) {
+          return connection;
+        } finally {
           connectionLockMap.delete(dbPath);
-          try {
-            const coreInfo = await getFinderCoreInfo();
-            config.thumbnail = coreInfo.thumnail;
-          } catch (e) {
-            console.warn("Failed to get thumbnail of  global database");
-          }
         }
-        return connection;
-      } finally {
-        connectionLockMap.delete(dbPath);
-      }
-    },
-  };
-})();
+      },
+    };
+  })();
 
 export const { switchDb, getConfig } = (() => {
   const dbSession = (() => {
@@ -304,4 +308,10 @@ export const getFinderCoreInfo = async (notSubDb = false) => {
     coreInfoDbPath = config.dbPath;
   }
   return coreInfo;
+};
+
+export const removeDbFiles = async (absDbPath: string) => {
+  if (!fs.existsSync(absDbPath)) return;
+  await releaseConnection(absDbPath);
+  ["", "-shm", "-wal"].forEach((v) => fs.unlinkSync(absDbPath + v));
 };

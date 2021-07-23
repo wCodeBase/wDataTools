@@ -11,7 +11,7 @@ import {
 } from "./../executors";
 
 import { FileInfo } from "../entities/FileInfo";
-import { doScan, stopScan } from "./../scan";
+import { doScan, genExternalSubDbPath, stopScan } from "./../scan";
 import { EvFinderStatus, EvLog, EvUiCmd, EvUiCmdResult } from "./events";
 import {
   FinderStatus,
@@ -23,7 +23,9 @@ import {
 import { waitMilli } from "../../tools/tool";
 import { uiMsgTimeout } from "./eventTools";
 import { DbIncluded } from "../entities/DbIncluded";
-import { getConfig, switchDb } from "../db";
+import { getConfig, initDb, removeDbFiles, switchDb } from "../db";
+import { ScanPath } from "../entities/ScanPath";
+import { joinToAbsolute } from "../../tools/pathTool";
 
 export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
   if (!msg) return;
@@ -108,6 +110,28 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
           cmd,
           result: { results: result, error: "" },
         };
+      } else if (msg.cmd === "splitSubDb" || msg.cmd === "removeSubDb") {
+        const { cmd } = msg;
+        const scanPath = await ScanPath.findOne(msg.data.scanPathId);
+        if (!scanPath) throw new Error("ScanPath not exist.");
+        if (msg.cmd === "splitSubDb") {
+          const dbPath = (scanPath.dbPath = genExternalSubDbPath(scanPath));
+          await initDb({
+            dbPath,
+            dbName: context.dbName,
+            finderRoot: joinToAbsolute(context.finderRoot, scanPath.path),
+            isSubDb: true,
+          });
+        } else {
+          const dbPath = scanPath.dbPath;
+          if (dbPath) {
+            await removeDbFiles(joinToAbsolute(context.finderRoot, dbPath));
+            scanPath.dbPath = "";
+          }
+        }
+        scanPath.lastMessage = "Info changed, rescan required";
+        await scanPath.save();
+        cmdResult = { cmd, result: {} };
       } else if (msg.cmd === "addConfig") {
         const { cmd, data } = msg;
         let error = "";

@@ -70,7 +70,3 @@ export const pathPem = (() => {
     canRead: genGetOnePem(2),
   };
 })();
-
-export const removeDbFiles = (absDbPath: string) => {
-  ["", "-shm", "-wal"].forEach((v) => fs.unlinkSync(absDbPath + v));
-};

@@ -205,7 +205,7 @@ export const Search = ({ className = "" }) => {
       const element = tableAreaRef.current;
       if (element) {
         setState({ take: Math.floor(element.clientHeight / 57) - 3 });
-        if (state.records?.length) state.doSearch();
+        if (state.records?.length && state.skip > 0) state.doSearch();
       }
     }, 300),
   }));

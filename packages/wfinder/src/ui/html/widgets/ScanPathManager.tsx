@@ -26,6 +26,20 @@ import { ExclamationCircleFilled } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { formatDate } from "../../../tools/tool";
 import { useMemo } from "react";
+import { messageError } from "../uiTools";
+
+const usePathScanning = (records: TypeMsgPathItem[], context?: TypeDbInfo) => {
+  const [finderStatus] = useFinderStatus();
+  context = context || getLocalContext();
+  const contextPaths = useMemo(() => {
+    return records.map((v) => getDbInfoId(v.dbInfo) + v.path);
+  }, [context, records]);
+  return useMemo(() => {
+    return contextPaths.some((v) =>
+      finderStatus.scanContextIdAndPathSet.has(v)
+    );
+  }, [finderStatus.scanContextIdAndPathSet, contextPaths]);
+};
 
 const SearchButton = React.memo(
   (
@@ -35,16 +49,8 @@ const SearchButton = React.memo(
       noClear?: boolean;
     }
   ) => {
-    const [finderStatus] = useFinderStatus();
     const context = props.context || getLocalContext();
-    const contextPaths = useMemo(() => {
-      return props.records.map((v) => getDbInfoId(v.dbInfo) + v.path);
-    }, [context, context, props.records]);
-    const scanning = useMemo(() => {
-      return contextPaths.some((v) =>
-        finderStatus.scanContextIdAndPathSet.has(v)
-      );
-    }, [finderStatus.scanContextIdAndPathSet, contextPaths]);
+    const scanning = usePathScanning(props.records, context);
     return (
       <div className="flex flex-row">
         <div className="pl-2">
@@ -84,16 +90,15 @@ const ClearIndexButton = React.memo(
         <Button
           onClick={async () => {
             setLodaing(true);
-            const res = await executeUiCmd("clearIndexedData", {
-              cmd: "clearIndexedData",
-              data: {
-                path: props.records.map((v) => v.path),
-              },
-              context: props.context || getLocalContext(),
-            }).catch((e) => {
-              message.error(String(e));
-              return null;
-            });
+            const res = await messageError(
+              executeUiCmd("clearIndexedData", {
+                cmd: "clearIndexedData",
+                data: {
+                  path: props.records.map((v) => v.path),
+                },
+                context: props.context || getLocalContext(),
+              })
+            );
             if (res) {
               message.success("Clear scan data success");
             }
@@ -112,70 +117,6 @@ const ClearIndexButton = React.memo(
   }
 );
 
-const ScanAddonOperations = React.memo<
-  TypeManagerTableAddonOperationProps<TypeMsgPathItem>
->((props) => {
-  if (props.isTableEdit || props.isTableOnNew) return null;
-  return (
-    <div className="m-0.5">
-      <SearchButton
-        {...props}
-        context={props.record.dbInfo}
-        tiny
-        records={[props.record]}
-        noClear
-      />
-    </div>
-  );
-});
-
-const PathTable = genManagerTable<TypeMsgPathItem>(
-  // FIXME: TODO: support dbInfo.
-  [
-    "path",
-    { prop: "dbPath", title: "isolated db file" },
-    "createdAt",
-    "lastScanedAt",
-  ],
-  {
-    lastScanedAt: (val, record) => {
-      const content = (
-        <div
-          className={
-            "flex flex-row items-center truncate " +
-            (record.lastScanError ? "text-red-400 cursor-pointer" : "")
-          }
-        >
-          <span className="flex-shrink">{formatDate(val)}</span>
-          {record.lastScanError && (
-            <span className="flex items-center flex-shrink-0 ml-1">
-              <ExclamationCircleFilled />
-            </span>
-          )}
-        </div>
-      );
-      if (record.lastScanError)
-        return (
-          <Tooltip title={"Last scaned with error: \n" + record.lastScanError}>
-            {content}
-          </Tooltip>
-        );
-      else return content;
-    },
-  },
-  { path: SimplePathEdit },
-  { path: SimplePathEdit },
-  simpleGetKey,
-  () => ({
-    id: -1,
-    path: "",
-    createdAt: new Date(),
-    dbInfo: EvDefaultDbInfo.value,
-  }),
-  SearchButton,
-  ScanAddonOperations
-);
-
 export const ScanPathManager = defaultPropsFc(
   {
     className: "",
@@ -187,40 +128,149 @@ export const ScanPathManager = defaultPropsFc(
       paths: [] as TypeMsgPathItem[],
       context: props.context || getLocalContext(),
       remove: async (v: TypeMsgPathItem) => {
-        const res = await executeUiCmd("deletePath", {
-          cmd: "deletePath",
-          data: [v.path],
-          context: v.dbInfo,
-        }).catch((e) => {
-          message.error(String(e));
-          return null;
-        });
+        const res = await messageError(
+          executeUiCmd("deletePath", {
+            cmd: "deletePath",
+            data: [v.path],
+            context: v.dbInfo,
+          })
+        );
         if (res) await state.listPath();
       },
       addNew: async (v: TypeMsgPathItem) => {
-        const res = await executeUiCmd("addPath", {
-          cmd: "addPath",
-          data: [v.path],
-          context: state.context,
-        }).catch((e) => {
-          message.error(String(e));
-          return null;
-        });
+        const res = await messageError(
+          executeUiCmd("addPath", {
+            cmd: "addPath",
+            data: [v.path],
+            context: state.context,
+          })
+        );
         if (res) await state.listPath();
         return !!res;
       },
       listPath: async () => {
-        const res = await executeUiCmd("listPath", {
-          cmd: "listPath",
-          data: [],
-          context: state.context,
-        }).catch((e) => {
-          message.error(String(e));
-          return null;
-        });
+        const res = await messageError(
+          executeUiCmd("listPath", {
+            cmd: "listPath",
+            data: [],
+            context: state.context,
+          })
+        );
         return !!res;
       },
+      subDbManage: async (
+        scanPath: TypeMsgPathItem,
+        cmd: "removeSubDb" | "splitSubDb"
+      ) => {
+        await messageError(
+          executeUiCmd(cmd, {
+            cmd,
+            data: { scanPathId: scanPath.id },
+            context: state.context,
+          })
+        );
+      },
     }));
+
+    const PathTable = useMemo(() => {
+      const SubDbButtons = React.memo<
+        TypeManagerTableAddonOperationProps<TypeMsgPathItem>
+      >((props) => {
+        const scanning = usePathScanning([props.record], props.record.dbInfo);
+        return (
+          <div className="m-0.5">
+            {props.record.dbPath ? (
+              <Button
+                disabled={scanning}
+                type="primary"
+                danger
+                size="small"
+                onClick={() => state.subDbManage(props.record, "removeSubDb")}
+              >
+                RM DB
+              </Button>
+            ) : (
+              <Button
+                disabled={scanning}
+                type="primary"
+                size="small"
+                onClick={() => state.subDbManage(props.record, "splitSubDb")}
+              >
+                New DB
+              </Button>
+            )}
+          </div>
+        );
+      });
+
+      const ScanAddonOperations = React.memo<
+        TypeManagerTableAddonOperationProps<TypeMsgPathItem>
+      >((props) => {
+        if (props.isTableEdit || props.isTableOnNew) return null;
+        return (
+          <>
+            <div className="m-0.5">
+              <SearchButton
+                {...props}
+                context={props.record.dbInfo}
+                tiny
+                records={[props.record]}
+                noClear
+              />
+            </div>
+            {!props.isTableEdit && !props.isTableOnNew && (
+              <SubDbButtons {...props} />
+            )}
+          </>
+        );
+      });
+
+      return genManagerTable<TypeMsgPathItem>(
+        [
+          "path",
+          { prop: "dbPath", title: "isolated db file" },
+          "createdAt",
+          "lastScanedAt",
+        ],
+        {
+          lastScanedAt: (val, record) => {
+            const content = (
+              <div
+                className={
+                  "flex flex-row items-center truncate " +
+                  (record.lastMessage ? "text-red-400 cursor-pointer" : "")
+                }
+              >
+                <span className="flex-shrink">{formatDate(val)}</span>
+                {record.lastMessage && (
+                  <span className="flex items-center flex-shrink-0 ml-1">
+                    <ExclamationCircleFilled />
+                  </span>
+                )}
+              </div>
+            );
+            if (record.lastMessage)
+              return (
+                <Tooltip title={"Last message: \n" + record.lastMessage}>
+                  {content}
+                </Tooltip>
+              );
+            else return content;
+          },
+        },
+        { path: SimplePathEdit },
+        { path: SimplePathEdit },
+        simpleGetKey,
+        () => ({
+          id: -1,
+          path: "",
+          createdAt: new Date(),
+          dbInfo: EvDefaultDbInfo.value,
+        }),
+        SearchButton,
+        ScanAddonOperations
+      );
+    }, []);
 
     useFinderReady(() => {
       if (!props.context) state.context = getLocalContext();

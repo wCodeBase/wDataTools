@@ -84,7 +84,7 @@ type TypeMsgStopScan = {
 
 export type TypeMsgPathItem = Pick<
   ScanPath,
-  "id" | "path" | "dbPath" | "createdAt" | "lastScanedAt" | "lastScanError"
+  "id" | "path" | "dbPath" | "createdAt" | "lastScanedAt" | "lastMessage"
 > &
   Partial<Pick<ScanPath, "dbInfo">>;
 
@@ -99,6 +99,16 @@ type TypeMsgPathManage = {
   addPath: TypeMsgPathManageDef;
   deletePath: TypeMsgPathManageDef;
   listPath: TypeMsgPathManageDef;
+  splitSubDb: {
+    data: {
+      scanPathId: number;
+    };
+  };
+  removeSubDb: {
+    data: {
+      scanPathId: number;
+    };
+  };
 };
 
 export type TypeMsgConfigItem = Pick<

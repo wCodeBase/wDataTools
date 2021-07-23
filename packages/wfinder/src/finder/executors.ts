@@ -1,6 +1,6 @@
 import { last } from "lodash";
 import { waitMilli } from "../tools/tool";
-import { getConfig, switchDb } from "./db";
+import { getConfig, removeDbFiles, switchDb } from "./db";
 import { ConfigLine } from "./entities/ConfigLine";
 import { DbIncluded } from "./entities/DbIncluded";
 import { FileInfo } from "./entities/FileInfo";
@@ -8,7 +8,6 @@ import { ScanPath } from "./entities/ScanPath";
 import { TypeMsgConfigItem } from "./events/types";
 import { ConfigLineType, TypeDbInfo } from "./types";
 import path from "path";
-import { removeDbFiles } from "../tools/nodeTool";
 import { isPathEqual, isPathInclude, joinToAbsolute } from "../tools/pathTool";
 
 export const exAddScanPath = async (scanPath: string, config = getConfig()) => {
@@ -47,7 +46,7 @@ export const exDeleteScanPath = async (
         if (scanPath.dbPath) {
           const absDbPath = joinToAbsolute(config.finderRoot, scanPath.dbPath);
           if (isPathInclude(config.finderRoot, absDbPath)) {
-            removeDbFiles(absDbPath);
+            await removeDbFiles(absDbPath);
           }
         }
       }
