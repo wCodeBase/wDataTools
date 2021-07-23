@@ -48,6 +48,8 @@ type TypeMsgSearch = {
   search: {
     data: {
       keywords: string[];
+      fullMatchInput?: string;
+      regMatchInput?: string;
       skip: number;
       take: number;
     };
@@ -55,6 +57,8 @@ type TypeMsgSearch = {
       records: TypeMsgSearchResultItem[];
       total: number;
       keywords: string[];
+      fullMatchInput?: string;
+      regMatchInput?: string;
       skip: number;
       take: number;
     };
@@ -88,7 +92,6 @@ type TypeMsgPathManageDef = {
   data: string[];
   result: {
     results: TypeMsgPathItem[];
-    error: string;
   };
 };
 
@@ -107,7 +110,6 @@ export type TypeMsgConfigItem = Pick<
 type TypeMsgConfigLineDef = {
   result: {
     results: TypeMsgConfigItem[];
-    error: string;
   };
 };
 
@@ -182,7 +184,6 @@ type TypeMsgSubDbManage = {
   listDbIncluded: {
     result: {
       data: TypeDbIncludedItem[];
-      error?: string;
     };
   };
 };
@@ -202,6 +203,9 @@ export type TypeCmdUiMsgMap = {
     cmd: key;
     tag?: string | number;
     context?: TypeDbInfo;
+    result: {
+      error?: string;
+    };
   };
 };
 export type TypeUiMsgDataMap = {

@@ -28,6 +28,7 @@ import { getConfig, switchDb } from "../db";
 export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
   if (!msg) return;
   let finished = false;
+  const context = msg.context || getConfig();
   try {
     const triggerHeartBeat = async () => {
       const { tag } = msg;
@@ -37,7 +38,6 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
         EvUiCmdResult.next({ cmd: "MsgHeartbeat", tag });
       }
     };
-    const context = msg.context || getConfig();
     const cmdResult = await switchDb(context, async () => {
       let cmdResult: TypeUiMsgResult;
       if (msg.cmd === "scan") {
@@ -54,15 +54,31 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
         triggerHeartBeat();
         const { cmd, data } = msg;
         EvFinderStatus.next({ status: FinderStatus.searching });
-        const total = await FileInfo.countByMatchName(data.keywords);
-        const records = (
-          await FileInfo.findByMatchName(data.keywords, data.take, data.skip)
-        ).map((v) => {
-          const { size, type, id, dbInfo, absPath } = v;
-          return { name: v.getName(), size, type, id, dbInfo, absPath };
-        });
-        cmdResult = { cmd, result: { ...data, total, records } };
-        EvFinderStatus.next({ status: FinderStatus.idle });
+        try {
+          const [total, records] = await Promise.all([
+            await FileInfo.countByMatchName(
+              data.keywords,
+              data.fullMatchInput,
+              data.regMatchInput
+            ),
+            (
+              await FileInfo.findByMatchName(
+                data.keywords,
+                data.fullMatchInput,
+                data.regMatchInput,
+                data.take,
+                data.skip
+              )
+            ).map((v) => {
+              const { size, type, id, dbInfo, absPath } = v;
+              return { name: v.getName(), size, type, id, dbInfo, absPath };
+            }),
+          ]);
+          cmdResult = { cmd, result: { ...data, total, records } };
+          EvFinderStatus.next({ status: FinderStatus.idle });
+        } finally {
+          EvFinderStatus.next({ status: FinderStatus.idle });
+        }
       } else if (msg.cmd === "clearIndexedData") {
         triggerHeartBeat();
         const { cmd, data } = msg;
@@ -162,6 +178,12 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
     EvLog(
       `Error: failed to execute ui command. command: ${msg.cmd}, error: ${e}`
     );
+    EvUiCmdResult.next({
+      cmd: msg.cmd,
+      tag: msg.tag,
+      context,
+      result: { error: `Failed to execute command: ${msg.cmd}, error: ${e}` },
+    } as TypeUiMsgResult);
   } finally {
     finished = true;
   }

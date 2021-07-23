@@ -178,14 +178,35 @@ export class FileInfo extends BaseDbInfoEntity {
 
   static async countByMatchName(
     keywords: string[],
+    fullMatchStr?: string,
+    regMatchStr?: string,
     onlyCurrentDb = false,
     queryLimit = DEFAULT_QUERY_LIMIT
   ) {
-    const query = (rep: typeof FileInfo) =>
-      rep.query(
-        `select count(1) as count from ${IndexTableName} where name match ?`,
-        [processQueryText(keywords.join(" "))]
-      );
+    if (!keywords.every((v) => v) && !fullMatchStr && !regMatchStr) return 0;
+    const query = regMatchStr
+      ? await (async () => {
+          const { queryStr, queryParams } = await genComplexQuery(
+            (indexTable) => `select ${indexTable ? "rowid" : "id"} as id `,
+            keywords,
+            fullMatchStr
+          );
+          return async (rep: typeof FileInfo) => {
+            let ids = (await rep.query(queryStr, queryParams)).map(
+              (v: any) => v.id
+            );
+            ids = await rep.regexpMatch(ids, regMatchStr);
+            return [{ count: ids.length }];
+          };
+        })()
+      : await (async () => {
+          const { queryStr, queryParams } = await genComplexQuery(
+            () => "select count(1) as count",
+            keywords,
+            fullMatchStr
+          );
+          return (rep: typeof FileInfo) => rep.query(queryStr, queryParams);
+        })();
     const res: any[] = await (onlyCurrentDb
       ? query(this)
       : this.queryAllDbIncluded(query));
@@ -193,7 +214,7 @@ export class FileInfo extends BaseDbInfoEntity {
     if (!getConfig().isSubDb) {
       const remoteQuery = this.callRemoteStaticMethod(
         "countByMatchName",
-        [keywords, onlyCurrentDb],
+        [keywords, fullMatchStr, regMatchStr, onlyCurrentDb],
         queryLimit
       );
       let rRes = await remoteQuery.next();
@@ -212,43 +233,73 @@ export class FileInfo extends BaseDbInfoEntity {
     return sumBy(res, "count") + rTotal;
   }
 
+  /** TODO: count total */
   static async findByMatchName(
     keywords: string[],
+    fullMatchStr?: string,
+    regMatchStr?: string,
     take = 100,
     skip = 0,
     queryLimit = DEFAULT_QUERY_LIMIT
   ) {
+    if (!keywords.every((v) => v) && !fullMatchStr && !regMatchStr) return [];
     const end = take + skip;
     let pos = 0;
     let res: FileInfo[] = await this.queryAllDbIncluded(async (handle) => {
       if (pos > end) return [];
-      const count = await handle.countByMatchName(keywords, true);
+      let allIds: (number | string)[] = [];
+      if (regMatchStr) {
+        const { queryStr, queryParams } = await genComplexQuery(
+          (indexTable) => `select ${indexTable ? "rowid" : "id"} as id `,
+          keywords,
+          fullMatchStr
+        );
+        allIds = (await handle.query(queryStr, queryParams)).map(
+          (v: any) => v.id
+        );
+        allIds = await handle.regexpMatch(allIds, regMatchStr);
+      }
+      const count = regMatchStr
+        ? allIds.length
+        : await handle.countByMatchName(
+            keywords,
+            fullMatchStr,
+            regMatchStr,
+            true
+          );
       const mSkip = Math.max(0, skip - pos);
       const mEnd = Math.min(end - pos, count);
       const mTake = Math.max(0, mEnd - mSkip);
       pos += count;
       if (!mTake) return [];
-      return await handle
-        .getRepository()
-        .query(
-          `select rowid from ${IndexTableName} where name match ? limit ?,?`,
-          [processQueryText(keywords.join(" ")), mSkip, mTake]
+      if (regMatchStr) {
+        allIds = await handle.regexpMatch(allIds, regMatchStr);
+        allIds = allIds.slice(mSkip, mSkip + mTake);
+      }
+      let ids = allIds;
+      if (!regMatchStr) {
+        const { queryStr, queryParams } = await genComplexQuery(
+          (indexTable) => `select ${indexTable ? "rowid" : "id"} as id `,
+          keywords,
+          fullMatchStr,
+          mSkip,
+          mTake
+        );
+        ids = (await handle.query(queryStr, queryParams)).map((v: any) => v.id);
+      }
+      return handle.findByIds(ids).then((infos) =>
+        Promise.all(
+          infos.map(async (v) => {
+            v.absPath = await handle.getPath(v.id);
+            return v;
+          })
         )
-        .then((ids) => {
-          return handle.findByIds(ids.map((v: any) => v.rowid)).then((infos) =>
-            Promise.all(
-              infos.map(async (v) => {
-                v.absPath = await handle.getPath(v.id);
-                return v;
-              })
-            )
-          );
-        });
+      );
     });
     if (pos < end && !getConfig().isSubDb) {
       const remoteQuery = this.callRemoteStaticMethod(
         "findByMatchName",
-        [keywords, take, skip],
+        [keywords, fullMatchStr, regMatchStr, take, skip],
         queryLimit
       );
       let rRes = await remoteQuery.next();
@@ -268,6 +319,23 @@ export class FileInfo extends BaseDbInfoEntity {
         }
         rRes = await remoteQuery.next();
       }
+    }
+    return res;
+  }
+
+  static async regexpMatch(ids: (string | number)[], regStr: string) {
+    const reg = new RegExp(regStr);
+    const batchSize = 1000;
+    let res: (string | number)[] = [];
+    const tableName = (await getConnection()).getMetadata(this).tableName;
+    while (ids.length) {
+      const batch = ids.splice(-batchSize);
+      const pairs: any[] = await this.query(
+        `select id, name from ${tableName} where id in (${batch.join(",")})`
+      );
+      res = res.concat(
+        pairs.filter((v) => reg.test(restoreText(v.name))).map((v) => v.id)
+      );
     }
     return res;
   }
@@ -416,6 +484,45 @@ export class FileInfo extends BaseDbInfoEntity {
     );
   }
 }
+
+const genComplexQuery = async (
+  getSelectStr: (indexTable: boolean) => string,
+  keywords: string[],
+  fullMatchStr?: string,
+  skip?: number,
+  take?: number
+) => {
+  let queryStr = "";
+  let queryParams: (string | number)[] = [];
+  const tableName = (await getConnection()).getMetadata(FileInfo).tableName;
+  if (keywords.every((v) => v) && !fullMatchStr) {
+    queryStr = `${getSelectStr(
+      true
+    )} from ${IndexTableName} where name match ?`;
+    queryParams = [processQueryText(keywords.join(" "))];
+  }
+  if (fullMatchStr) {
+    queryStr = `${getSelectStr(false)} from ${tableName} where ${
+      keywords.every((v) => v)
+        ? `id in (select rowId from ${IndexTableName} where name match ?) and `
+        : ""
+    }${fullMatchStr ? `name like ? and ` : ""}`.replace(/and\s?$/, "");
+    queryParams = [];
+    if (keywords.every((v) => v))
+      queryParams.push(processQueryText(keywords.join(" ")));
+    if (fullMatchStr) queryParams.push(processText(`%${fullMatchStr}%`));
+  }
+  if (!queryStr) queryStr = `${getSelectStr(false)} from ${tableName}`;
+  if (take !== undefined) {
+    queryStr = queryStr + " limit ?";
+    queryParams.push(take);
+  }
+  if (skip !== undefined) {
+    queryStr = queryStr + " offset ?";
+    queryParams.push(skip);
+  }
+  return { queryStr, queryParams };
+};
 
 /** TODO: support searching for special characters like ".[]" */
 export const processText = (() => {

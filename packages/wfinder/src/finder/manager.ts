@@ -29,7 +29,7 @@ export const listScanPath = async () => {
 
 export const findFiles = async (keyWords: string[]) => {
   await getConnection();
-  const fileInfos = await FileInfo.findByMatchName(keyWords);
+  const fileInfos = await FileInfo.findByMatchName(keyWords, "", "", 101);
   if (!fileInfos.length) {
     console.log("No file found.");
     return;

@@ -110,6 +110,17 @@ export class BaseDbInfoEntity extends BaseEntity {
   }
 }
 
+const triggerChangeMethods = new Set([
+  "save",
+  "remove",
+  "softRemove",
+  "insert",
+  "update",
+  "delete",
+  "query",
+  "clear",
+] as (keyof typeof BaseDbInfoEntity)[]);
+
 (
   [
     "save",
@@ -128,23 +139,24 @@ export class BaseDbInfoEntity extends BaseEntity {
         // @ts-ignore
         this.constructor.useConnection(getCachedConnection(getConfig()));
       // @ts-ignore
-      const res = old.apply(this, args);
-      entityChangeWatchingSubjectMap.get(this.constructor)?.next(getConfig());
-      return res;
+      return old.apply(this, args);
     };
+    // @ts-ignore
+    if (triggerChangeMethods.has(p)) {
+      // @ts-ignore
+      BaseDbInfoEntity.prototype[p] = function (...args: any) {
+        const connection = getCachedConnection(getConfig());
+        if (connection)
+          // @ts-ignore
+          this.constructor.useConnection(getCachedConnection(getConfig()));
+        // @ts-ignore
+        const res = old.apply(this, args);
+        entityChangeWatchingSubjectMap.get(this.constructor)?.next(getConfig());
+        return res;
+      };
+    }
   }
 });
-
-const triggerChangeMethods = new Set([
-  "save",
-  "remove",
-  "softRemove",
-  "insert",
-  "update",
-  "delete",
-  "query",
-  "clear",
-] as (keyof typeof BaseDbInfoEntity)[]);
 
 (
   [

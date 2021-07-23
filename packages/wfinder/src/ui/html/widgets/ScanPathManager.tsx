@@ -230,13 +230,6 @@ export const ScanPathManager = defaultPropsFc(
     useSubjectCallback(
       EvUiCmdResult,
       (res) => {
-        if (res.cmd === "listPath" && !res.result.error) {
-          console.log(
-            getDbInfoId(res.context) === getDbInfoId(state.context),
-            res.context,
-            state.context
-          );
-        }
         if (
           res.cmd === "listPath" &&
           !res.result.error &&

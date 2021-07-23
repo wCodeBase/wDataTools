@@ -298,6 +298,16 @@ export const doScan = async (
       if (config.isSubDb && !scanPaths.length) {
         scanPaths.push(new ScanPath("./"));
       }
+      if (
+        scanPaths.find((v) => v.path !== "./") &&
+        !scanPaths.find((v) => v.path === "./")
+      ) {
+        EvUiCmdMessage.next({
+          warn: `Only partial sub path will be scan in ${
+            config.finderRoot
+          }: ${scanPaths.map((v) => v.path).join(";")} `,
+        });
+      }
       EvUiCmdMessage.next({ message: `${scanPaths.length} path to scan.` });
       for (const pathToScan of scanPaths) {
         pathToScan.lastScanError = "";

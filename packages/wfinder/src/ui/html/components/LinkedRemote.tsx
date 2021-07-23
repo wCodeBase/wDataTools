@@ -137,7 +137,7 @@ export const LinkedRemoteIndicator = defaultPropsFc(
         trigger="hover"
         placement="bottomRight"
       >
-        <div className="flex flex-row items-center">
+        <div className={"flex flex-row items-center " + props.className}>
           <LinkedRemoteLight
             {...props}
             className="cursor-pointer"

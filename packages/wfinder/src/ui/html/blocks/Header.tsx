@@ -62,7 +62,7 @@ export const Header = () => {
       <div className="lg:hidden">
         <SettingButton />
       </div>
-      <LinkedRemoteIndicator />
+      <LinkedRemoteIndicator className="ml-2" />
       {!isElectron && <ConnectionLight className="pl-1" />}
     </div>
   );
