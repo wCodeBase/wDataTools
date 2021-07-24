@@ -1,6 +1,7 @@
 import { exAddScanPath, exListScanPath } from "./executors";
-import { getConnection } from "./db";
+import { getConfig, getConnection } from "./db";
 import { FileInfo } from "./entities/FileInfo";
+import path from "path";
 
 export const addScanPath = async (scanPath: string) => {
   const res = await exAddScanPath(scanPath);
@@ -29,16 +30,19 @@ export const listScanPath = async () => {
 
 export const findFiles = async (keyWords: string[]) => {
   await getConnection();
-  const fileInfos = await FileInfo.findByMatchName(keyWords, "", "", 101);
+  const total = await FileInfo.countByMatchName(keyWords, "", "");
+  const fileInfos = await FileInfo.findByMatchName(keyWords, "", "", 50);
   if (!fileInfos.length) {
     console.log("No file found.");
     return;
   }
   const paths: string[] = [];
-  for (const info of fileInfos.slice(0, 100)) paths.push(await info.getPath());
+  const cwd = process.cwd();
+  for (const info of fileInfos.slice(0, 100))
+    paths.push(path.relative(cwd, info.absPath));
   console.log(
-    `Search results(${fileInfos.length}): \n`,
+    `Search results(${total}): \n`,
     paths.map((v, i) => `(${i}): ${v}`).join("\n")
   );
-  if (fileInfos.length >= 100) console.log("...");
+  if (total >= 100) console.log("...");
 };

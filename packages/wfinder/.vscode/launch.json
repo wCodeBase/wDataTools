@@ -23,6 +23,23 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "test-ts-node",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceRoot}/node_modules/ts-node/dist/bin.js",
+            "env": {"NODE_ENV":"testDebug"},
+            "args": [
+                "node_modules/.bin/mocha",
+                "./test/index.ts",
+                "./cli/index.ts"
+            ],
+            "cwd": "${workspaceFolder}",
+            "protocol": "inspector",
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "ts-node-server",
             "skipFiles": [
                 "<node_internals>/**"

@@ -27,7 +27,12 @@ import prettyBytes from "pretty-bytes";
 import { CaretRightFilled } from "@ant-design/icons";
 import { format } from "d3-format";
 
-const formatNumber = format(".0s");
+const _formatNumber = format(".3s");
+const formatNumber = (num: number) => {
+  if (!num) return num;
+  if (num < 9999) return num;
+  return _formatNumber(num);
+};
 
 const DetailButton = React.memo(
   (props: { record: TypeMsgSearchResultItem }) => {
@@ -204,7 +209,9 @@ export const Search = ({ className = "" }) => {
     adjusTakeNum: debounce(() => {
       const element = tableAreaRef.current;
       if (element) {
-        setState({ take: Math.floor(element.clientHeight / 57) - 3 });
+        const take = Math.floor(element.clientHeight / 57) - 3;
+        if (take === state.take) return;
+        setState({ take });
         if (state.records?.length && state.skip > 0) state.doSearch();
       }
     }, 300),

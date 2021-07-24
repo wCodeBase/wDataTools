@@ -31,9 +31,13 @@ export const createFtsTable = async (connection: Connection) => {
 };
 
 const dbType = "better-sqlite3";
-export const initDb = async (config: TypeDbInfo) => {
+export const initDb = async (config: TypeDbInfo, reInitIfExist = false) => {
   const { dbPath } = config;
   let connection: Connection | undefined;
+  if (fs.existsSync(config.dbPath)) {
+    if (!reInitIfExist) return;
+    await removeDbFiles(config.dbPath);
+  }
   try {
     connection = await createConnection({
       type: dbType,

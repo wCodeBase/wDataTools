@@ -54,7 +54,7 @@ export class FileInfo extends BaseDbInfoEntity {
   @Column({ default: 0 })
   ctime!: Date;
 
-  absPath?: string;
+  absPath = "";
 
   constructor(
     name: string,
@@ -87,11 +87,11 @@ export class FileInfo extends BaseDbInfoEntity {
   }
 
   async getPath() {
-    let filePath = this.name;
+    let filePath = this.getName();
     let info: FileInfo | undefined = this;
     while (true) {
       info = await FileInfo.findOne(info.parentId);
-      if (info) filePath = path.join(info.name, filePath);
+      if (info) filePath = path.join(info.getName(), filePath);
       else break;
     }
     return filePath;
