@@ -354,12 +354,6 @@ export const watchServerSettings = () => {
       getDbInfoId(msg.context) === getDbInfoId(Config)
     ) {
       if (!msg.result.error) {
-        console.log(
-          "change",
-          msg.result.results.filter(
-            (v) => v.type === ConfigLineType.serverSetting
-          )
-        );
         const config = msg.result.results.filter(
           (v) => v.type === ConfigLineType.serverSetting
         )[0];

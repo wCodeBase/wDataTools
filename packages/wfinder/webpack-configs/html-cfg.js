@@ -3,8 +3,11 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 const mode = process.env.NODE_ENV || "production";
 const isDev = mode === "development";
+const isAnalyze = process.env.M_NODE_ENV === "analyze";
 const distHtmlRoot = path.resolve(__dirname, "../dist/ui/html/");
 const setting = require("./setting");
+const BundleAnalyzerPlugin =
+  require("webpack-bundle-analyzer").BundleAnalyzerPlugin;
 
 module.exports = {
   entry: "./src/ui/html/index.tsx",
@@ -96,6 +99,7 @@ module.exports = {
     clean: true,
   },
   plugins: [
+    ...(isAnalyze ? [new BundleAnalyzerPlugin({ analyzerPort: 10049 })] : []),
     new HtmlWebpackPlugin({
       filename: "index.html",
       template: "./src/ui/html/index.html",
