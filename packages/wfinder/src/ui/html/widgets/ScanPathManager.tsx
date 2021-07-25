@@ -8,7 +8,7 @@ import {
 } from "../../../finder/events/events";
 import { useStableState, useSubjectCallback } from "../../hooks/hooks";
 import { FinderStatus, TypeMsgPathItem } from "../../../finder/events/types";
-import { Button, message, Tooltip } from "antd";
+import { Button, message, Popconfirm, Tooltip } from "antd";
 import {
   genManagerTable,
   SimplePathEdit,
@@ -180,15 +180,15 @@ export const ScanPathManager = defaultPropsFc(
         return (
           <div className="m-0.5">
             {props.record.dbPath ? (
-              <Button
+              <Popconfirm
+                title="Are you sure to remove isolated sub databas of this scan path?"
                 disabled={scanning}
-                type="primary"
-                danger
-                size="small"
-                onClick={() => state.subDbManage(props.record, "removeSubDb")}
+                onConfirm={() => state.subDbManage(props.record, "removeSubDb")}
               >
-                RM DB
-              </Button>
+                <Button type="primary" danger size="small">
+                  RM DB
+                </Button>
+              </Popconfirm>
             ) : (
               <Button
                 disabled={scanning}

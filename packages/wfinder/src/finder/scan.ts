@@ -80,6 +80,16 @@ export const scanPath = async (
         EvUiCmdMessage.next({
           message: `Sub database found: ${testDbPath}`,
         });
+        await DbIncluded.remove(
+          (
+            await DbIncluded.find()
+          ).filter((v) =>
+            isPathInclude(
+              testAbsPath,
+              joinToAbsolute(v.dbInfo.finderRoot, v.path)
+            )
+          )
+        );
         await DbIncluded.mark(
           path.relative(config.finderRoot, testAbsPath),
           config.dbName

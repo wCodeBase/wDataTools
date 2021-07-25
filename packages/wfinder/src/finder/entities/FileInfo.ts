@@ -172,6 +172,9 @@ export class FileInfo extends BaseDbInfoEntity {
       await createFtsTable(await getConnection()).catch((e) => {
         console.error("Create fts table failed: ", e);
       });
+      await DbIncluded.clear().catch((e) => {
+        console.error("Clear DbIncluded table failed: ", e);
+      });
       return [];
     });
   }

@@ -9,7 +9,24 @@ export enum ConfigLineType {
   remoteUrl,
   coreInfo,
   userPreference,
+  serverSetting,
 }
+
+export type TypeServerSetting = {
+  bindAddressList: string[];
+  allowIps: string[];
+  /** TODO: authority verification */
+  passwordPairs: [];
+  allowTokens: [];
+  serverOpen?: boolean;
+};
+
+export const defaultServerSetting: TypeServerSetting = {
+  bindAddressList: ["0.0.0.0:9000"],
+  allowIps: [".*"],
+  passwordPairs: [],
+  allowTokens: [],
+};
 
 export type TypeDbInfo = {
   /** Root path for indexing, only files included in this path will be scan and index */

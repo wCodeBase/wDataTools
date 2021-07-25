@@ -144,13 +144,13 @@ const triggerChangeMethods = new Set([
     // @ts-ignore
     if (triggerChangeMethods.has(p)) {
       // @ts-ignore
-      BaseDbInfoEntity.prototype[p] = function (...args: any) {
+      BaseDbInfoEntity.prototype[p] = async function (...args: any) {
         const connection = getCachedConnection(getConfig());
         if (connection)
           // @ts-ignore
           this.constructor.useConnection(getCachedConnection(getConfig()));
         // @ts-ignore
-        const res = old.apply(this, args);
+        const res = await old.apply(this, args);
         entityChangeWatchingSubjectMap.get(this.constructor)?.next(getConfig());
         return res;
       };

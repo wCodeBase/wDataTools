@@ -16,7 +16,7 @@ export class ConfigLine extends BaseDbInfoEntity {
   id!: number;
 
   @Column({ type: "text" })
-  content: string;
+  content = "";
 
   @Column()
   type: ConfigLineType;

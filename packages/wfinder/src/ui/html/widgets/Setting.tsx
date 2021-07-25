@@ -14,8 +14,16 @@ import {
 import { Tag, Tooltip } from "antd";
 import { InfoCircleFilled, InfoCircleOutlined } from "@ant-design/icons";
 import { SubDatabaseHint } from "../components/SubDatabaseHint";
+import { ServerSettings } from "./ServerSettings";
+import { isElectron } from "../../../finder/events/webEventTools";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 
 const Segments = {
+  ...(isElectron
+    ? {
+        ServerSettings,
+      }
+    : {}),
   ScanPathManager,
   FileNameToExcludeManager,
   FileNameToExcludeChildrenManager,
@@ -64,7 +72,9 @@ export const Setting = defaultPropsFc(
                     (index < segments.length - 1 ? " mb-2 " : "")
                   }
                 >
-                  <Render titleClassName="text-white text-base leading-6 bg-lightBlue-800 p-1 " />
+                  <ErrorBoundary>
+                    <Render titleClassName="text-white text-base leading-6 bg-lightBlue-800 p-1 " />
+                  </ErrorBoundary>
                 </div>
               );
             }

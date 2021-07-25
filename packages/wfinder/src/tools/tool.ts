@@ -29,3 +29,9 @@ export const formatDate = (date: Date) => {
   if (!date) return "";
   return dayjs(date).format("YYYY-MM-DD hh:mm:ss");
 };
+
+export const parseAddress = (address: string) => {
+  const [host, portStr = "80"] = address.split(":");
+  const port = parseInt(portStr);
+  return { host, port };
+};

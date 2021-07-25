@@ -26,6 +26,7 @@ import { DbIncluded } from "../entities/DbIncluded";
 import { getConfig, initDb, removeDbFiles, switchDb } from "../db";
 import { ScanPath } from "../entities/ScanPath";
 import { joinToAbsolute } from "../../tools/pathTool";
+import { isDev } from "../common";
 
 export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
   if (!msg) return;
@@ -208,6 +209,9 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
       context,
       result: { error: `Failed to execute command: ${msg.cmd}, error: ${e}` },
     } as TypeUiMsgResult);
+    if (isDev) {
+      console.log(`Failed to execute command: ${msg.cmd}`, e);
+    }
   } finally {
     finished = true;
   }

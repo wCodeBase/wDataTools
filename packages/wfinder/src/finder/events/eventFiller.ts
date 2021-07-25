@@ -1,3 +1,4 @@
+import { watchServerSettings } from "./../server/httpServer";
 import { last, pick } from "lodash";
 import { debounceTime } from "rxjs/operators";
 import { Config } from "../common";
@@ -15,9 +16,15 @@ import {
   EvFinderState,
   EvUiCmd,
   EvUiCmdResult,
+  EvUiLaunched,
 } from "./events";
-import { LinkedRemoteItemKeys, TypeLinkedRemote } from "./types";
+import {
+  LinkedRemoteItemKeys,
+  TypeLinkedRemote,
+  TypeServerState,
+} from "./types";
 import { uiCmdExecutor } from "./uiCmdExecutor";
+import { TypeServerSetting } from "../types";
 
 EvFileInfoChange.subscribe(async () => {
   await getConnection();
@@ -33,6 +40,11 @@ cEvFinderState.subscribe((state) => {
       res[key] = pick(value, LinkedRemoteItemKeys);
       return res;
     }, {} as TypeLinkedRemote),
+    servers: Object.entries(state.serverState).reduce((res, [key, state]) => {
+      const { server, ...rest } = state;
+      res[key] = rest;
+      return res;
+    }, {} as TypeServerState),
   });
 });
 
@@ -44,4 +56,12 @@ cEvDbIncludedChange.subscribe((context) => {
 });
 cEvScanPathChange.subscribe((context) => {
   uiCmdExecutor({ cmd: "listPath", data: [], context: context || Config });
+});
+
+const uiLaunchSub = EvUiLaunched.subscribe((v) => {
+  if (v.electron)
+    process.nextTick(() => {
+      uiLaunchSub.unsubscribe();
+      watchServerSettings();
+    });
 });

@@ -9,11 +9,18 @@ import {
   listScanPath,
 } from "./finder/manager";
 import { doScanCmd } from "./finder/scan";
-import { HttpServerOption } from "./finder/types";
+import {
+  defaultServerSetting,
+  HttpServerOption,
+  TypeServerSetting,
+} from "./finder/types";
+import { parseAddress } from "./tools/tool";
 
 const program = new Command();
-const defaultServerPort = 9000;
-const defaultServerHost = localhost;
+const defaultServerAddress = defaultServerSetting.bindAddressList[0];
+const { port: defaultServerPort, host: defaultServerHost } =
+  parseAddress(defaultServerAddress);
+
 program
   .command("serve")
   .description("Start web server.")
@@ -25,17 +32,33 @@ program
     "-a, --address <address>",
     `Host address to bind. default ${defaultServerHost}`
   )
+  .option(
+    "-i, --ip <ips...>",
+    `Limit access only to ips which match any of given regular expressions`
+  )
   .action(async (options) => {
     let port = options.port ? Number.parseInt(options.port) : defaultServerPort;
     const host = options.host || defaultServerHost;
     let portConflict = false;
+    let settings: TypeServerSetting | undefined = undefined;
+    if (options.ip) {
+      settings = { ...defaultServerSetting, allowIps: options.ip };
+    }
     while (true) {
       try {
-        await require("./finder/server").runAsServer({
-          port,
-          host,
-        } as HttpServerOption);
+        await require("./finder/server").runAsServer(
+          {
+            port,
+            host,
+          } as HttpServerOption,
+          settings
+        );
         console.log(`Server listening on http://${host}:${port}`);
+        if (options.ip)
+          console.warn(
+            "Only request from these ips will be acceptted: " +
+              options.ip.join(", ")
+          );
         break;
       } catch (e) {
         if (e.code === "EADDRINUSE" && !options.port) {

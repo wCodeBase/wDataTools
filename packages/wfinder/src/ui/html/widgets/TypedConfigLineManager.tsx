@@ -20,6 +20,7 @@ import { ConfigLineType, getDbInfoId } from "../../../finder/types";
 import { useFinderReady } from "../../hooks/webHooks";
 import { isEmpty, isEqual } from "lodash";
 import { getLocalContext } from "../../../finder/events/webEvent";
+import { messageError } from "../uiTools";
 
 const genTypedConfigmanager = (
   type: ConfigLineType,
@@ -50,54 +51,41 @@ const genTypedConfigmanager = (
           waitingForCmdResult: false,
           configs: [] as TypeMsgConfigItem[],
           remove: async (v: TypeMsgConfigItem) => {
-            const res = await executeUiCmd("deleteConfig", {
-              cmd: "deleteConfig",
-              data: v,
-            }).catch((e) => {
-              message.error(String(e));
-              return null;
-            });
-            if (res?.result.error) message.error(res?.result.error);
+            await messageError(
+              executeUiCmd("deleteConfig", {
+                cmd: "deleteConfig",
+                data: v,
+              })
+            );
           },
           addNew: async (v: TypeMsgConfigItem) => {
-            const res = await executeUiCmd("addConfig", {
-              cmd: "addConfig",
-              data: v,
-              context: props.contexted ? getLocalContext() : undefined,
-            }).catch((e) => {
-              message.error(String(e));
-              return null;
-            });
-            if (res?.result.error) message.error(res?.result.error);
+            const res = await messageError(
+              executeUiCmd("addConfig", {
+                cmd: "addConfig",
+                data: v,
+                context: props.contexted ? getLocalContext() : undefined,
+              })
+            );
             return !!res;
           },
           save: async (v: TypeMsgConfigItem) => {
-            const res = await executeUiCmd("saveConfig", {
-              cmd: "saveConfig",
-              data: v,
-              context: props.contexted ? getLocalContext() : undefined,
-            }).catch((e) => {
-              message.error(String(e));
-              return null;
-            });
-            if (res?.result.error) message.error(res?.result.error);
+            const res = await messageError(
+              executeUiCmd("saveConfig", {
+                cmd: "saveConfig",
+                data: v,
+                context: props.contexted ? getLocalContext() : undefined,
+              })
+            );
             return !!res;
           },
           listConfig: async () => {
-            const res = await executeUiCmd("listConfig", {
-              cmd: "listConfig",
-              data: listConfigData,
-              context: props.contexted ? getLocalContext() : undefined,
-            }).catch((e) => {
-              message.error(String(e));
-              return null;
-            });
-            if (res?.result.error) message.error(res?.result.error);
-          },
-          checkBusy: () => {
-            if (state.waitingForCmdResult)
-              message.warn("Busy now, pleace waiting...");
-            return state.waitingForCmdResult;
+            await messageError(
+              executeUiCmd("listConfig", {
+                cmd: "listConfig",
+                data: listConfigData,
+                context: props.contexted ? getLocalContext() : undefined,
+              })
+            );
           },
         };
         return res;

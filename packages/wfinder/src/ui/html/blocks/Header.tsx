@@ -12,6 +12,7 @@ import { ConnectionLight } from "../components/ConnectionLight";
 import { isElectron } from "../../../finder/events/webEventTools";
 import { ContextIndicator } from "../widgets/Contexts";
 import { LinkedRemoteIndicator } from "../components/LinkedRemote";
+import { ServerLight } from "../components/ServerLight";
 
 const SettingButton = React.memo(() => {
   const [state, setState] = useStableState(() => ({
@@ -24,6 +25,7 @@ const SettingButton = React.memo(() => {
     <>
       <Button
         type="primary"
+        size="middle"
         onClick={() => {
           setState({ showSetting: true });
         }}
@@ -63,6 +65,7 @@ export const Header = () => {
         <SettingButton />
       </div>
       <LinkedRemoteIndicator className="ml-2" />
+      {isElectron && <ServerLight className="ml-2" />}
       {!isElectron && <ConnectionLight className="pl-1" />}
     </div>
   );

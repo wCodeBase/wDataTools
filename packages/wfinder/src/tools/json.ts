@@ -149,7 +149,7 @@ export const buildJsonMore = <T>(
     },
     parse: (data: string) => {
       const json: JsonMoreData = JSON.parse(data);
-      if (json.label !== "JsonMoreData") return null;
+      if (json.label !== "JsonMoreData") return json as _TypeJsonData<T>;
       json.special.forEach((special) => {
         const { type, path } = special;
         if (nameSpecialValueMap.has(type)) {

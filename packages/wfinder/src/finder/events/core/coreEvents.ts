@@ -16,7 +16,9 @@ import {
   TypeTransferRemote,
   TypeTransferRemoteStatus,
   TypeLinkedRemoteItem,
+  TypeServerState,
 } from "../types";
+import { Server } from "http";
 
 export const cEvScanBrake = new BehaviorSubject(false);
 const callTpl = genRemoteCaller<cTypeJsonMoreEntitySpecial, cTypeOrmCallDef>(
@@ -48,6 +50,12 @@ export type cTypeTransferRemote = {
   status: TypeTransferRemoteStatus;
 };
 
+export type cTypeServerState = {
+  error?: string;
+  server?: Server;
+  connecting?: boolean;
+};
+
 const emptyFinderState = {
   configStack: [] as TypeDbInfo[],
   configIndex: 0,
@@ -59,6 +67,7 @@ const emptyFinderState = {
     string,
     ObjectType<BaseDbInfoEntity>
   >,
+  serverState: {} as { [address: string]: cTypeServerState },
 };
 
 export type CoreFinderState = typeof emptyFinderState;

@@ -15,7 +15,12 @@ import * as fs from "fs";
 import { Config, entityChangeWatchingSubjectMap, genConfig } from "./common";
 import { ScanPath } from "./entities/ScanPath";
 import { DbIncluded } from "./entities/DbIncluded";
-import { EvFileInfoChange, EvUiCmd, EvUiLaunched } from "./events/events";
+import {
+  EvFileInfoChange,
+  EvLog,
+  EvUiCmd,
+  EvUiLaunched,
+} from "./events/events";
 import { ConfigLineType, TypeDbInfo, TypeFinderCoreInfo } from "./types";
 import { STR_FINDER_CORE_INFO } from "../constants";
 import { executeUiCmd } from "./events/eventTools";
@@ -49,14 +54,18 @@ export const initDb = async (config: TypeDbInfo, reInitIfExist = false) => {
     await createFtsTable(connection);
     await connection.close();
     connection = undefined;
-    setTimeout(async () => {
+    const postCreateConnection = async () => {
+      clearTimeout(postCreateConnectionTimeout);
+      postCreate.delete(dbPath, postCreateConnection);
       await switchDb(config, async () => {
         await new ConfigLine(
           "^node_modules$",
           ConfigLineType.excludeChildrenFolderName
         ).save();
       });
-    }, 10);
+    };
+    const postCreateConnectionTimeout = setTimeout(postCreateConnection, 10);
+    postCreate.add(dbPath, postCreateConnection);
   } catch (e) {
     if (
       fs.existsSync(dbPath) &&
@@ -88,174 +97,204 @@ entityChangeWatchingSubjectMap.set(DbIncluded, cEvDbIncludedChange);
 // Register entity to serve remote orm method.
 cEvFinderState.next({ remoteMethodServeEntityMap: { FileInfo } });
 
-export const { getConnection, getCachedConnection, releaseConnection } =
-  (() => {
-    const connectionMap = new Map<string, Connection>();
-    const blockingResolveMap = new Map<string, ((res: Connection) => void)[]>();
-    const connectionLockMap = new Map<string, boolean | undefined>();
-    return {
-      getCachedConnection: (config = getConfig()) => {
-        return connectionMap.get(config.dbPath);
+export const {
+  getConnection,
+  getCachedConnection,
+  releaseConnection,
+  postCreate,
+} = (() => {
+  const connectionMap = new Map<string, Connection>();
+  let connectionIndex = 0;
+  const blockingResolveMap = new Map<string, ((res: Connection) => void)[]>();
+  const connectionLockMap = new Map<string, boolean | undefined>();
+  const postCreateConnectionMap = new Map<string, (() => Promise<void>)[]>();
+  return {
+    getCachedConnection: (config = getConfig()) => {
+      return connectionMap.get(config.dbPath);
+    },
+    postCreate: {
+      add: (dbPath: string, cb: () => Promise<void>) => {
+        postCreateConnectionMap.set(
+          dbPath,
+          (postCreateConnectionMap.get(dbPath) || []).concat(cb)
+        );
       },
-      releaseConnection: async (dbPath: string) => {
-        if (connectionLockMap.has(dbPath) || blockingResolveMap.has(dbPath))
-          throw new Error("Database busy now.");
-        const connection = connectionMap.get(dbPath);
-        if (connection) {
-          connectionMap.delete(dbPath);
-          await connection.close();
-        }
+      delete: (dbPath: string, cb: () => Promise<void>) => {
+        const cbs = postCreateConnectionMap
+          .get(dbPath)
+          ?.filter((v) => v !== cb);
+        if (cbs?.length) postCreateConnectionMap.set(dbPath, cbs);
+        else postCreateConnectionMap.delete(dbPath);
       },
-      getConnection: async (
-        config = getConfig(),
-        forceCreate = false,
-        ignoreLock = false
-      ): Promise<Connection> => {
-        const { dbPath } = config;
-        let connection = connectionMap.get(dbPath);
-        if (connection) return connection;
-        const lock = connectionLockMap.get(dbPath);
-        if (lock && !ignoreLock) {
-          return new Promise<Connection>((r) => {
-            const resolves = blockingResolveMap.get(dbPath) || [];
-            resolves.push(r);
-            blockingResolveMap.set(dbPath, resolves);
-          });
-        } else connectionLockMap.set(dbPath, true);
-        try {
-          if (!fs.existsSync(dbPath)) {
-            if (config.readOnly || EvUiLaunched.value.ink)
-              throw new Error("DbPath not exist: " + dbPath);
-            if (
-              (!forceCreate && !config.isSubDb) ||
-              !pathPem.canWrite(path.parse(dbPath).dir)
-            ) {
-              // Only global database config be initialed.
-              if (config !== Config)
-                throw new Error(
-                  "Failed to create connection to config: " +
-                    JSON.stringify(config)
-                );
-              if (EvUiLaunched.value.electron || EvUiLaunched.value.web) {
-                let userDataDir: string | undefined;
-                if (EvUiLaunched.value.electron) {
-                  try {
-                    userDataDir = (
-                      await executeUiCmd("queryUserDataDir", {
-                        cmd: "queryUserDataDir",
-                      })
-                    ).result;
-                  } catch (e) {
-                    console.error("queryUserDataDir failed: ", e);
-                  }
+    },
+    releaseConnection: async (dbPath: string) => {
+      if (connectionLockMap.has(dbPath) || blockingResolveMap.has(dbPath))
+        throw new Error("Database busy now.");
+      const connection = connectionMap.get(dbPath);
+      if (connection) {
+        connectionMap.delete(dbPath);
+        await connection.close();
+      }
+    },
+    getConnection: async (
+      config = getConfig(),
+      forceCreate = false,
+      ignoreLock = false
+    ): Promise<Connection> => {
+      const { dbPath } = config;
+      let connection = connectionMap.get(dbPath);
+      if (connection) return connection;
+      const lock = connectionLockMap.get(dbPath);
+      if (lock && !ignoreLock) {
+        return new Promise<Connection>((r) => {
+          const resolves = blockingResolveMap.get(dbPath) || [];
+          resolves.push(r);
+          blockingResolveMap.set(dbPath, resolves);
+        });
+      } else connectionLockMap.set(dbPath, true);
+      try {
+        if (!fs.existsSync(dbPath)) {
+          if (config.readOnly || EvUiLaunched.value.ink)
+            throw new Error("DbPath not exist: " + dbPath);
+          if (
+            (!forceCreate && !config.isSubDb) ||
+            !pathPem.canWrite(path.parse(dbPath).dir)
+          ) {
+            // Only global database config be initialed.
+            if (config !== Config)
+              throw new Error(
+                "Failed to create connection to config: " +
+                  JSON.stringify(config)
+              );
+            if (EvUiLaunched.value.electron || EvUiLaunched.value.web) {
+              let userDataDir: string | undefined;
+              if (EvUiLaunched.value.electron) {
+                try {
+                  userDataDir = (
+                    await executeUiCmd("queryUserDataDir", {
+                      cmd: "queryUserDataDir",
+                    })
+                  ).result;
+                } catch (e) {
+                  console.error("queryUserDataDir failed: ", e);
                 }
-                let newDbPath = "";
-                if (
-                  userDataDir &&
-                  pathPem.canWrite(path.join(userDataDir, config.dbName))
-                ) {
-                  newDbPath = userDataDir;
-                } else {
-                  let message = "";
-                  while (true) {
-                    try {
-                      const res = await executeUiCmd(
-                        "requestChooseFinderRoot",
-                        {
-                          cmd: "requestChooseFinderRoot",
-                          tag: Math.random(),
-                          data: {
-                            cwd: process.cwd(),
-                            userDataDir,
-                            currentDatabaseDir: path.parse(dbPath).dir,
-                            message,
-                          },
-                        },
-                        Infinity
-                      );
-                      const { finderRoot } = res.result;
-                      const newPath = path.resolve(finderRoot);
-                      if (
-                        finderRoot === userDataDir &&
-                        !fs.existsSync(userDataDir)
-                      )
-                        fs.mkdirSync(userDataDir);
-                      if (!fs.existsSync(newPath))
-                        message = `Error: path "${newPath}" dosen't exist.`;
-                      else if (!pathPem.canWrite(newPath))
-                        message = `Error: path "${newPath}" is not writable.`;
-                      else {
-                        newDbPath = newPath;
-                        break;
-                      }
-                    } catch (e) {
-                      console.error("requestChooseFinderRoot failed: ", e);
-                    }
-                  }
-                }
-                const newConfig = genConfig(newDbPath);
-                const stackedConfig = cEvFinderState.value.configStack.find(
-                  (v) => v.dbPath === Config.dbPath
-                );
-                if (stackedConfig) {
-                  Object.assign(stackedConfig, newConfig);
-                  cEvFinderState.next({
-                    configStack: [...cEvFinderState.value.configStack],
-                  });
-                }
-                Object.assign(Config, newConfig);
-                return await getConnection(
-                  Config,
-                  true,
-                  newConfig.dbPath === dbPath
-                );
-              } else {
-                const answer = await inquirer.prompt({
-                  name: "dbCreate",
-                  message: "Index database dosent exist, create it now?",
-                  type: "confirm",
-                });
-                if (!answer.dbCreate) exitNthTodo();
               }
+              let newDbPath = "";
+              if (
+                userDataDir &&
+                pathPem.canWrite(path.join(userDataDir, config.dbName))
+              ) {
+                newDbPath = userDataDir;
+              } else {
+                let message = "";
+                while (true) {
+                  try {
+                    const res = await executeUiCmd(
+                      "requestChooseFinderRoot",
+                      {
+                        cmd: "requestChooseFinderRoot",
+                        tag: Math.random(),
+                        data: {
+                          cwd: process.cwd(),
+                          userDataDir,
+                          currentDatabaseDir: path.parse(dbPath).dir,
+                          message,
+                        },
+                      },
+                      Infinity
+                    );
+                    const { finderRoot } = res.result;
+                    const newPath = path.resolve(finderRoot);
+                    if (
+                      finderRoot === userDataDir &&
+                      !fs.existsSync(userDataDir)
+                    )
+                      fs.mkdirSync(userDataDir);
+                    if (!fs.existsSync(newPath))
+                      message = `Error: path "${newPath}" dosen't exist.`;
+                    else if (!pathPem.canWrite(newPath))
+                      message = `Error: path "${newPath}" is not writable.`;
+                    else {
+                      newDbPath = newPath;
+                      break;
+                    }
+                  } catch (e) {
+                    console.error("requestChooseFinderRoot failed: ", e);
+                  }
+                }
+              }
+              const newConfig = genConfig(newDbPath);
+              const stackedConfig = cEvFinderState.value.configStack.find(
+                (v) => v.dbPath === Config.dbPath
+              );
+              if (stackedConfig) {
+                Object.assign(stackedConfig, newConfig);
+                cEvFinderState.next({
+                  configStack: [...cEvFinderState.value.configStack],
+                });
+              }
+              Object.assign(Config, newConfig);
+              return await getConnection(
+                Config,
+                true,
+                newConfig.dbPath === dbPath
+              );
+            } else {
+              const answer = await inquirer.prompt({
+                name: "dbCreate",
+                message: "Index database dosent exist, create it now?",
+                type: "confirm",
+              });
+              if (!answer.dbCreate) exitNthTodo();
             }
-            console.log("Creating index database...");
-            await initDb(config);
           }
-          connection = await createConnection({
-            type: dbType,
-            name:
-              dbPath === Config.dbPath
-                ? "default"
-                : `connection-${connectionMap.size}`,
-            synchronize: true,
-            database: dbPath,
-            entities: AUTO_CONNECT_ENTITIES,
-          });
-          connectionMap.set(dbPath, connection);
-          const close = connection.close;
-          connection.close = async () => {
-            connectionMap.delete(dbPath);
-            await close();
-          };
-          const con = connection;
-          blockingResolveMap.get(dbPath)?.forEach((v) => v(con));
-          blockingResolveMap.delete(dbPath);
-          if (config === Config && !config.thumbnail) {
-            connectionLockMap.delete(dbPath);
-            try {
-              const coreInfo = await getFinderCoreInfo();
-              config.thumbnail = coreInfo.thumnail;
-            } catch (e) {
-              console.warn("Failed to get thumbnail of  global database");
-            }
-          }
-          return connection;
-        } finally {
-          connectionLockMap.delete(dbPath);
+          console.log("Creating index database...");
+          await initDb(config);
         }
-      },
-    };
-  })();
+        connection = await createConnection({
+          type: dbType,
+          name:
+            dbPath === Config.dbPath
+              ? "default"
+              : `connection-${connectionIndex++}`,
+          synchronize: true,
+          database: dbPath,
+          entities: AUTO_CONNECT_ENTITIES,
+        });
+        connectionMap.set(dbPath, connection);
+        const close = connection.close.bind(connection);
+        connection.close = async () => {
+          connectionMap.delete(dbPath);
+          await close();
+        };
+        const con = connection;
+        blockingResolveMap.get(dbPath)?.forEach((v) => v(con));
+        blockingResolveMap.delete(dbPath);
+        if (config === Config && !config.thumbnail) {
+          connectionLockMap.delete(dbPath);
+          try {
+            const coreInfo = await getFinderCoreInfo();
+            config.thumbnail = coreInfo.thumnail;
+          } catch (e) {
+            console.warn("Failed to get thumbnail of  global database");
+          }
+        }
+        return connection;
+      } finally {
+        connectionLockMap.delete(dbPath);
+        await Promise.all(
+          (postCreateConnectionMap.get(dbPath) || []).map((v) =>
+            v().catch((e) => {
+              EvLog(
+                `Error of postCreateConnection callback, dbpath: ${dbPath},error: ${e}`
+              );
+            })
+          )
+        );
+      }
+    },
+  };
+})();
 
 export const { switchDb, getConfig } = (() => {
   const dbSession = (() => {

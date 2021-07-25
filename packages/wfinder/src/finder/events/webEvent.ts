@@ -7,7 +7,7 @@ import {
 } from "./../types";
 import { BehaviorSubject, merge, Subject } from "rxjs";
 import { ShallowBehaviorSubject } from "./eventLib";
-import { isEmpty, isEqual, last } from "lodash";
+import { first, isEmpty, isEqual, last } from "lodash";
 import { joinToAbsolute } from "../../tools/pathTool";
 
 export enum WebEventStatus {
@@ -36,6 +36,9 @@ export const wEvGlobalState = new ShallowBehaviorSubject({
 export const getLocalContext = () =>
   last(last(wEvGlobalState.value.contextStack)?.localContexts);
 
+export const getLocalRootContext = () =>
+  first(last(wEvGlobalState.value.contextStack)?.localContexts);
+
 export const wEvFinderReady = new BehaviorSubject<boolean>(false);
 
 export const wEvLocalDbContextChange = new Subject<void>();
@@ -52,7 +55,7 @@ EvUiCmdResult.subscribe((msg) => {
       );
       if (context) {
         const newRemotes = msg.result.results
-          .filter((v) => v.type === ConfigLineType.remoteUrl)
+          .filter((v) => v.type === ConfigLineType.remoteUrl && !v.disabled)
           .map((v) => v.content);
         if (!isEqual(newRemotes, context.remoteOptionUrls)) {
           context.remoteOptionUrls = newRemotes;

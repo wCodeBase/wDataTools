@@ -355,3 +355,5 @@ export const LinkedRemoteItemKeys: (keyof TypeLinkedRemoteItem)[] = [
 export type TypeLinkedRemote = {
   [remoteUrl: string]: TypeLinkedRemoteItem;
 };
+
+export type TypeServerState = { [address: string]: { error?: string } };
