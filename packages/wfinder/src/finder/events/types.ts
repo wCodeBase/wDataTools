@@ -357,3 +357,7 @@ export type TypeLinkedRemote = {
 };
 
 export type TypeServerState = { [address: string]: { error?: string } };
+
+export type TypeOsInfo = {
+  systemIps?: string[];
+};

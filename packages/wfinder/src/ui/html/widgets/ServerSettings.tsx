@@ -1,9 +1,9 @@
 import { LoadingOutlined } from "@ant-design/icons";
-import { Input, message, Modal, Spin, Switch } from "antd";
+import { Input, message, Modal, Spin, Switch, Tag as AntTag } from "antd";
 import { cloneDeep, isEmpty, isEqual, parseInt } from "lodash";
 import { type } from "os";
 import React, { useEffect } from "react";
-import { EvUiCmdResult } from "../../../finder/events/events";
+import { EvFinderState, EvUiCmdResult } from "../../../finder/events/events";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import {
   getLocalContext,
@@ -17,7 +17,11 @@ import {
   TypeServerSetting,
 } from "../../../finder/types";
 import { parseAddress } from "../../../tools/tool";
-import { useStableState, useSubjectCallback } from "../../hooks/hooks";
+import {
+  usePickBehaviorSubjectValue,
+  useStableState,
+  useSubjectCallback,
+} from "../../hooks/hooks";
 import { useFinderReady } from "../../hooks/webHooks";
 import { defaultPropsFc } from "../../tools/fc";
 import { SimpleInput } from "../components/SimpleInput";
@@ -51,6 +55,11 @@ export const ServerSettings = defaultPropsFc(
         );
       },
     }));
+
+    const [systemIps] = usePickBehaviorSubjectValue(
+      EvFinderState,
+      (v) => v.osInfo.systemIps
+    );
 
     useFinderReady(() => {
       state.listConfig();
@@ -177,6 +186,14 @@ export const ServerSettings = defaultPropsFc(
                       }}
                     />
                   </span>
+                  {systemIps?.length && (
+                    <div className="mt-1 opacity-80 text-gray-800">
+                      <span className="font-bold">Current system ips: </span>
+                      {systemIps.map((v) => (
+                        <AntTag key={v}>{v}</AntTag>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

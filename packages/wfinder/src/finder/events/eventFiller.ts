@@ -25,6 +25,8 @@ import {
 } from "./types";
 import { uiCmdExecutor } from "./uiCmdExecutor";
 import { TypeServerSetting } from "../types";
+import { networkInterfaces } from "os";
+import { getIpAddressList } from "../../tools/nodeTool";
 
 EvFileInfoChange.subscribe(async () => {
   await getConnection();
@@ -34,6 +36,7 @@ EvFileInfoChange.subscribe(async () => {
 });
 
 cEvFinderState.subscribe((state) => {
+  networkInterfaces();
   EvFinderState.next({
     config: last(state.configStack),
     remotes: Object.entries(state.linkedRemote).reduce((res, [key, value]) => {
@@ -45,6 +48,9 @@ cEvFinderState.subscribe((state) => {
       res[key] = rest;
       return res;
     }, {} as TypeServerState),
+    osInfo: {
+      systemIps: getIpAddressList(),
+    },
   });
 });
 

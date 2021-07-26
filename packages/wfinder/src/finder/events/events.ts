@@ -5,6 +5,7 @@ import {
   TypeDatabaseInfos,
   TypeFinderStatus,
   TypeLinkedRemote,
+  TypeOsInfo,
   TypeServerState,
   TypeUiMsgData,
   TypeUiMsgMessage,
@@ -64,4 +65,5 @@ export const EvFinderState = new ShallowJsonBehaviorSubject({
   config: undefined as TypeDbInfo | undefined,
   remotes: {} as TypeLinkedRemote,
   servers: {} as TypeServerState,
+  osInfo: {} as TypeOsInfo,
 });

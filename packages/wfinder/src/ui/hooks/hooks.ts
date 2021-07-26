@@ -1,3 +1,4 @@
+import { isEqual } from "lodash";
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { BehaviorSubject, Subject } from "rxjs";
 import { debounceTime } from "rxjs/operators";
@@ -46,7 +47,8 @@ export const useBehaviorSubjectValue = <T>(subject: BehaviorSubject<T>) => {
 
 export const usePickBehaviorSubjectValue = <T, V>(
   subject: BehaviorSubject<T>,
-  pick: (value: T) => V
+  pick: (value: T) => V,
+  deepEqual = true
 ) => {
   const update = useUpdate();
   const timestamp = useRef<number>(Date.now());
@@ -55,6 +57,7 @@ export const usePickBehaviorSubjectValue = <T, V>(
     const sub = subject.subscribe((value) => {
       const newValue = pick(value);
       if (newValue === oldValue.current) return;
+      if (deepEqual && isEqual(newValue, oldValue.current)) return;
       oldValue.current = newValue;
       timestamp.current = Date.now();
       update();

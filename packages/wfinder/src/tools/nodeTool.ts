@@ -1,6 +1,6 @@
 import * as path from "path";
 import { createHash } from "crypto";
-import os from "os";
+import os, { networkInterfaces } from "os";
 import fs from "fs";
 
 export const exitNthTodo = () => exit("Nothing to do, program will exit now.");
@@ -82,4 +82,12 @@ export const getElectron = () => {
 export const isNodeElectron = () => {
   const electron = getElectron();
   return electron instanceof Object;
+};
+
+export const getIpAddressList = () => {
+  let ipList: string[] = [];
+  Object.entries(networkInterfaces()).forEach(([dev, info]) => {
+    if (info) ipList = ipList.concat(info.map((v) => v.address));
+  });
+  return ipList;
 };
