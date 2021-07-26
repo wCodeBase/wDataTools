@@ -33,6 +33,9 @@ import { isEmpty } from "lodash";
 import { JsonMore } from "../../tools/json";
 import { Socket } from "net";
 import { parseAddress } from "../../tools/tool";
+import compression from "compression";
+
+const compressor = compression();
 
 type serverSetting = TypeServerSetting & { ipRegexps: RegExp[] };
 const getGlobalSettings = (() => {
@@ -156,6 +159,7 @@ export const createHttpServer = async (
       }
     }
     if (!staticSetted) {
+      app.use(staticRoute, compressor);
       app.use(
         staticRoute,
         express.static(path.join(__dirname, "../../ui/html"))

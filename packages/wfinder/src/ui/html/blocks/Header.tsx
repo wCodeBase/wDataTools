@@ -58,7 +58,7 @@ const SettingButton = React.memo(() => {
 
 export const Header = () => {
   return (
-    <div className="flex flex-row w-full truncate bg-gradient-to-br from-blueGray-500 to-blueGray-700 shadow-sm text-white px-2 py-0.5">
+    <div className="flex flex-row w-full flex-shrink-0 truncate bg-gradient-to-br from-blueGray-500 to-blueGray-700 shadow-sm text-white px-2 py-0.5">
       <ContextIndicator />
       <div className="flex-grow mx-2 h-8" />
       <div className="lg:hidden">

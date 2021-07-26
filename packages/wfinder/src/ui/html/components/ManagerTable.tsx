@@ -138,7 +138,9 @@ export const genManagerTable = <T extends Record<string, unknown>>(
     (props) => {
       const [state, setState, update] = useStableState(() => {
         const genColumns = () => {
-          const isEdit = (record: T) => record.id === state.editRecord?.id;
+          const isEdit = (record: T) =>
+            state.editRecord &&
+            state.getRecordKey(record) === state.getRecordKey(state.editRecord);
           const plainRender: ColumnType<T>["render"] = (v) => {
             const content =
               v instanceof Date
@@ -300,6 +302,8 @@ export const genManagerTable = <T extends Record<string, unknown>>(
           editType: "" as "new" | "edit" | "",
           editRecord: null as null | T,
           dataSource: props.records,
+          getRecordKey:
+            typeof rowKey === "string" ? (v: T) => v[rowKey] : rowKey,
           columns: genColumns(),
           genColumns,
           addRecord: async () =>
@@ -343,7 +347,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
           <div className={props.titleClassName + " flex flex-row items-center"}>
             {props.tableTitle}
             <div className="flex-grow" />
-            {!props.readOnly && !state.editType && (
+            {!props.readOnly && props.onNewRecord && !state.editType && (
               <Button type="primary" size="small" onClick={state.addRecord}>
                 <div className="flex items-center">
                   <PlusOutlined />
@@ -371,7 +375,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                 rowKey={props.rowKey}
               />
             ) : (
-              <Empty onAdd={state.addRecord} />
+              <Empty onAdd={props.onNewRecord && state.addRecord} />
             )}
           </div>
         </div>

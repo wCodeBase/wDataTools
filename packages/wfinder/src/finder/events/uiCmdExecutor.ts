@@ -3,6 +3,7 @@ import {
   exAddScanPath,
   exClearIndexedData,
   exDeleteConfigLine,
+  exDeleteDbIncluded,
   exDeleteScanPath,
   exListConfigLine,
   exListDbIncluded,
@@ -186,6 +187,19 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
       } else if (msg.cmd === "listDbIncluded") {
         const { cmd } = msg;
         const res = await exListDbIncluded();
+        cmdResult = {
+          cmd,
+          result: {
+            data: res.result.map(({ path, dbInfo, dbName }) => ({
+              path,
+              dbInfo,
+              dbName,
+            })),
+          },
+        };
+      } else if (msg.cmd === "deleteDbIncluded") {
+        const { cmd } = msg;
+        const res = await exDeleteDbIncluded(context, msg.data);
         cmdResult = {
           cmd,
           result: {

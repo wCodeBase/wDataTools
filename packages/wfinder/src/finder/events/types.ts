@@ -196,6 +196,12 @@ type TypeMsgSubDbManage = {
       data: TypeDbIncludedItem[];
     };
   };
+  deleteDbIncluded: {
+    data: string[];
+    result: {
+      data: TypeDbIncludedItem[];
+    };
+  };
 };
 
 type TypeCmdUiMsgDefMap = TypeMsgScan &

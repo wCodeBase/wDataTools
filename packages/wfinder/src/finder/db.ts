@@ -25,6 +25,7 @@ import { ConfigLineType, TypeDbInfo, TypeFinderCoreInfo } from "./types";
 import { STR_FINDER_CORE_INFO } from "../constants";
 import { executeUiCmd } from "./events/eventTools";
 import { createNamespace, getNamespace } from "cls-hooked";
+import { In } from "typeorm";
 
 export const createFtsTable = async (connection: Connection) => {
   const { tableName } = connection.getMetadata(FileInfo);
@@ -36,7 +37,11 @@ export const createFtsTable = async (connection: Connection) => {
 };
 
 const dbType = "better-sqlite3";
-export const initDb = async (config: TypeDbInfo, reInitIfExist = false) => {
+export const initDb = async (
+  config: TypeDbInfo,
+  prevConfig?: TypeDbInfo,
+  reInitIfExist = false
+) => {
   const { dbPath } = config;
   let connection: Connection | undefined;
   if (fs.existsSync(config.dbPath)) {
@@ -57,11 +62,33 @@ export const initDb = async (config: TypeDbInfo, reInitIfExist = false) => {
     const postCreateConnection = async () => {
       clearTimeout(postCreateConnectionTimeout);
       postCreate.delete(dbPath, postCreateConnection);
+      const prevConfigLines =
+        prevConfig && prevConfig !== config
+          ? await switchDb(prevConfig, async () => {
+              return await ConfigLine.find({
+                where: {
+                  type: In([
+                    ConfigLineType.excludeChildrenFolderName,
+                    ConfigLineType.excludeFileName,
+                  ]),
+                },
+              });
+            })
+          : [];
       await switchDb(config, async () => {
-        await new ConfigLine(
-          "^node_modules$",
-          ConfigLineType.excludeChildrenFolderName
-        ).save();
+        if (prevConfig && prevConfig !== config) {
+          prevConfigLines.forEach((v) => {
+            v.dbInfo = config;
+            // @ts-ignore
+            v.id = undefined;
+          });
+          await ConfigLine.save(prevConfigLines);
+        } else {
+          await new ConfigLine(
+            "^node_modules$",
+            ConfigLineType.excludeChildrenFolderName
+          ).save();
+        }
       });
     };
     const postCreateConnectionTimeout = setTimeout(postCreateConnection, 10);
@@ -253,7 +280,7 @@ export const {
             }
           }
           console.log("Creating index database...");
-          await initDb(config);
+          await initDb(config, getConfig());
         }
         connection = await createConnection({
           type: dbType,
@@ -308,7 +335,7 @@ export const { switchDb, getConfig } = (() => {
       get: () => (session.get(KEY_CONFIG) || Config) as TypeDbInfo,
       run: async <T>(config: TypeDbInfo, cb: () => Promise<T>) => {
         if (config.isSubDb && !fs.existsSync(config.dbPath)) {
-          await initDb(config);
+          await initDb(config, getConfig());
         }
         const connection = await getConnection(config);
         return session.runPromise(async () => {
@@ -360,5 +387,8 @@ export const getFinderCoreInfo = async (notSubDb = false) => {
 export const removeDbFiles = async (absDbPath: string) => {
   if (!fs.existsSync(absDbPath)) return;
   await releaseConnection(absDbPath);
-  ["", "-shm", "-wal"].forEach((v) => fs.unlinkSync(absDbPath + v));
+  ["", "-shm", "-wal"].forEach((v) => {
+    const fPath = absDbPath + v;
+    if (fs.existsSync(fPath)) fs.unlinkSync(fPath);
+  });
 };

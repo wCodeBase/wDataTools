@@ -5,10 +5,11 @@ import { ConfigLine } from "./entities/ConfigLine";
 import { DbIncluded } from "./entities/DbIncluded";
 import { FileInfo } from "./entities/FileInfo";
 import { ScanPath } from "./entities/ScanPath";
-import { TypeMsgConfigItem } from "./events/types";
+import { TypeDbIncludedItem, TypeMsgConfigItem } from "./events/types";
 import { ConfigLineType, TypeDbInfo } from "./types";
 import path from "path";
 import { isPathEqual, isPathInclude, joinToAbsolute } from "../tools/pathTool";
+import fs from "fs";
 
 export const exAddScanPath = async (scanPath: string, config = getConfig()) => {
   return await switchDb(config, async () => {
@@ -133,12 +134,27 @@ export const exListConfigLine = async (
 
 export const exListDbIncluded = async (config = getConfig()) => {
   return await switchDb(config, async () => {
-    const dbIncludes = await (
-      await DbIncluded.find()
-    ).filter(
+    const dbIncludes = (await DbIncluded.find()).filter(
       (v) =>
         !isPathEqual(path.join(config.finderRoot, v.path), config.finderRoot)
     );
+    return { result: dbIncludes };
+  });
+};
+
+export const exDeleteDbIncluded = async (
+  config = getConfig(),
+  paths: string[]
+) => {
+  return await switchDb(config, async () => {
+    const dbIncludes = await DbIncluded.findByIds(paths);
+    await Promise.all(
+      dbIncludes.map((v) => {
+        const absPath = path.join(config.finderRoot, v.path, v.dbName);
+        return removeDbFiles(absPath);
+      })
+    );
+    await DbIncluded.remove(dbIncludes);
     return { result: dbIncludes };
   });
 };

@@ -17,6 +17,7 @@ import { SubDatabaseHint } from "../components/SubDatabaseHint";
 import { ServerSettings } from "./ServerSettings";
 import { isWebElectron } from "../../../finder/events/webEventTools";
 import { ErrorBoundary } from "../components/ErrorBoundary";
+import { DbIncludedManager } from "./DbIncludedManager";
 
 const Segments = {
   ...(isWebElectron
@@ -27,6 +28,7 @@ const Segments = {
   ScanPathManager,
   FileNameToExcludeManager,
   FileNameToExcludeChildrenManager,
+  DbIncludedManager,
   RemoteWfinderManager,
 };
 
@@ -34,6 +36,7 @@ const SubDbSegments = {
   ScanPathManager,
   FileNameToExcludeManager,
   FileNameToExcludeChildrenManager,
+  DbIncludedManager,
 };
 
 export const Setting = defaultPropsFc(
