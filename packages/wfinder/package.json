@@ -1,10 +1,11 @@
 {
   "name": "wfinder",
-  "version": "0.0.0-dev-4",
+  "version": "0.0.0-test-0",
   "description": "A local file index and search tool.",
   "bin": {
     "wfinder": "dist/main.js"
   },
+  "main": "dist/main.js",
   "scripts": {
     "eslint": "eslint --ext .js,.ts,.tsx --format codeframe ./",
     "lint-staged": "lint-staged",
@@ -19,7 +20,11 @@
     "clean-test-dir": "ts-node test/initializers/clean.ts",
     "test-plain": "ts-node node_modules/.bin/mocha test/index.ts",
     "test": "npm run build && npm run test-plain",
-    "analyze": "NODE_ENV=production M_NODE_ENV=analyze npm_config_report=true npm run build-html"
+    "analyze": "NODE_ENV=production M_NODE_ENV=analyze npm_config_report=true npm run build-html",
+    "pack-electron": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist-all": "electron-builder -wl",
+    "run-dist": "ts-node build-electron.ts"
   },
   "keywords": [],
   "author": "wCodeBase",
@@ -29,8 +34,8 @@
     "cls-hooked": "^4.2.2",
     "colors": "^1.4.0",
     "commander": "^7.2.0",
+    "dayjs": "^1.10.6",
     "express": "^4.17.1",
-    "fs-extra": "^10.0.0",
     "ink": "^3.0.8",
     "ink-select-input": "^4.2.0",
     "ink-spinner": "^4.0.2",
@@ -40,7 +45,6 @@
     "react": "^17.0.2",
     "rxjs": "^7.1.0",
     "typeorm": "^0.2.34",
-    "dayjs": "^1.10.6",
     "ws": "^7.5.3"
   },
   "devDependencies": {
@@ -69,13 +73,16 @@
     "@types/ws": "^7.4.6",
     "@typescript-eslint/eslint-plugin": "^4.18.0",
     "@typescript-eslint/parser": "^4.18.0",
+    "fs-extra": "^10.0.0",
     "antd": "^4.16.6",
+    "antd-dayjs-webpack-plugin": "^1.0.6",
     "autoprefixer": "^10.2.6",
     "babel-loader": "^8.2.2",
     "chai": "^4.3.4",
     "css-loader": "^5.2.6",
     "d3-format": "^3.0.1",
     "electron": "^13.1.5",
+    "electron-builder": "^22.11.7",
     "electron-rebuild": "^2.3.5",
     "eslint": "^7.22.0",
     "eslint-plugin-prettier": "^3.3.1",
@@ -112,6 +119,17 @@
   "lint-staged": {
     "*.{js,ts,tsx}": [
       "eslint --format codeframe --fix"
+    ]
+  },
+  "build": {
+    "appId": "com.wcodebase.wfinder",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/",
+      "node_modules/",
+      "package.json"
     ]
   }
 }

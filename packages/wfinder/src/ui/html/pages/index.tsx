@@ -11,7 +11,10 @@ import {
   EvUiCmdMessage,
   EvUiCmdResult,
 } from "../../../finder/events/events";
-import { isElectron, webInitEvent } from "../../../finder/events/webEventTools";
+import {
+  isWebElectron,
+  webInitEvent,
+} from "../../../finder/events/webEventTools";
 import {
   executeUiCmd,
   executeUiCmdInterceptors,
@@ -133,7 +136,7 @@ export const FinderUi = () => {
                             handle?.update();
                           }}
                         />
-                        {isElectron && (
+                        {isWebElectron && (
                           <Button
                             disabled={selectPath !== 1}
                             type="primary"

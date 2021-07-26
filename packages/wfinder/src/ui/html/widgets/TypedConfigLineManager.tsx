@@ -118,6 +118,7 @@ const genTypedConfigmanager = (
             onSave={state.save}
             tableTitle={tableTitle}
             titleClassName={props.titleClassName}
+            context={props.contexted ? getLocalContext() : undefined}
           />
         </div>
       );

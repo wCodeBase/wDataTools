@@ -14,6 +14,7 @@ import {
   HttpServerOption,
   TypeServerSetting,
 } from "./finder/types";
+import { isNodeElectron } from "./tools/nodeTool";
 import { parseAddress } from "./tools/tool";
 
 const program = new Command();
@@ -83,6 +84,7 @@ program
   .option("-s, --scan", "Scan each scan path")
   .option("-f, --find <keyWords...>", "Find files by match filename")
   .option("-g, --gui", "Start GUI")
+  .option("-i, --ink", "Start ink ui in terminal")
   .action(async (options) => {
     if (options.addPath) {
       await addScanPath(options.addPath);
@@ -96,8 +98,11 @@ program
       await findFiles(options.find);
     } else if (options.gui) {
       require("./ui/electron").startElectron();
-    } else {
+    } else if (options.ink) {
       require("./finder/index").finder();
+    } else {
+      if (isNodeElectron()) require("./ui/electron").startElectron();
+      else require("./finder/index").finder();
     }
   })
   .parse();

@@ -9,7 +9,7 @@ import {
 } from "../../hooks/hooks";
 import { Setting } from "../widgets/Setting";
 import { ConnectionLight } from "../components/ConnectionLight";
-import { isElectron } from "../../../finder/events/webEventTools";
+import { isWebElectron } from "../../../finder/events/webEventTools";
 import { ContextIndicator } from "../widgets/Contexts";
 import { LinkedRemoteIndicator } from "../components/LinkedRemote";
 import { ServerLight } from "../components/ServerLight";
@@ -58,15 +58,15 @@ const SettingButton = React.memo(() => {
 
 export const Header = () => {
   return (
-    <div className="flex flex-row w-full truncate bg-gradient-to-br from-blueGray-500 to-blueGray-700 shadow-sm text-white p-2">
+    <div className="flex flex-row w-full truncate bg-gradient-to-br from-blueGray-500 to-blueGray-700 shadow-sm text-white px-2 py-0.5">
       <ContextIndicator />
-      <div className="flex-grow mx-2" />
+      <div className="flex-grow mx-2 h-8" />
       <div className="lg:hidden">
         <SettingButton />
       </div>
       <LinkedRemoteIndicator className="ml-2" />
-      {isElectron && <ServerLight className="ml-2" />}
-      {!isElectron && <ConnectionLight className="pl-1" />}
+      {isWebElectron && <ServerLight className="ml-2" />}
+      {!isWebElectron && <ConnectionLight className="pl-1" />}
     </div>
   );
 };

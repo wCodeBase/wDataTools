@@ -352,6 +352,7 @@ export const doScan = async (
             if (!dbPath) {
               dbPath = pathToScan.dbPath = genExternalSubDbPath(pathToScan);
             }
+            dbPath = joinToAbsolute(config.finderRoot, dbPath);
             const scanErrors = await doScan(
               {
                 dbPath,

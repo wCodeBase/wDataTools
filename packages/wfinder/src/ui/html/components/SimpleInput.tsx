@@ -27,12 +27,14 @@ export const SimpleInput = defaultPropsFc(
       return rest;
     }, [props]);
     return (
-      <Input
-        {...inputProps}
-        value={state.input}
-        onChange={state.onChange}
-        onPressEnter={state.onEnter}
-      />
+      <span className="min-w-20">
+        <Input
+          {...inputProps}
+          value={state.input}
+          onChange={state.onChange}
+          onPressEnter={state.onEnter}
+        />
+      </span>
     );
   },
   true

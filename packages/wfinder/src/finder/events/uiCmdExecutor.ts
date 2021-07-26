@@ -41,6 +41,11 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
         EvUiCmdResult.next({ cmd: "MsgHeartbeat", tag });
       }
     };
+    if (
+      msg.cmd === "requestPickLocalPath" ||
+      msg.cmd === "requestChooseFinderRoot"
+    )
+      return;
     const cmdResult = await switchDb(context, async () => {
       let cmdResult: TypeUiMsgResult;
       if (msg.cmd === "scan") {

@@ -142,6 +142,10 @@ export const {
       ignoreLock = false
     ): Promise<Connection> => {
       const { dbPath } = config;
+      if (!path.isAbsolute(dbPath))
+        throw new Error(
+          "dbPath used in getConnection should be absolute: " + dbPath
+        );
       let connection = connectionMap.get(dbPath);
       if (connection) return connection;
       const lock = connectionLockMap.get(dbPath);

@@ -301,6 +301,7 @@ export const ScanPathManager = defaultPropsFc(
           onNewRecord={state.addNew}
           tableTitle="Included paths"
           titleClassName={props.titleClassName}
+          context={state.context}
         />
       </div>
     );

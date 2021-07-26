@@ -17,14 +17,17 @@ import { GetRowKey } from "antd/lib/table/interface";
 import { useCallback } from "react";
 import { PlusOutlined } from "@ant-design/icons";
 import { Empty } from "./Empty";
-import { isElectron } from "../../../finder/events/webEventTools";
+import { isWebElectron } from "../../../finder/events/webEventTools";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import { formatDate } from "../../../tools/tool";
+import { TypeDbInfo } from "../../../finder/types";
+import { getLocalContext } from "../../../finder/events/webEvent";
 
 const TEXT_OPERATION = "operation";
 type TypeTableEditRenderProps<T> = {
   value: T | undefined;
   onChange: (val: T) => void;
+  context?: TypeDbInfo;
 };
 export type TypeTableEditRender<T> = (
   props: TypeTableEditRenderProps<T>
@@ -55,8 +58,10 @@ export const SimplePathEdit: TypeTableEditRender<string> = (props) => {
   );
   return (
     <div className="flex flex-row">
-      <Input className="min-w-5" value={props.value} onChange={onChange} />
-      {isElectron && (
+      <span className="min-w-20">
+        <Input value={props.value} onChange={onChange} />
+      </span>
+      {isWebElectron && (
         <Button
           type="primary"
           onClick={async () => {
@@ -69,6 +74,7 @@ export const SimplePathEdit: TypeTableEditRender<string> = (props) => {
                   properties: ["createDirectory"],
                   toShotestAbsOrRel: true,
                 },
+                context: props.context,
               },
               Infinity
             );
@@ -127,6 +133,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
       onNewRecord: null as null | ((data: T) => Promise<boolean>),
       onRemove: null as null | ((data: T) => Promise<void>),
       onSave: null as null | ((data: T) => Promise<boolean>),
+      context: undefined as TypeDbInfo | undefined,
     },
     (props) => {
       const [state, setState, update] = useStableState(() => {
@@ -150,12 +157,14 @@ export const genManagerTable = <T extends Record<string, unknown>>(
             );
           };
           const columns: ColumnsType<T> = props.showProperties.map((p) => {
-            const prop = p instanceof Object ? p.prop : String(p);
+            const prop: keyof T = p instanceof Object ? p.prop : String(p);
             const title = p instanceof Object ? p.title : String(p);
             const showRender: ColumnType<T>["render"] =
               renderProterties[prop] || plainRender;
-            const editRender = editableProperties[prop];
-            const newRender = newRecordProperties[prop];
+            const editRender: undefined | TypeTableEditRender<T[typeof prop]> =
+              editableProperties[prop];
+            const newRender: undefined | TypeTableEditRender<T[typeof prop]> =
+              newRecordProperties[prop];
             const onChange = (val: T[typeof prop]) => {
               if (state.editRecord) {
                 state.editRecord[prop] = val;
@@ -180,10 +189,10 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                       if (Render && state.editRecord) {
                         return (
                           <div>
-                            {/* @ts-ignore */}
                             <Render
                               value={state.editRecord[prop]}
                               onChange={onChange}
+                              context={props.context}
                             />
                           </div>
                         );
@@ -315,6 +324,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
         props.rowKey,
         props.onNewRecord,
         props.onRemove,
+        props.context,
       ]);
 
       useLaterEffect(() => {

@@ -12,7 +12,7 @@ import { ComsumableEvent } from "./eventLib";
 
 const electron = eval(`try{require('electron')}catch(e){}`);
 
-export const isElectron = !!electron?.ipcRenderer;
+export const isWebElectron = !!electron?.ipcRenderer;
 
 export const webInitEvent = (() => {
   let gatewaySend = new ComsumableEvent<string>();
@@ -32,7 +32,7 @@ export const webInitEvent = (() => {
     gatewaySend.destory();
     let currentGatewaySend = (gatewaySend = new ComsumableEvent<string>());
     wEvEventStatus.next(WebEventStatus.connecting);
-    if (isElectron && !remoteContext) {
+    if (isWebElectron && !remoteContext) {
       try {
         electron.ipcRenderer.send(GATEWAY_CHANNEL, CLIENT_READY);
         const onData = (_: any, data: string) => {
@@ -53,7 +53,7 @@ export const webInitEvent = (() => {
     } else {
       try {
         if (remoteContext) {
-          if (!isElectron) remoteContext.unshift(location.origin);
+          if (!isWebElectron) remoteContext.unshift(location.origin);
         }
         const url = remoteContext?.shift() || location.origin;
         const wss = `${url.replace(/^http/, "ws")}${

@@ -49,6 +49,7 @@ const getGlobalSettings = (() => {
   EvUiCmdResult.subscribe((msg) => {
     if (
       msg.cmd === "listConfig" &&
+      !msg.result.error &&
       (msg.result.oriData.type === ConfigLineType.serverSetting ||
         isEmpty(msg.result.oriData)) &&
       getDbInfoId(msg.context) === getDbInfoId(Config)
@@ -349,6 +350,7 @@ export const watchServerSettings = () => {
   EvUiCmdResult.subscribe(async (msg) => {
     if (
       msg.cmd === "listConfig" &&
+      !msg.result.error &&
       (msg.result.oriData.type === ConfigLineType.serverSetting ||
         isEmpty(msg.result.oriData)) &&
       getDbInfoId(msg.context) === getDbInfoId(Config)

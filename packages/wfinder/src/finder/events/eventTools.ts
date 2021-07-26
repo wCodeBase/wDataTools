@@ -63,6 +63,11 @@ export const executeUiCmd = async <T extends keyof TypeUiMsgDataMap>(
   }
   const { tag = Math.random() } = cmdData;
   return await new Promise<TypeUiMsgResultMap[T]>((res, rej) => {
+    const doTimeout = () => {
+      subscribe.unsubscribe();
+      rej(new ErrorExecuteTimeout(`Execute cmd ${cmd} timeout.`));
+    };
+    let tHandle = timeout === Infinity ? null : setTimeout(doTimeout, timeout);
     const subscribe = EvUiCmdResult.subscribe((data) => {
       if (data.cmd === "MsgHeartbeat") {
         if (tHandle) {
@@ -76,11 +81,6 @@ export const executeUiCmd = async <T extends keyof TypeUiMsgDataMap>(
       }
     });
     EvUiCmd.next({ ...cmdData, tag });
-    const doTimeout = () => {
-      subscribe.unsubscribe();
-      rej(new ErrorExecuteTimeout(`Execute cmd ${cmd} timeout.`));
-    };
-    let tHandle = timeout === Infinity ? null : setTimeout(doTimeout, timeout);
   });
 };
 

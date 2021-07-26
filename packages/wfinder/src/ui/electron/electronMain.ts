@@ -13,57 +13,14 @@ import {
 } from "../../finder/events/eventTools";
 import { throttle } from "lodash";
 import {
+  EvFinderState,
   EvUiCmd,
   EvUiCmdResult,
   EvUiLaunched,
 } from "../../finder/events/events";
 import path from "path";
 import { APP_DATA_FOLDER_NAME } from "../../constants";
-
-(() => {
-  const [tag, port, address, token] = process.argv.slice(2);
-  if (tag === USE_IPC_SERVER) {
-    const socket = net.createConnection(Number(port), address);
-    socket.setNoDelay(true);
-    let gateway: TypeGateway | undefined;
-    socket.on("connect", () => {
-      socket.write(token);
-      gateway = switchEvent(
-        (data) => socket.write(packetTool.wrapData(data)),
-        false
-      );
-    });
-    const dataCache: Buffer[] = [];
-    socket.on("data", (data) => {
-      try {
-        if (!gateway) dataCache.push(data);
-        else {
-          let cached = dataCache.shift();
-          while (cached) {
-            packetTool
-              .parseData(cached)
-              .forEach((data) => gateway?.receive(String(data)));
-            cached = dataCache.shift();
-          }
-          packetTool
-            .parseData(data)
-            .forEach((data) => gateway?.receive(String(data)));
-        }
-      } catch (e) {
-        console.log(
-          `Failed to parse ipcServer data from server: ${socket.address()}`,
-          e
-        );
-      }
-    });
-    socket.on("close", () => {
-      gateway?.destory();
-    });
-  } else {
-    EvUiLaunched.next({ electron: true });
-    initFinder();
-  }
-})();
+import { isDev } from "../../finder/common";
 
 EvUiCmd.subscribe((msg) => {
   if (msg?.cmd === "queryUserDataDir") {
@@ -78,6 +35,76 @@ EvUiCmd.subscribe((msg) => {
 Menu.setApplicationMenu(null);
 
 app.whenReady().then(async () => {
+  EvUiCmd.subscribe(async (msg) => {
+    if (msg?.cmd === "requestPickLocalPath") {
+      const cwd = msg.data.cwd || process.cwd();
+      const res = await dialog.showOpenDialog(win, {
+        defaultPath: cwd,
+        title: msg.data.title,
+        properties: ["openDirectory", ...(msg.data.properties || [])],
+      });
+      if (msg.data.toShotestAbsOrRel) {
+        const fRoot =
+          (msg.context || EvFinderState.value.config)?.finderRoot || cwd;
+        res.filePaths = res.filePaths.map((v) => {
+          const relative = path.relative(fRoot, v);
+          if (relative.length < v.length) return relative || "./";
+          return v;
+        });
+      }
+      EvUiCmdResult.next({
+        cmd: "requestPickLocalPath",
+        tag: msg.tag,
+        result: { path: res.filePaths[0] },
+      });
+    }
+  });
+
+  (() => {
+    const [tag, port, address, token] = process.argv.slice(2);
+    if (tag === USE_IPC_SERVER) {
+      const socket = net.createConnection(Number(port), address);
+      socket.setNoDelay(true);
+      let gateway: TypeGateway | undefined;
+      socket.on("connect", () => {
+        socket.write(token);
+        gateway = switchEvent(
+          (data) => socket.write(packetTool.wrapData(data)),
+          false
+        );
+      });
+      const dataCache: Buffer[] = [];
+      socket.on("data", (data) => {
+        try {
+          if (!gateway) dataCache.push(data);
+          else {
+            let cached = dataCache.shift();
+            while (cached) {
+              packetTool
+                .parseData(cached)
+                .forEach((data) => gateway?.receive(String(data)));
+              cached = dataCache.shift();
+            }
+            packetTool
+              .parseData(data)
+              .forEach((data) => gateway?.receive(String(data)));
+          }
+        } catch (e) {
+          console.log(
+            `Failed to parse ipcServer data from server: ${socket.address()}`,
+            e
+          );
+        }
+      });
+      socket.on("close", () => {
+        gateway?.destory();
+      });
+    } else {
+      EvUiLaunched.next({ electron: true });
+      initFinder();
+    }
+  })();
+
   const preference = await getUserPreference();
   const win = new BrowserWindow({
     width: preference.windowWidth,
@@ -110,7 +137,7 @@ app.whenReady().then(async () => {
   win.addListener("resize", updateWindowPreference);
   win.addListener("move", updateWindowPreference);
   win.addListener("maximize", updateWindowPreference);
-  win.webContents.openDevTools();
+  if (isDev) win.webContents.openDevTools();
   (() => {
     let clientReady = false;
     let gateway: TypeGateway | undefined;
@@ -130,27 +157,4 @@ app.whenReady().then(async () => {
     win.addListener("close", () => gateway?.destory());
   })();
   loadHtml(win);
-
-  EvUiCmd.subscribe(async (msg) => {
-    if (msg?.cmd === "requestPickLocalPath") {
-      const cwd = msg.data.cwd || process.cwd();
-      const res = await dialog.showOpenDialog(win, {
-        defaultPath: cwd,
-        title: msg.data.title,
-        properties: ["openDirectory", ...(msg.data.properties || [])],
-      });
-      if (msg.data.toShotestAbsOrRel) {
-        res.filePaths = res.filePaths.map((v) => {
-          const relative = path.relative(cwd, v);
-          if (relative.length < v.length) return relative;
-          return v;
-        });
-      }
-      EvUiCmdResult.next({
-        cmd: "requestPickLocalPath",
-        tag: msg.tag,
-        result: { path: res.filePaths[0] },
-      });
-    }
-  });
 });

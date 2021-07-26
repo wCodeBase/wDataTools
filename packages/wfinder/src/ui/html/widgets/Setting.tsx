@@ -15,11 +15,11 @@ import { Tag, Tooltip } from "antd";
 import { InfoCircleFilled, InfoCircleOutlined } from "@ant-design/icons";
 import { SubDatabaseHint } from "../components/SubDatabaseHint";
 import { ServerSettings } from "./ServerSettings";
-import { isElectron } from "../../../finder/events/webEventTools";
+import { isWebElectron } from "../../../finder/events/webEventTools";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 
 const Segments = {
-  ...(isElectron
+  ...(isWebElectron
     ? {
         ServerSettings,
       }

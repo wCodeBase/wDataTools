@@ -8,6 +8,7 @@ const distHtmlRoot = path.resolve(__dirname, "../dist/ui/html/");
 const setting = require("./setting");
 const BundleAnalyzerPlugin =
   require("webpack-bundle-analyzer").BundleAnalyzerPlugin;
+const AntdDayjsWebpackPlugin = require("antd-dayjs-webpack-plugin");
 
 module.exports = {
   entry: "./src/ui/html/index.tsx",
@@ -104,6 +105,7 @@ module.exports = {
       filename: "index.html",
       template: "./src/ui/html/index.html",
     }),
+    new AntdDayjsWebpackPlugin(),
   ],
   ...(!isDev
     ? {}

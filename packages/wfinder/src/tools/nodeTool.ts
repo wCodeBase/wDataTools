@@ -70,3 +70,16 @@ export const pathPem = (() => {
     canRead: genGetOnePem(2),
   };
 })();
+
+export const getElectron = () => {
+  try {
+    return require("electron");
+  } catch (e) {
+    console.log("Failed to load electron");
+  }
+};
+
+export const isNodeElectron = () => {
+  const electron = getElectron();
+  return electron instanceof Object;
+};

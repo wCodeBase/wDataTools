@@ -2,3 +2,4 @@ wfinder.db*
 tmp*
 sub*.db*
 test/testFileFolder
+dist*
