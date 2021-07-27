@@ -1,4 +1,4 @@
-import { BaseDbInfoEntity } from "./BaseDbInfoEntity";
+import { BaseDbInfoEntity, SubDatabaseIterators } from "./BaseDbInfoEntity";
 import {
   BaseEntity,
   Column,
@@ -6,8 +6,10 @@ import {
   Entity,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { getConfig } from "../db";
-import { TypeMsgPathItem } from "../events/types";
+import { joinToAbsolute, isPathInclude } from "../../tools/pathTool";
+import fs from "fs";
+import { EvLog } from "../events/events";
+import { getConfig, switchDb } from "../db";
 
 @Entity()
 export class ScanPath extends BaseDbInfoEntity {
@@ -35,3 +37,33 @@ export class ScanPath extends BaseDbInfoEntity {
     this.path = path;
   }
 }
+
+SubDatabaseIterators.push(async (cb) => {
+  const config = getConfig();
+  const scanPaths = await ScanPath.find();
+  for (const scanPath of scanPaths) {
+    if (!scanPath.dbPath) continue;
+    const absDbPath = joinToAbsolute(config.finderRoot, scanPath.dbPath);
+    const absFinderRoot = joinToAbsolute(config.finderRoot, scanPath.path);
+    if (!fs.existsSync(absDbPath)) {
+      EvLog(
+        `It's time to rescan, database file of scan path not exist: ${absDbPath}.`
+      );
+    } else if (!isPathInclude(config.finderRoot, absFinderRoot)) {
+      try {
+        await switchDb(
+          {
+            dbName: config.dbName,
+            finderRoot: absFinderRoot,
+            dbPath: absDbPath,
+            readOnly: true,
+            isSubDb: true,
+          },
+          cb
+        );
+      } catch (e) {
+        console.error("Query external scan path failed: ", absFinderRoot, e);
+      }
+    }
+  }
+});

@@ -10,6 +10,7 @@ import { ConfigLineType, TypeDbInfo } from "./types";
 import path from "path";
 import { isPathEqual, isPathInclude, joinToAbsolute } from "../tools/pathTool";
 import fs from "fs";
+import { In } from "typeorm";
 
 export const exAddScanPath = async (scanPath: string, config = getConfig()) => {
   return await switchDb(config, async () => {
@@ -99,6 +100,48 @@ export const exSaveConfigLine = async (
       configs.forEach((config) => Object.assign(config, item));
       const result = await ConfigLine.save(configs);
       return { result };
+    }
+  });
+};
+
+export const exApplyConfigLines = async (
+  ids: number[],
+  mode: "add" | "delete",
+  config = getConfig()
+) => {
+  return await switchDb(config, async () => {
+    const configs = await ConfigLine.findByIds(ids);
+    const getId = (v: ConfigLine) => JSON.stringify([v.type, v.content]);
+    const types = Array.from(new Set(configs.map((v) => v.type)));
+    if (mode === "add") {
+      const configIdPairs = configs.map(
+        (v) => [getId(v), v] as [string, ConfigLine]
+      );
+      await ConfigLine.queryAllDbIncluded(async (handle) => {
+        const exist = new Set(
+          (await ConfigLine.find({ where: { type: In(types) } })).map(getId)
+        );
+        const applies = configIdPairs
+          .filter((v) => !exist.has(v[0]))
+          .map((v) => v[1]);
+        const dbInfo = getConfig();
+        applies.forEach((v) => {
+          v.dbInfo = dbInfo;
+          // @ts-ignore
+          v.id = undefined;
+        });
+        await ConfigLine.save(applies);
+        return [];
+      });
+    } else if (mode === "delete") {
+      const included = new Set(configs.map(getId));
+      await ConfigLine.queryAllDbIncluded(async (handle) => {
+        const toRemoves = (
+          await ConfigLine.find({ where: { type: In(types) } })
+        ).filter((v) => included.has(getId(v)));
+        await ConfigLine.remove(toRemoves);
+        return [];
+      });
     }
   });
 };

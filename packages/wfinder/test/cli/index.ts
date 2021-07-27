@@ -28,6 +28,7 @@ const runWfinder = (params: string) => {
 
 describe("Cli test", function () {
   this.timeout(100000);
+
   (
     ["simpleTestFolder", "freshTestFolder"] as (keyof typeof testRoots)[]
   ).forEach((folderKey) => {

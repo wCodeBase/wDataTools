@@ -4,8 +4,12 @@ import {
   initReadonlyTestFiles,
   initSimpleTestFiles,
 } from ".";
+import { shellJs } from "../imports";
 
 describe("Init test files", () => {
+  it(`Rebuild dependencies`, () => {
+    shellJs.exec(`npm run node-rebuild`);
+  });
   it("Create simple test files", async () => {
     await initSimpleTestFiles();
   });

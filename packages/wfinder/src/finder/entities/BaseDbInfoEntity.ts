@@ -1,3 +1,4 @@
+import path from "path";
 import { Subject } from "rxjs";
 import {
   BaseEntity,
@@ -8,19 +9,46 @@ import {
   SaveOptions,
 } from "typeorm";
 import { TypeJsonData } from "../../tools/json";
+import {
+  isPathEqual,
+  joinToAbsolute,
+  isPathInclude,
+} from "../../tools/pathTool";
 import { entityChangeWatchingSubjectMap } from "../common";
 import {
   getConnection,
   getFinderCoreInfo,
   getConfig,
   getCachedConnection,
+  switchDb,
 } from "../db";
 import { cEvFinderState } from "../events/core/coreEvents";
 import { cTypeImplementedOrmCall } from "../events/core/coreTypes";
 import { EvLog } from "../events/events";
 import { TypeQueryLimit } from "../types";
 
+export type SubDatabaseIterator = (cb: () => Promise<void>) => Promise<void>;
+
+export const SubDatabaseIterators: SubDatabaseIterator[] = [];
+
 export class BaseDbInfoEntity extends BaseEntity {
+  constructor(...v: any) {
+    super();
+  }
+
+  public static async queryAllDbIncluded<E extends typeof BaseDbInfoEntity, T>(
+    this: E,
+    doQuery: (handle: typeof this) => Promise<T[]>
+  ) {
+    let res: T[] = await doQuery(this);
+    for (const cb of SubDatabaseIterators) {
+      await cb(async () => {
+        res = res.concat(await this.queryAllDbIncluded(doQuery));
+      });
+    }
+    return res;
+  }
+
   async save(options?: SaveOptions) {
     const res = await super.save(options);
     entityChangeWatchingSubjectMap.get(this.constructor)?.next(getConfig());

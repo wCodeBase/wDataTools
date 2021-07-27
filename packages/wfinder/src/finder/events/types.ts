@@ -146,6 +146,12 @@ type TypeMsgConfigLineManage = {
     data: Pick<TypeMsgConfigItem, "type" | "dbInfo" | "content"> &
       Partial<TypeMsgConfigItem>;
   } & TypeMsgConfigLineDef;
+  applyConfigsToSunDatabases: {
+    data: {
+      ids: number[];
+      mode: "add" | "delete";
+    };
+  };
 };
 
 type TypeQueryForInfo = {

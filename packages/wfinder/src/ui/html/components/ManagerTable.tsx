@@ -281,10 +281,10 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                           {AddonOperation && (
                             <AddonOperation
                               isTableEdit={
-                                isEdit(record) && state.editType === "edit"
+                                !!isEdit(record) && state.editType === "edit"
                               }
                               isTableOnNew={
-                                isEdit(record) && state.editType === "new"
+                                !!isEdit(record) && state.editType === "new"
                               }
                               isReadonly={props.readOnly}
                               record={record}

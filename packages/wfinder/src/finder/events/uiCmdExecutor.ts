@@ -1,6 +1,7 @@
 import {
   exAddConfigLine,
   exAddScanPath,
+  exApplyConfigLines,
   exClearIndexedData,
   exDeleteConfigLine,
   exDeleteDbIncluded,
@@ -183,6 +184,13 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
         cmdResult = {
           cmd,
           result: { results: result ? result : [], error },
+        };
+      } else if (msg.cmd === "applyConfigsToSunDatabases") {
+        const { cmd } = msg;
+        await exApplyConfigLines(msg.data.ids, msg.data.mode);
+        cmdResult = {
+          cmd,
+          result: {},
         };
       } else if (msg.cmd === "listDbIncluded") {
         const { cmd } = msg;

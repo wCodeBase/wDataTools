@@ -97,67 +97,6 @@ export class FileInfo extends BaseDbInfoEntity {
     return filePath;
   }
 
-  private static async queryAllDbIncluded<T>(
-    doQuery: (handle: typeof FileInfo) => Promise<T[]>
-  ) {
-    let res: T[] = await doQuery(this);
-    const includedDbs = await DbIncluded.find();
-    const config = getConfig();
-    for (const db of includedDbs) {
-      const finderRoot = path.join(config.finderRoot, db.path);
-      if (isPathEqual(config.finderRoot, finderRoot)) continue;
-      try {
-        const dbPath = path.join(finderRoot, db.dbName);
-        if (!fs.existsSync(dbPath)) {
-          EvLog(`It's time to rescan, sub database file not exist: ${dbPath}.`);
-        } else
-          await switchDb(
-            {
-              dbName: db.dbName,
-              finderRoot,
-              dbPath,
-              readOnly: true,
-              isSubDb: true,
-            },
-            async () => {
-              res = res.concat(await FileInfo.queryAllDbIncluded(doQuery));
-            }
-          );
-      } catch (e) {
-        console.error("Query sub database failed: ", finderRoot, e);
-      }
-    }
-    const scanPaths = await ScanPath.find();
-    for (const scanPath of scanPaths) {
-      if (!scanPath.dbPath) continue;
-      const absDbPath = joinToAbsolute(config.finderRoot, scanPath.dbPath);
-      const absFinderRoot = joinToAbsolute(config.finderRoot, scanPath.path);
-      if (!fs.existsSync(absDbPath)) {
-        EvLog(
-          `It's time to rescan, database file of scan path not exist: ${absDbPath}.`
-        );
-      } else if (!isPathInclude(config.finderRoot, absFinderRoot)) {
-        try {
-          await switchDb(
-            {
-              dbName: config.dbName,
-              finderRoot: absFinderRoot,
-              dbPath: absDbPath,
-              readOnly: true,
-              isSubDb: true,
-            },
-            async () => {
-              res = res.concat(await FileInfo.queryAllDbIncluded(doQuery));
-            }
-          );
-        } catch (e) {
-          console.error("Query external scan path failed: ", absFinderRoot, e);
-        }
-      }
-    }
-    return res;
-  }
-
   static async removeAllIndexedData() {
     await this.queryAllDbIncluded(async (handle) => {
       await handle.clear().catch((e) => {
