@@ -118,7 +118,7 @@ export const DbIncludedManager = defaultPropsFc(
       return (
         <div className="flex flex-row items-center">
           <span>Sub databases</span>
-          <Tooltip title="Sub database is descovered when scanning and will be used to store data and search for results.">
+          <Tooltip title="Sub database is descovered in scanning and will be used to store data and search for results.">
             <span className="p-1 flex flex-row cursor-pointer">
               <QuestionCircleOutlined />
             </span>

@@ -31,7 +31,10 @@ const switchContext = async (
 ) => {
   const { remoteUrls } = context;
   const { contextStack } = wEvGlobalState.value;
-  const contextPos = contextStack.findIndex((v) => v === fromContext);
+  const fromId = getDbInfoId(last(fromContext.localContexts));
+  const contextPos = contextStack.findIndex(
+    (v) => getDbInfoId(last(v.localContexts)) === fromId
+  );
   const isCurrentContext = contextPos === contextStack.length - 1;
   const newContexts = contextStack.slice(0, contextPos + (isNew ? 1 : 0));
   newContexts.push(context);
@@ -53,6 +56,7 @@ const switchContext = async (
     wEvGlobalState.next({ contextStack: newContexts });
     if (isRestore) message.warn(msg + " success");
     else message.success(msg + " success");
+    console.log(contextStack, newContexts, isNew, contextPos);
   } catch (e) {
     message.error(`${msg} failed: ${e}`);
     const contextToRestore = last(contextStack);
@@ -64,9 +68,9 @@ const switchContext = async (
 };
 
 export const ContextPannel = React.memo(() => {
-  const [contexts] = usePickBehaviorSubjectValue(
+  const [{ contextStack: contexts }] = usePickBehaviorSubjectValue(
     wEvGlobalState,
-    (v) => v.contextStack
+    (v) => v
   );
 
   return (

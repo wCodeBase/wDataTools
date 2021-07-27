@@ -39,6 +39,8 @@ export type TypeDbInfo = {
   thumbnail?: string;
   /** Is info from ScanPath or DbIncluded */
   isSubDb?: boolean;
+  /** Used in web, to verify and update contexts. */
+  from?: "ScanPath" | "DbIncluded";
 };
 
 export const getDbInfoId = (info?: TypeDbInfo) =>

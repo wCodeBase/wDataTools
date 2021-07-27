@@ -43,6 +43,7 @@ export const initDb = async (
   reInitIfExist = false
 ) => {
   const { dbPath } = config;
+  if (!path.isAbsolute(dbPath)) throw new Error("dbPath should be absolute.");
   let connection: Connection | undefined;
   if (fs.existsSync(config.dbPath)) {
     if (!reInitIfExist) return;

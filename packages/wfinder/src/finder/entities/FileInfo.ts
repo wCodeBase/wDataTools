@@ -14,7 +14,7 @@ import {
 } from "typeorm";
 import * as path from "path";
 import { EvLog } from "../events/events";
-import { last, sumBy } from "lodash";
+import { last, sum, sumBy } from "lodash";
 import * as fs from "fs";
 import { interactYield } from "../../tools/tool";
 import { BehaviorSubject } from "rxjs";
@@ -116,6 +116,13 @@ export class FileInfo extends BaseDbInfoEntity {
       });
       return [];
     });
+  }
+
+  static async countAllSubDatabases() {
+    const res = await this.queryAllDbIncluded((handle) =>
+      handle.count().then((res) => [res])
+    );
+    return sum(res);
   }
 
   static async countByMatchName(

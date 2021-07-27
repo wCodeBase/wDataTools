@@ -123,7 +123,8 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
         const scanPath = await ScanPath.findOne(msg.data.scanPathId);
         if (!scanPath) throw new Error("ScanPath not exist.");
         if (msg.cmd === "splitSubDb") {
-          const dbPath = (scanPath.dbPath = genExternalSubDbPath(scanPath));
+          let dbPath = (scanPath.dbPath = genExternalSubDbPath(scanPath));
+          dbPath = joinToAbsolute(getConfig().finderRoot, dbPath);
           await initDb({
             dbPath,
             dbName: context.dbName,
@@ -216,6 +217,13 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
               dbInfo,
               dbName,
             })),
+          },
+        };
+      } else if (msg.cmd === "countAllFileInfo") {
+        cmdResult = {
+          cmd: msg.cmd,
+          result: {
+            total: await FileInfo.countAllSubDatabases(),
           },
         };
       } else {

@@ -2,7 +2,7 @@ import { watchServerSettings } from "./../server/httpServer";
 import { last, pick } from "lodash";
 import { debounceTime } from "rxjs/operators";
 import { Config } from "../common";
-import { getConfig, getConnection } from "../db";
+import { getConfig, getConnection, switchDb } from "../db";
 import { FileInfo } from "../entities/FileInfo";
 import {
   cEvConfigLineChange,
@@ -28,10 +28,14 @@ import { TypeServerSetting } from "../types";
 import { networkInterfaces } from "os";
 import { getIpAddressList } from "../../tools/nodeTool";
 
+cEvScanPathChange.subscribe((v) => EvFileInfoChange.next(v));
+cEvDbIncludedChange.subscribe((v) => EvFileInfoChange.next(v));
+
 EvFileInfoChange.subscribe(async () => {
-  await getConnection();
   EvDatabaseInfos.next({
-    fileInfoCount: await FileInfo.count(),
+    fileInfoCount: await switchDb(Config, () =>
+      FileInfo.countAllSubDatabases()
+    ),
   });
 });
 

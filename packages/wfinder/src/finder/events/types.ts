@@ -192,6 +192,11 @@ type TypeMsgCoreManage = {
     };
     result: string;
   };
+  countAllFileInfo: {
+    result: {
+      total: number;
+    };
+  };
 };
 
 export type TypeDbIncludedItem = Pick<DbIncluded, "path" | "dbName" | "dbInfo">;

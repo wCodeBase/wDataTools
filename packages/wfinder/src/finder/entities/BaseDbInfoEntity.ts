@@ -14,6 +14,7 @@ import {
   joinToAbsolute,
   isPathInclude,
 } from "../../tools/pathTool";
+import { interactYield } from "../../tools/tool";
 import { entityChangeWatchingSubjectMap } from "../common";
 import {
   getConnection,
@@ -43,6 +44,7 @@ export class BaseDbInfoEntity extends BaseEntity {
     let res: T[] = await doQuery(this);
     for (const cb of SubDatabaseIterators) {
       await cb(async () => {
+        await interactYield();
         res = res.concat(await this.queryAllDbIncluded(doQuery));
       });
     }

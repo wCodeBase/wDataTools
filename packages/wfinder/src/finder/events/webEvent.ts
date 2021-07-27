@@ -78,8 +78,9 @@ EvUiCmdResult.subscribe((msg) => {
     if (!lastLocal) return;
     if (getDbInfoId(lastLocal) === getDbInfoId(msg.context)) {
       const parentPath = lastLocal.dbPath.slice(0, -lastLocal.dbName.length);
-      const localOptions = context.localOptions || [];
+      let localOptions = context.localOptions || [];
       if (msg.cmd === "listDbIncluded") {
+        localOptions = localOptions.filter((v) => v.from !== "DbIncluded");
         msg.result.data.forEach((v) => {
           const finderRoot = parentPath + v.path;
           if (localOptions.find((v) => v.finderRoot === finderRoot)) return;
@@ -88,9 +89,11 @@ EvUiCmdResult.subscribe((msg) => {
             dbName: v.dbName,
             dbPath: finderRoot + "/" + v.dbName,
             isSubDb: true,
+            from: "DbIncluded",
           } as TypeDbInfo);
         });
       } else if (msg.cmd === "listPath") {
+        localOptions = localOptions.filter((v) => v.from !== "ScanPath");
         msg.result.results.forEach((v) => {
           const { dbPath } = v;
           if (dbPath) {
@@ -101,13 +104,16 @@ EvUiCmdResult.subscribe((msg) => {
               dbName: lastLocal.dbName,
               dbPath: joinToAbsolute(parentPath, dbPath),
               isSubDb: true,
+              from: "ScanPath",
             } as TypeDbInfo);
           }
         });
       }
-      context.localOptions = localOptions;
       wEvGlobalState.next({
-        contextStack: [...wEvGlobalState.value.contextStack],
+        contextStack: [
+          ...wEvGlobalState.value.contextStack.slice(0, -1),
+          { ...context, localOptions },
+        ],
       });
     }
   }

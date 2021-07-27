@@ -1,4 +1,4 @@
-import { debounceTime } from "rxjs/operators";
+import { debounceTime, throttleTime } from "rxjs/operators";
 import {
   FinderStatus,
   MsgHeartbeat,
@@ -19,6 +19,7 @@ import {
   ShallowJsonBehaviorSubject,
 } from "./eventLib";
 import { useBehaviorSubjectValue } from "../../ui/hooks/hooks";
+import { concat } from "rxjs";
 
 export const EvFinderStatus = new ShallowJsonBehaviorSubject<TypeFinderStatus>({
   status: FinderStatus.idle,
@@ -35,7 +36,10 @@ export const useFinderStatus = () => useBehaviorSubjectValue(EvFinderStatus);
 /** Triggered when FileInfo inserted or deleted */
 export const EvFileInfoChange = (() => {
   const subject = new JsonBehaviorSubject<TypeDbInfo | null>(null);
-  const observer = subject.pipe(debounceTime(500));
+  const observer = concat(
+    subject.pipe(debounceTime(500)),
+    subject.pipe(throttleTime(500))
+  );
   return Object.assign(new JsonBehaviorSubject<TypeDbInfo | null>(null), {
     next: subject.next.bind(subject),
     subscribe: observer.subscribe.bind(observer),
