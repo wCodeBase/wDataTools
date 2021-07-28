@@ -57,6 +57,19 @@ module.exports = {
       scale: {
         ...percent25,
       },
+      keyframes: {
+        shine: {
+          "0%,100%": {
+            opacity: 0.3,
+          },
+          "50%": {
+            opacity: 1,
+          },
+        },
+      },
+      animation: {
+        shine: "shine 1.5s ease-in-out infinite",
+      },
     },
   },
   variants: {

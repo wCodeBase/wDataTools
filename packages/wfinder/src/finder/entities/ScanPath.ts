@@ -8,7 +8,7 @@ import {
 } from "typeorm";
 import { joinToAbsolute, isPathInclude } from "../../tools/pathTool";
 import fs from "fs";
-import { EvLog } from "../events/events";
+import { EvLog, EvLogWarn } from "../events/events";
 import { getConfig, switchDb } from "../db";
 
 @Entity()
@@ -32,6 +32,9 @@ export class ScanPath extends BaseDbInfoEntity {
   @Column({ nullable: true, type: "text" })
   lastMessage?: string;
 
+  @Column({ nullable: true })
+  lastSuccessCost?: number;
+
   constructor(path: string) {
     super();
     this.path = path;
@@ -46,7 +49,7 @@ SubDatabaseIterators.push(async (cb) => {
     const absDbPath = joinToAbsolute(config.finderRoot, scanPath.dbPath);
     const absFinderRoot = joinToAbsolute(config.finderRoot, scanPath.path);
     if (!fs.existsSync(absDbPath)) {
-      EvLog(
+      EvLogWarn(
         `It's time to rescan, database file of scan path not exist: ${absDbPath}.`
       );
     } else if (!isPathInclude(config.finderRoot, absFinderRoot)) {

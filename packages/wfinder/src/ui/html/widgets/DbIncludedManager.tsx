@@ -123,7 +123,7 @@ export const DbIncludedManager = defaultPropsFc(
               <QuestionCircleOutlined />
             </span>
           </Tooltip>
-          {scanning && (
+          {scanning && !!state.dbIncludeds.length && (
             <Tooltip title="Sub database is not editable when scanning.">
               <span className="p-1 text-red-500 flex flex-row cursor-pointer">
                 <ExclamationCircleOutlined />

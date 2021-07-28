@@ -11,7 +11,7 @@ export const isPathEqual = (pathA: string, pathB: string) =>
  */
 export const joinToAbsolute = (absParentPath: string, pathB: string) => {
   if (path.isAbsolute(pathB)) return pathB;
-  return path.join(absParentPath, pathB);
+  return path.resolve(path.join(absParentPath, pathB));
 };
 
 export const splitPath = (pathStr: string) => {

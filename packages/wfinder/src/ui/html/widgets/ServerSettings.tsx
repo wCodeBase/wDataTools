@@ -189,9 +189,11 @@ export const ServerSettings = defaultPropsFc(
                   {systemIps?.length && (
                     <div className="mt-1 opacity-80 text-gray-800">
                       <span className="font-bold">Current system ips: </span>
-                      {systemIps.map((v) => (
-                        <AntTag key={v}>{v}</AntTag>
-                      ))}
+                      {systemIps
+                        .filter((v) => !v.includes(":"))
+                        .map((v) => (
+                          <AntTag key={v}>{v}</AntTag>
+                        ))}
                     </div>
                   )}
                 </div>

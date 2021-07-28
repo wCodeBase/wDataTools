@@ -11,7 +11,7 @@ export const InkConsole = () => {
       {!!value && !!count && (
         <Box>
           <Text backgroundColor="blue">Console({count}):</Text>
-          <Text>{" " + value}</Text>
+          <Text>{" " + value.message}</Text>
         </Box>
       )}
     </>

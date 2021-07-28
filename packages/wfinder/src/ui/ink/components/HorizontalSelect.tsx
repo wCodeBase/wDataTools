@@ -1,6 +1,6 @@
 import { Box, Text, useInput } from "ink";
 import React from "react";
-import { EvLog } from "../../../finder/events/events";
+import { EvLog, EvLogWarn } from "../../../finder/events/events";
 import { useStableState } from "../../hooks/hooks";
 
 export type TypeSelectOption<T> = { label: string; value: T };
@@ -29,7 +29,7 @@ export const HorizontalSelect = <T extends unknown>(props: {
         : -1;
       if (key.return) {
         if (!state.selected || optionIndex < 0) {
-          EvLog("Warn: no option selected yet.");
+          EvLogWarn("Warn: no option selected yet.");
           return;
         }
         props.onSelect(state.selected.value);

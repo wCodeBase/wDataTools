@@ -1,4 +1,5 @@
 import React from "react";
+import { EvLogError } from "../../finder/events/events";
 
 export const defaultPropsFc = <T,>(
   defaultProps: T,
@@ -18,6 +19,7 @@ export const fcErrorBoundary = <T,>(fc: React.FC<T>, fcErrorTitle?: string) => {
       return fc(props);
     } catch (e) {
       console.error("UI error caught by fcErrorBoundary: ", e);
+      EvLogError("Error: UI error caught by fcErrorBoundary: ", e);
       return (
         <div className="p-3 flex flex-col items-center bg-red-400 ">
           {fcErrorTitle && (

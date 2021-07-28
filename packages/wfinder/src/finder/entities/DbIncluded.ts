@@ -5,7 +5,7 @@ import { getConfig, switchDb } from "../db";
 import * as path from "path";
 import * as fs from "fs";
 import { isPathEqual } from "../../tools/pathTool";
-import { EvLog } from "../events/events";
+import { EvLog, EvLogWarn } from "../events/events";
 
 @Entity()
 export class DbIncluded extends BaseDbInfoEntity {
@@ -50,7 +50,9 @@ SubDatabaseIterators.push(async (cb) => {
     try {
       const dbPath = path.join(finderRoot, db.dbName);
       if (!fs.existsSync(dbPath)) {
-        EvLog(`It's time to rescan, sub database file not exist: ${dbPath}.`);
+        EvLogWarn(
+          `It's time to rescan, sub database file not exist: ${dbPath}.`
+        );
       } else
         await switchDb(
           {

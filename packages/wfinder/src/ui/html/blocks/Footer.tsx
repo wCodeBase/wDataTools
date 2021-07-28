@@ -16,6 +16,7 @@ import {
   wEvFinderReady,
 } from "../../../finder/events/webEvent";
 import { getDbInfoId } from "../../../finder/types";
+import { ConsoleOutput } from "../widgets/ConsoleOutput";
 
 export const TotalFile = defaultPropsFc({ className: "" }, (props) => {
   const [state, setState] = useStableState(() => ({
@@ -73,24 +74,21 @@ export const FinderStatusIndicator = defaultPropsFc(
       ? FinderStatus.searching
       : finderStatus.status;
     return (
-      <div>
-        <div className={"flex items-center " + props.className}>
-          <span className="font-bold">Finder state:</span>{" "}
-          {FinderStatus[status]}
-          {!!BUSY_FINDER_STATES.includes(status) && (
-            <LoadingOutlined className="m-1" />
-          )}
-        </div>
+      <div className={"flex items-center " + props.className}>
+        <span className="font-bold">Finder state:</span> {FinderStatus[status]}
+        {!!BUSY_FINDER_STATES.includes(status) && (
+          <LoadingOutlined className="m-1" />
+        )}
       </div>
     );
   }
 );
 export const Footer = () => {
   return (
-    <div className="flex justify-start bg-gradient-to-br from-blueGray-700 to-blueGray-500 shadow-sm text-white p-0.5 px-1">
-      <FinderStatusIndicator className="mr-3" />
-      <div className="flex-grow" />
-      <TotalFile className="mr-2" />
+    <div className="flex flex-row items-center justify-start bg-gradient-to-br from-blueGray-700 to-blueGray-500 shadow-sm text-white px-1">
+      <FinderStatusIndicator className="mr-3 flex-shrink-0" />
+      <ConsoleOutput />
+      <TotalFile className="mr-2 my-0.5 flex-shrink-0" />
     </div>
   );
 };

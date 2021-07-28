@@ -154,7 +154,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                 : String(v);
             return (
               <Tooltip title={content}>
-                <div className="truncate max-w-xl">{content}</div>
+                <div className="truncate max-w-md">{content}</div>
               </Tooltip>
             );
           };
@@ -215,7 +215,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                     render: (v, record, index) => {
                       const { onRemove } = props;
                       return (
-                        <div>
+                        <div className="flex flex-row items-center max-w-xs">
                           {isEdit(record) ? (
                             <>
                               {state.editType === "new" ? (

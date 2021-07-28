@@ -18,6 +18,7 @@ import { DbIncluded } from "./entities/DbIncluded";
 import {
   EvFileInfoChange,
   EvLog,
+  EvLogError,
   EvUiCmd,
   EvUiLaunched,
 } from "./events/events";
@@ -317,7 +318,7 @@ export const {
         await Promise.all(
           (postCreateConnectionMap.get(dbPath) || []).map((v) =>
             v().catch((e) => {
-              EvLog(
+              EvLogError(
                 `Error of postCreateConnection callback, dbpath: ${dbPath},error: ${e}`
               );
             })

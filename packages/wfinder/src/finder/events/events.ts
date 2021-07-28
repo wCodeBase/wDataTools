@@ -19,7 +19,7 @@ import {
   ShallowJsonBehaviorSubject,
 } from "./eventLib";
 import { useBehaviorSubjectValue } from "../../ui/hooks/hooks";
-import { concat } from "rxjs";
+import { concat, merge } from "rxjs";
 
 export const EvFinderStatus = new ShallowJsonBehaviorSubject<TypeFinderStatus>({
   status: FinderStatus.idle,
@@ -36,7 +36,7 @@ export const useFinderStatus = () => useBehaviorSubjectValue(EvFinderStatus);
 /** Triggered when FileInfo inserted or deleted */
 export const EvFileInfoChange = (() => {
   const subject = new JsonBehaviorSubject<TypeDbInfo | null>(null);
-  const observer = concat(
+  const observer = merge(
     subject.pipe(debounceTime(500)),
     subject.pipe(throttleTime(500))
   );
@@ -51,9 +51,16 @@ export const EvDatabaseInfos = new JsonBehaviorSubject<TypeDatabaseInfos>({
   fileInfoCount: 0,
 });
 
-export const EvConsole = new JsonBehaviorSubject<string>("");
+export const EvConsole = new JsonBehaviorSubject<
+  { message: string; type: "log" | "warn" | "error" } | undefined
+>(undefined);
 
-export const EvLog = (...args: any[]) => EvConsole.next(args.join(", "));
+export const EvLog = (...args: any[]) =>
+  EvConsole.next({ type: "log", message: args.join(", ") });
+export const EvLogError = (...args: any[]) =>
+  EvConsole.next({ type: "error", message: args.join(", ") });
+export const EvLogWarn = (...args: any[]) =>
+  EvConsole.next({ type: "warn", message: args.join(", ") });
 
 export const EvUiCmd = new JsonBehaviorSubject<TypeUiMsgData | null>(null);
 

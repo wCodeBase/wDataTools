@@ -18,6 +18,7 @@ import { ServerSettings } from "./ServerSettings";
 import { isWebElectron } from "../../../finder/events/webEventTools";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { DbIncludedManager } from "./DbIncludedManager";
+import { RefreshUi } from "./RefreshUi";
 
 const Segments = {
   ...(isWebElectron
@@ -30,6 +31,11 @@ const Segments = {
   FileNameToExcludeChildrenManager,
   DbIncludedManager,
   RemoteWfinderManager,
+  ...(isWebElectron
+    ? {
+        RefreshUi,
+      }
+    : {}),
 };
 
 const SubDbSegments = {

@@ -20,7 +20,9 @@ import {
 } from "../types";
 import { Server } from "http";
 
-export const cEvScanBrake = new BehaviorSubject(false);
+export const cEvScanBrake = new BehaviorSubject<{
+  [absPath: string]: TypeDbInfo;
+}>({});
 const callTpl = genRemoteCaller<cTypeJsonMoreEntitySpecial, cTypeOrmCallDef>(
   () => {
     void 0;

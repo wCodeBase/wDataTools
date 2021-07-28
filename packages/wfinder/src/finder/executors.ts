@@ -202,8 +202,22 @@ export const exDeleteDbIncluded = async (
   });
 };
 
-export const exClearIndexedData = async (config = getConfig()) => {
+export const exClearIndexedData = async (
+  config = getConfig(),
+  scanPaths?: string[]
+) => {
   return await switchDb(config, async () => {
-    await FileInfo.removeAllIndexedData();
+    if (scanPaths === undefined) await FileInfo.removeAllIndexedData();
+    else {
+      for (const p of scanPaths) {
+        const absPath = joinToAbsolute(config.finderRoot, p);
+        await exClearIndexedData({
+          finderRoot: absPath,
+          dbName: config.dbName,
+          dbPath: path.join(absPath, config.dbName),
+          isSubDb: true,
+        });
+      }
+    }
   });
 };

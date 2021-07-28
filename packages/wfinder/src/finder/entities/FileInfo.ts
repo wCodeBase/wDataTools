@@ -1,3 +1,4 @@
+import { EvLogError } from "./../events/events";
 import { createFtsTable, getConnection } from "../db";
 import { DEFAULT_QUERY_LIMIT } from "./../common";
 import { BaseDbInfoEntity } from "./BaseDbInfoEntity";
@@ -171,7 +172,7 @@ export class FileInfo extends BaseDbInfoEntity {
         const { result } = rRes.value.rRes;
         if (typeof result === "number") rTotal += result;
         else {
-          EvLog(
+          EvLogError(
             `Error: remote call countByMatchName return invalid value: `,
             result
           );

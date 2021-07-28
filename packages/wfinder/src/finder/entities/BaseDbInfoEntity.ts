@@ -25,7 +25,7 @@ import {
 } from "../db";
 import { cEvFinderState } from "../events/core/coreEvents";
 import { cTypeImplementedOrmCall } from "../events/core/coreTypes";
-import { EvLog } from "../events/events";
+import { EvLog, EvLogError } from "../events/events";
 import { TypeQueryLimit } from "../types";
 
 export type SubDatabaseIterator = (cb: () => Promise<void>) => Promise<void>;
@@ -130,7 +130,7 @@ export class BaseDbInfoEntity extends BaseEntity {
           });
           yield { url, rRes };
         } catch (e) {
-          EvLog(
+          EvLogError(
             `Error: query remote failed, method: countByMatchName, args: ${args},remote: ${url} error: `,
             e
           );

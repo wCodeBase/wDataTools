@@ -14,7 +14,13 @@ import {
 
 import { FileInfo } from "../entities/FileInfo";
 import { doScan, genExternalSubDbPath, stopScan } from "./../scan";
-import { EvFinderStatus, EvLog, EvUiCmd, EvUiCmdResult } from "./events";
+import {
+  EvFinderStatus,
+  EvLog,
+  EvLogError,
+  EvUiCmd,
+  EvUiCmdResult,
+} from "./events";
 import {
   FinderStatus,
   TypeMsgConfigItem,
@@ -45,7 +51,8 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
     };
     if (
       msg.cmd === "requestPickLocalPath" ||
-      msg.cmd === "requestChooseFinderRoot"
+      msg.cmd === "requestChooseFinderRoot" ||
+      msg.cmd === "queryUserDataDir"
     )
       return;
     const cmdResult = await switchDb(context, async () => {
@@ -57,7 +64,7 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
         cmdResult = { cmd, result: "done" };
         EvFinderStatus.next({ status: FinderStatus.idle });
       } else if (msg.cmd === "stopScan") {
-        stopScan();
+        stopScan(msg.data.path);
         const { cmd } = msg;
         cmdResult = { cmd, result: "done" };
       } else if (msg.cmd === "search") {
@@ -91,8 +98,11 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
         }
       } else if (msg.cmd === "clearIndexedData") {
         triggerHeartBeat();
-        const { cmd, data } = msg;
-        await exClearIndexedData(msg.context);
+        const {
+          cmd,
+          data: { path },
+        } = msg;
+        await exClearIndexedData(msg.context, path);
         cmdResult = { cmd, result: "done" };
       } else if (msg.cmd === "addPath" || msg.cmd === "deletePath") {
         triggerHeartBeat();
@@ -235,7 +245,7 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
     cmdResult.context = context;
     EvUiCmdResult.next(cmdResult);
   } catch (e) {
-    EvLog(
+    EvLogError(
       `Error: failed to execute ui command. command: ${msg.cmd}, error: ${e}`
     );
     EvUiCmdResult.next({

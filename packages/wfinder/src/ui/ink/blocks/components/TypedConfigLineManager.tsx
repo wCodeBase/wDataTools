@@ -8,6 +8,7 @@ import {
 } from "../../../../finder/events/types";
 import {
   EvLog,
+  EvLogError,
   EvUiCmd,
   EvUiCmdResult,
 } from "../../../../finder/events/events";
@@ -58,7 +59,7 @@ export const genConfigLineManager = (type: ConfigLineType) => () => {
   useSubjectCallback(EvUiCmdResult, (msg) => {
     if (msg.cmd === "deleteConfig" || msg.cmd === "addConfig") {
       if (msg.result.error) {
-        EvLog("Error: " + msg.result.error);
+        EvLogError("Error: " + msg.result.error);
         setState({ waitingForCmdResult: false });
       } else {
         EvUiCmd.next({ cmd: "listConfig", data: { type } });
@@ -72,7 +73,7 @@ export const genConfigLineManager = (type: ConfigLineType) => () => {
           Math.min(state.skip, msg.result.results.length - state.showLength)
         ),
       });
-      if (msg.result.error) EvLog("Error: " + msg.result.error);
+      if (msg.result.error) EvLogError("Error: " + msg.result.error);
       if (state.waitingForCmdResult)
         setState({ waitingForCmdResult: false, cmd: "" });
     }

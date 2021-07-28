@@ -78,13 +78,18 @@ type TypeMsgScan = {
 };
 
 type TypeMsgStopScan = {
-  /** TODO: stop scanning on partical path */
   stopScan: TypeScanMsgDef;
 };
 
 export type TypeMsgPathItem = Pick<
   ScanPath,
-  "id" | "path" | "dbPath" | "createdAt" | "lastScanedAt" | "lastMessage"
+  | "id"
+  | "path"
+  | "dbPath"
+  | "createdAt"
+  | "lastScanedAt"
+  | "lastMessage"
+  | "lastSuccessCost"
 > &
   Partial<Pick<ScanPath, "dbInfo">>;
 

@@ -1,4 +1,4 @@
-import { EvLog, EvUiCmd, EvUiCmdResult } from "./events";
+import { EvLog, EvLogWarn, EvUiCmd, EvUiCmdResult } from "./events";
 import {
   judgeUiMsgResultType,
   TypeUiMsgDataMap,
@@ -127,7 +127,7 @@ export const switchEventInSubjects = <T>(
         try {
           send(jsonMore.stringify(packer ? packer(msg) : msg));
         } catch (e) {
-          subjects.EvLog(
+          subjects.EvLogError(
             "Error in eventGateway, failed to stringify message data: ",
             data,
             "\nerror: ",
@@ -153,7 +153,7 @@ export const switchEventInSubjects = <T>(
             subjects[msg.subjectName]?.next?.(msg.data);
           }
         } catch (e) {
-          subjects.EvLog(
+          subjects.EvLogError(
             "Error in eventGateway, failed to parse message data: ",
             data,
             "\nerror: ",
@@ -195,7 +195,7 @@ export const genRemoteCaller = <K, T extends TypeCommonMsgDef<K>>(
         if (msg.type === "res") tagPromiseMap[msg.tag]?.res(msg.data);
       }
     } catch (e) {
-      EvLog("Warning: recieve invalid data from remote call", data);
+      EvLogWarn("Warning: recieve invalid data from remote call", data);
     }
   };
   return {
@@ -295,7 +295,7 @@ export const genRemoteExector = <K, T extends TypeCommonMsgDef<K>>(
           }
         }
       } catch (e) {
-        EvLog("Warning: recieve invalid data from remote call", data);
+        EvLogWarn("Warning: recieve invalid data from remote call", data);
       }
     };
     return {

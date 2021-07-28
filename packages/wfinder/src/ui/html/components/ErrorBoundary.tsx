@@ -1,5 +1,6 @@
 import React, { ErrorInfo } from "react";
 import { PureComponent } from "react";
+import { EvLog, EvLogError } from "../../../finder/events/events";
 
 export class ErrorBoundary extends PureComponent<{ errorTitle?: string }> {
   state = {
@@ -20,5 +21,6 @@ export class ErrorBoundary extends PureComponent<{ errorTitle?: string }> {
   componentDidCatch(error: Error, info: ErrorInfo) {
     this.setState({ error });
     console.error("ErrorBoundary error caught: ", error, info);
+    EvLogError("ErrorBoundary error caught: ", error);
   }
 }

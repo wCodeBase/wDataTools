@@ -53,12 +53,6 @@ export const FinderUi = () => {
     let handle: TypeShowModalHandle | undefined;
     let currentUiCmdMsg: TypeUiMsgData | undefined;
     const subscribes = [
-      EvConsole.subscribe((val) => {
-        console.warn(val);
-      }),
-      EvUiCmdMessage.subscribe((msg) => {
-        console.log("UiCmdMessage", msg);
-      }),
       EvFinderReady.subscribe((ready) => {
         if (ready && handle) {
           handle.destory();

@@ -5,6 +5,7 @@ import { useStableState, useSubjectCallback } from "../../../hooks/hooks";
 import { TypeMsgPathItem } from "../../../../finder/events/types";
 import {
   EvLog,
+  EvLogError,
   EvUiCmd,
   EvUiCmdResult,
 } from "../../../../finder/events/events";
@@ -53,7 +54,7 @@ export const PathManager = () => {
   useSubjectCallback(EvUiCmdResult, (msg) => {
     if (msg.cmd === "deletePath" || msg.cmd === "addPath") {
       if (msg.result.error) {
-        EvLog("Error: " + msg.result.error);
+        EvLogError("Error: " + msg.result.error);
         setState({ waitingForCmdResult: false });
       } else {
         EvUiCmd.next({ cmd: "listPath", data: [] });
@@ -67,7 +68,7 @@ export const PathManager = () => {
           Math.min(state.skip, msg.result.results.length - state.showLength)
         ),
       });
-      if (msg.result.error) EvLog("Error: " + msg.result.error);
+      if (msg.result.error) EvLogError("Error: " + msg.result.error);
       if (state.waitingForCmdResult)
         setState({ waitingForCmdResult: false, cmd: "" });
     }

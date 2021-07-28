@@ -16,6 +16,7 @@ import {
   EvUiCmdResult,
   EvUiCmdMessage,
   useFinderStatus,
+  EvLogError,
 } from "../../../finder/events/events";
 import {
   KEY_ARROW_DOWN,
@@ -54,7 +55,7 @@ const Search = () => {
       if (str) {
         setState({ skip: 0, keywords: [str] });
         state.doSearch();
-      } else EvLog("Error: keyword input is empty.");
+      } else EvLogError("Error: keyword input is empty.");
     },
     doSearch: () => {
       if (state.keywords.every((v) => v))

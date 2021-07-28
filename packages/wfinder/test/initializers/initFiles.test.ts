@@ -6,7 +6,8 @@ import {
 } from ".";
 import { shellJs } from "../imports";
 
-describe("Init test files", () => {
+describe("Init test files", function () {
+  this.timeout(10000);
   it(`Rebuild dependencies`, () => {
     shellJs.exec(`npm run node-rebuild`);
   });

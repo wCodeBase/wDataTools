@@ -27,6 +27,7 @@ import dayjs from "dayjs";
 import { formatDate } from "../../../tools/tool";
 import { useMemo } from "react";
 import { messageError } from "../uiTools";
+import prettyMs from "pretty-ms";
 
 const usePathScanning = (records: TypeMsgPathItem[], context?: TypeDbInfo) => {
   const [finderStatus] = useFinderStatus();
@@ -45,7 +46,7 @@ const SearchButton = React.memo(
   (
     props: TypeManagerTableAddonButtonProps<TypeMsgPathItem> & {
       context?: TypeDbInfo;
-      tiny?: boolean;
+      toLine?: boolean;
       noClear?: boolean;
     }
   ) => {
@@ -53,7 +54,7 @@ const SearchButton = React.memo(
     const scanning = usePathScanning(props.records, context);
     return (
       <div className="flex flex-row">
-        <div className="pl-2">
+        <div className="pl-1">
           <Button
             onClick={() => {
               EvUiCmd.next({
@@ -71,6 +72,26 @@ const SearchButton = React.memo(
             Scan
           </Button>
         </div>
+        {scanning && (
+          <div className="pl-1">
+            <Button
+              type="primary"
+              size="small"
+              danger
+              onClick={() => {
+                EvUiCmd.next({
+                  cmd: "stopScan",
+                  data: {
+                    path: props.records.map((v) => v.path),
+                  },
+                  context,
+                });
+              }}
+            >
+              Stop
+            </Button>
+          </div>
+        )}
         {!props.noClear && <ClearIndexButton {...props} disabled={scanning} />}
       </div>
     );
@@ -80,15 +101,16 @@ const SearchButton = React.memo(
 const ClearIndexButton = React.memo(
   (props: {
     context?: TypeDbInfo;
-    tiny?: boolean;
+    toLine?: boolean;
     disabled?: boolean;
     records: TypeMsgPathItem[];
   }) => {
     const [lodaing, setLodaing] = useState(false);
     return (
-      <div className="pl-2">
-        <Button
-          onClick={async () => {
+      <div className="pl-1">
+        <Popconfirm
+          title="Are you sure to remove scanned data?"
+          onConfirm={async () => {
             setLodaing(true);
             const res = await messageError(
               executeUiCmd("clearIndexedData", {
@@ -104,14 +126,17 @@ const ClearIndexButton = React.memo(
             }
             setLodaing(false);
           }}
-          loading={lodaing}
-          disabled={props.disabled}
-          type="primary"
-          danger
-          size="small"
         >
-          Clear{!props.tiny && " Data"}
-        </Button>
+          <Button
+            loading={lodaing}
+            disabled={props.disabled}
+            type="primary"
+            danger
+            size="small"
+          >
+            Clear{!props.toLine && " Data"}
+          </Button>
+        </Popconfirm>
       </div>
     );
   }
@@ -213,9 +238,9 @@ export const ScanPathManager = defaultPropsFc(
               <SearchButton
                 {...props}
                 context={props.record.dbInfo}
-                tiny
+                toLine
                 records={[props.record]}
-                noClear
+                noClear={!props.record.dbPath}
               />
             </div>
             {!props.isTableEdit && !props.isTableOnNew && (
@@ -231,6 +256,7 @@ export const ScanPathManager = defaultPropsFc(
           { prop: "dbPath", title: "isolated db file" },
           "createdAt",
           "lastScanedAt",
+          { prop: "lastSuccessCost", title: "cost" },
         ],
         {
           lastScanedAt: (val, record) => {
@@ -257,6 +283,7 @@ export const ScanPathManager = defaultPropsFc(
               );
             else return content;
           },
+          lastSuccessCost: (v) => v && prettyMs(v),
         },
         { path: SimplePathEdit },
         { path: SimplePathEdit },
