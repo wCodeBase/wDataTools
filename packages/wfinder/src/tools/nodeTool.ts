@@ -75,7 +75,7 @@ export const getElectron = () => {
   try {
     return require("electron");
   } catch (e) {
-    console.log("Failed to load electron");
+    console.log("Failed to load electron:", e);
   }
 };
 

@@ -1,5 +1,6 @@
 const path = require("path");
 const TerserPlugin = require("terser-webpack-plugin");
+const webpack = require("webpack");
 const isAnalyze = process.env.M_NODE_ENV === "analyze";
 const BundleAnalyzerPlugin =
   require("webpack-bundle-analyzer").BundleAnalyzerPlugin;
@@ -77,6 +78,11 @@ module.exports = {
   },
   plugins: [
     ...(isAnalyze ? [new BundleAnalyzerPlugin({ analyzerPort: 10049 })] : []),
+    new webpack.BannerPlugin({
+      banner: "#!/usr/bin/env node",
+      raw: true,
+      entryOnly: true,
+    }),
   ],
   output: {
     filename: "[name].js",

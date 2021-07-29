@@ -1,3 +1,4 @@
+import { execRoot } from "./../../env";
 import {
   EVENT_ORM_METHOD_WEBSOCKET_ROUTE,
   EVENT_TRANSFER_WEBSOCKET_ROUTE,
@@ -160,10 +161,7 @@ export const createHttpServer = async (
     }
     if (!staticSetted) {
       app.use(staticRoute, compressor);
-      app.use(
-        staticRoute,
-        express.static(path.join(__dirname, "../../ui/html"))
-      );
+      app.use(staticRoute, express.static(path.join(execRoot, "ui/html")));
       staticSetted = true;
     }
     const server = http.createServer(app);
