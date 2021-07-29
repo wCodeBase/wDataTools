@@ -1,6 +1,8 @@
 # Wfinder
 A local file indexing and searching tool supports cli and multi desktop platforms (Linux, Mac OS, Windows).
 
+English | [中文](README_CN.md)
+
 ---
 
 ## Features
@@ -32,7 +34,7 @@ or locally to search, modify settings or trigger scanning.
 ## Install
 1. Install using npm:
 ```sh
-# Install without cli commands, ink gui and web gui:
+# Install for cli commands, ink gui and web gui:
 npm install -g wfinder
 
 # If you want electron gui (desktop platforms)
@@ -43,11 +45,13 @@ npm install -g electron
 npm install -g wtoolbox
 ```
 2. Install using binary package:
-Download binary package you want from release page.
+
+    Download binary package you want from release page.
 
 ---
 ## User interfaces
 1. Single line commands: 
+
 ![image](doc/images/cli.png)
 
 2. Ink ui:
@@ -63,7 +67,8 @@ wfinder -i
 wfinder -g
 ```
 ![image](doc/images/gui.png)
-3. HTTP server:
+
+4. HTTP server:
 ```sh
 # The user interface is similar to GUI above.
 # Launch command:
