@@ -7,7 +7,7 @@ import {
   FinderStatus,
   TypeMsgSearchResultItem,
   TypeUiCmd,
-  TypeUiMsgMessage,
+  TypeLogMessage,
   UI_CMD_DEF,
 } from "../../../finder/events/types";
 import {
@@ -124,7 +124,7 @@ const Scan = () => {
   const [state, setState] = useStableState(() => ({
     confirmed: finderStatus.status === FinderStatus.scanning,
     goingBack: false,
-    scanMessages: [] as (TypeUiMsgMessage & { number: number })[],
+    scanMessages: [] as (TypeLogMessage & { number: number })[],
     scanMsgShowLines: 5,
     onSelect: (option: { value: string }) => {
       if (state.goingBack) return;
@@ -188,8 +188,8 @@ const Scan = () => {
                 <Text
                   key={msg.number}
                   backgroundColor={"gray"}
-                  color={msg.error ? "yellow" : "white"}
-                >{`(${msg.number}) ${msg.message} ${msg.error || ""}`}</Text>
+                  color={msg.type === "log" ? "white" : "yellow"}
+                >{`(${msg.number}) ${msg.message}`}</Text>
               ))
           )}
         </Box>

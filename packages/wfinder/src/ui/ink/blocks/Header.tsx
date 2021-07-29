@@ -23,7 +23,7 @@ export const Header = () => {
           ) && <Spinner />}
         </Box>
         <Box marginLeft={2}>
-          <Text>record count: </Text>
+          <Text>file count: </Text>
           <Box>
             <Text color="blueBright">{String(dbInfo.fileInfoCount)}</Text>
           </Box>

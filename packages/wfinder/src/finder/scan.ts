@@ -1,7 +1,7 @@
 import { interactYield } from "./../tools/tool";
 import { ConfigLine } from "./entities/ConfigLine";
 import { cEvScanBrake } from "./events/core/coreEvents";
-import { Config, MAX_PATH_DEPTH } from "./common";
+import { Config, isDev, MAX_PATH_DEPTH } from "./common";
 import * as path from "path";
 import * as fs from "fs";
 import { pathPem } from "../tools/nodeTool";
@@ -23,6 +23,53 @@ import { SUB_DATABASE_PREFIX } from "../constants";
 import { BehaviorSubject } from "rxjs";
 
 export class FileScanError extends Error {}
+
+const testAndScanSubDb = async (
+  testAbsPath: string,
+  ignoreCtime = false,
+  config = Config,
+  currentDepth = 0,
+  scanBrake: BehaviorSubject<boolean>
+) => {
+  if (isPathEqual(testAbsPath, config.finderRoot)) return false;
+  const testDbPath = path.join(testAbsPath, config.dbName);
+  if (
+    fs.existsSync(testDbPath) &&
+    fs.statSync(testDbPath).isFile() &&
+    pathPem.canWrite(testDbPath)
+  ) {
+    EvUiCmdMessage.next({
+      type: "log",
+      message: `Sub database found: ${testDbPath}`,
+    });
+    await DbIncluded.remove(
+      (
+        await DbIncluded.find()
+      ).filter((v) =>
+        isPathInclude(testAbsPath, joinToAbsolute(v.dbInfo.finderRoot, v.path))
+      )
+    );
+    await DbIncluded.mark(
+      path.relative(config.finderRoot, testAbsPath),
+      config.dbName
+    );
+    await doScan(
+      {
+        ...config,
+        dbPath: testDbPath,
+        finderRoot: testAbsPath,
+        isSubDb: true,
+      },
+      false,
+      ignoreCtime,
+      currentDepth + 1,
+      undefined,
+      scanBrake
+    );
+    return testDbPath;
+  }
+  return false;
+};
 
 export const scanPath = async (
   pathOrScanPath: string | ScanPath,
@@ -56,7 +103,6 @@ export const scanPath = async (
       );
       parentId = existPath.id;
     }
-
     if (fs.statSync(pathToScan).isFile()) {
       const fileInfo = await FileInfo.findOne(parentId);
       if (!fileInfo)
@@ -67,59 +113,6 @@ export const scanPath = async (
       fileInfo.size = fs.statSync(pathToScan).size;
       await fileInfo.save();
       return errors;
-    }
-    const testAndScanSubDb = async (
-      testAbsPath: string,
-      currentDepth: number
-    ) => {
-      if (isPathEqual(testAbsPath, config.finderRoot)) return false;
-      const testDbPath = path.join(testAbsPath, config.dbName);
-      if (
-        fs.existsSync(testDbPath) &&
-        fs.statSync(testDbPath).isFile() &&
-        pathPem.canWrite(testDbPath)
-      ) {
-        EvUiCmdMessage.next({
-          message: `Sub database found: ${testDbPath}`,
-        });
-        await DbIncluded.remove(
-          (
-            await DbIncluded.find()
-          ).filter((v) =>
-            isPathInclude(
-              testAbsPath,
-              joinToAbsolute(v.dbInfo.finderRoot, v.path)
-            )
-          )
-        );
-        await DbIncluded.mark(
-          path.relative(config.finderRoot, testAbsPath),
-          config.dbName
-        );
-        await doScan(
-          {
-            ...config,
-            dbPath: testDbPath,
-            finderRoot: testAbsPath,
-            isSubDb: true,
-          },
-          false,
-          ignoreCtime,
-          currentDepth + 1,
-          undefined,
-          scanBrake
-        );
-        return testDbPath;
-      }
-      return false;
-    };
-    const testDbPath = await testAndScanSubDb(pathToScan, currentDepth);
-    if (testDbPath) {
-      await FileInfo.removeChildren(parentId);
-      if (pathOrScanPath instanceof ScanPath) {
-        pathOrScanPath.dbPath = path.relative(config.finderRoot, testDbPath);
-        await pathOrScanPath.save();
-      }
     } else {
       const scanStack = [
         {
@@ -161,7 +154,8 @@ export const scanPath = async (
         if (!item) break;
         if (item.depth > MAX_PATH_DEPTH) {
           EvUiCmdMessage.next({
-            error: `Error: Reach max path depth(${MAX_PATH_DEPTH}): ${item.absPath}`,
+            type: "error",
+            message: `Error: Reach max path depth(${MAX_PATH_DEPTH}): ${item.absPath}`,
           });
           break;
         }
@@ -208,7 +202,15 @@ export const scanPath = async (
             } else if (!pathPem.canRead(chilPath)) {
               errors.push(`Path unreadable: ${chilPath}`);
             } else {
-              if (!(await testAndScanSubDb(chilPath, item.depth))) {
+              if (
+                !(await testAndScanSubDb(
+                  chilPath,
+                  ignoreCtime,
+                  config,
+                  item.depth,
+                  scanBrake
+                ))
+              ) {
                 scanStack.push({
                   id: info.id,
                   absPath: chilPath,
@@ -322,8 +324,12 @@ export const doScan = async (
       });
       await doScan(config, ignoreCtime, false);
       if (await checkScanBrake(paths, config))
-        EvUiCmdMessage.next({ warn: "Scan stopped manually." });
+        EvUiCmdMessage.next({
+          type: "warn",
+          message: "Scan stopped manually.",
+        });
       EvUiCmdMessage.next({
+        type: "log",
         message: `Scan finished, cost ${
           Date.now() - clsScan.get().startAt.valueOf()
         }ms, context: ${config.finderRoot}.`,
@@ -355,12 +361,16 @@ export const doScan = async (
         !scanPaths.find((v) => v.path === "./")
       ) {
         EvUiCmdMessage.next({
-          warn: `Only partial sub path will be scan in ${
+          type: "warn",
+          message: `Only partial sub path will be scan in ${
             config.finderRoot
           }: ${scanPaths.map((v) => v.path).join(";")} `,
         });
       }
-      EvUiCmdMessage.next({ message: `${scanPaths.length} path to scan.` });
+      EvUiCmdMessage.next({
+        type: "log",
+        message: `${scanPaths.length} path to scan.`,
+      });
       for (const pathToScan of scanPaths) {
         pathToScan.lastMessage = "";
         const isPathToScanAbs = path.isAbsolute(pathToScan.path);
@@ -375,7 +385,7 @@ export const doScan = async (
             scanBrake.next(true);
           }
         });
-        EvUiCmdMessage.next({ message: `Scan path: ${absPath}` });
+        EvUiCmdMessage.next({ type: "log", message: `Scan path: ${absPath}` });
         try {
           const pathPerm = pathPem.getPem(absPath);
           const pathScanStartAt = Date.now();
@@ -383,21 +393,38 @@ export const doScan = async (
             throw new Error("Path to scan is no readable: " + absPath);
           } else if (isPathInclude(config.finderRoot, absPath)) {
             if (clsScan.get().Scaned.has(absPath)) {
-              EvUiCmdMessage.next({ warn: "Skip scaned path: " + absPath });
+              EvUiCmdMessage.next({
+                type: "warn",
+                message: "Skip scaned path: " + absPath,
+              });
               continue;
             }
-            clsScan.get().Scaned.add(absPath);
-            errors = errors.concat(
-              await scanPath(
-                pathToScan,
-                ignoreCtime,
-                config,
-                currentDepth,
-                scanBrake
-              )
+
+            const testDbPath = await testAndScanSubDb(
+              absPath,
+              ignoreCtime,
+              config,
+              currentDepth,
+              scanBrake
             );
+            if (testDbPath) {
+              pathToScan.dbPath = path.relative(config.finderRoot, testDbPath);
+              await FileInfo.removePath(pathToScan.path);
+            } else {
+              clsScan.get().Scaned.add(absPath);
+              errors = errors.concat(
+                await scanPath(
+                  pathToScan,
+                  ignoreCtime,
+                  config,
+                  currentDepth,
+                  scanBrake
+                )
+              );
+            }
           } else {
             EvUiCmdMessage.next({
+              type: "log",
               message: "Switch to external scan path: " + absPath,
             });
             let dbPath = pathToScan.dbPath;
@@ -428,11 +455,15 @@ export const doScan = async (
           await pathToScan.save();
           if (scanBrake.value) {
             EvUiCmdMessage.next({
-              warn: `Scan stopped manually: ${absPath}`,
+              type: "warn",
+              message: `Scan stopped manually: ${absPath}`,
             });
             continue;
           }
-          EvUiCmdMessage.next({ message: `Path scan finished: ${absPath}` });
+          EvUiCmdMessage.next({
+            type: "log",
+            message: `Path scan finished: ${absPath}`,
+          });
         } catch (e) {
           pathToScan.lastMessage = String(e);
           pathToScan.lastScanedAt = new Date();
@@ -440,10 +471,13 @@ export const doScan = async (
             EvLogError("Error: Save scan path failed: ", e);
           });
           EvUiCmdMessage.next({
-            message: `Scan path fail: ${absPath}`,
-            error: String(e),
+            type: "error",
+            message: `Scan path fail, path: ${absPath}, error: ${String(e)}`,
           });
           errors.push(`Scan path fail: ${absPath}:${e}`);
+          if (isDev) {
+            console.error(`Scan path fail: ${absPath}:${e}`, e.stack);
+          }
         } finally {
           brakeSubscribe.unsubscribe();
           EvFinderStatus.value.scanContextIdAndPathSet.delete(
@@ -458,7 +492,8 @@ export const doScan = async (
 
 export const doScanCmd = async () => {
   const subscribe = EvUiCmdMessage.subscribe((msg) => {
-    if (msg.error) console.error(msg.message, msg.error);
+    if (msg.type === "error") console.error(msg.message);
+    if (msg.type === "warn") console.warn(msg.message);
     else console.log(msg.message);
   });
   await doScan();

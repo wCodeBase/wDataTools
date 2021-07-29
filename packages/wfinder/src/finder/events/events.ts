@@ -8,7 +8,7 @@ import {
   TypeOsInfo,
   TypeServerState,
   TypeUiMsgData,
-  TypeUiMsgMessage,
+  TypeLogMessage,
   TypeUiMsgResult,
   TypeUiStatus,
 } from "./types";
@@ -51,9 +51,9 @@ export const EvDatabaseInfos = new JsonBehaviorSubject<TypeDatabaseInfos>({
   fileInfoCount: 0,
 });
 
-export const EvConsole = new JsonBehaviorSubject<
-  { message: string; type: "log" | "warn" | "error" } | undefined
->(undefined);
+export const EvConsole = new JsonBehaviorSubject<TypeLogMessage | undefined>(
+  undefined
+);
 
 export const EvLog = (...args: any[]) =>
   EvConsole.next({ type: "log", message: args.join(", ") });
@@ -66,7 +66,7 @@ export const EvUiCmd = new JsonBehaviorSubject<TypeUiMsgData | null>(null);
 
 export const EvUiCmdResult = new JsonSubject<TypeUiMsgResult | MsgHeartbeat>();
 
-export const EvUiCmdMessage = new JsonSubject<TypeUiMsgMessage>();
+export const EvUiCmdMessage = new JsonSubject<TypeLogMessage>();
 
 export const EvUiLaunched = new ShallowJsonBehaviorSubject<TypeUiStatus>({});
 

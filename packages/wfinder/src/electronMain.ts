@@ -1,26 +1,26 @@
-import { getUserPreference, setUserPreference } from "./preference";
-import { USE_IPC_SERVER } from "./ipcServer";
-import { switchEvent } from "./../../finder/events/eventGateway";
-import { loadHtml } from "./common";
-import { app, BrowserWindow, dialog, Menu } from "electron";
-import { initFinder } from "../../finder";
-import net from "net";
-import { packetTool } from "../../tools/streamTool";
+import { app, Menu, dialog, BrowserWindow } from "electron";
+import { throttle } from "lodash";
+import path from "path";
+import { APP_DATA_FOLDER_NAME } from "./constants";
+import { initFinder } from "./finder";
+import { isDev } from "./finder/common";
+import { switchEvent } from "./finder/events/eventGateway";
+import {
+  EvUiCmd,
+  EvUiCmdResult,
+  EvFinderState,
+  EvUiLaunched,
+} from "./finder/events/events";
 import {
   TypeGateway,
   GATEWAY_CHANNEL,
   CLIENT_READY,
-} from "../../finder/events/eventTools";
-import { throttle } from "lodash";
-import {
-  EvFinderState,
-  EvUiCmd,
-  EvUiCmdResult,
-  EvUiLaunched,
-} from "../../finder/events/events";
-import path from "path";
-import { APP_DATA_FOLDER_NAME } from "../../constants";
-import { isDev } from "../../finder/common";
+} from "./finder/events/eventTools";
+import { packetTool } from "./tools/streamTool";
+import { loadHtml } from "./ui/electron/common";
+import { USE_IPC_SERVER } from "./ui/electron/ipcServer";
+import { getUserPreference, setUserPreference } from "./ui/electron/preference";
+import net from "net";
 
 EvUiCmd.subscribe((msg) => {
   if (msg?.cmd === "queryUserDataDir") {

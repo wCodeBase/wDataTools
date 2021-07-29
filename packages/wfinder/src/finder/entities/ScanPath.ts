@@ -8,7 +8,7 @@ import {
 } from "typeorm";
 import { joinToAbsolute, isPathInclude } from "../../tools/pathTool";
 import fs from "fs";
-import { EvLog, EvLogWarn } from "../events/events";
+import { EvFinderStatus, EvLog, EvLogWarn } from "../events/events";
 import { getConfig, switchDb } from "../db";
 
 @Entity()
@@ -49,9 +49,11 @@ SubDatabaseIterators.push(async (cb) => {
     const absDbPath = joinToAbsolute(config.finderRoot, scanPath.dbPath);
     const absFinderRoot = joinToAbsolute(config.finderRoot, scanPath.path);
     if (!fs.existsSync(absDbPath)) {
-      EvLogWarn(
-        `It's time to rescan, database file of scan path not exist: ${absDbPath}.`
-      );
+      if (!EvFinderStatus.value.scanContextIdAndPathSet.size) {
+        EvLogWarn(
+          `It's time to rescan, database file of scan path not exist: ${absDbPath}.`
+        );
+      }
     } else if (!isPathInclude(config.finderRoot, absFinderRoot)) {
       try {
         await switchDb(

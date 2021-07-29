@@ -371,7 +371,7 @@ export class FileInfo extends BaseDbInfoEntity {
    * Remove a given path and it's children.
    * @param path relative path to this finderRoot
    */
-  static async removePath(path: string, brake?: BehaviorSubject<boolean>) {
+  static async removePath(path: string) {
     const pathSegs = splitPath(path);
     const fileInfos: FileInfo[] = [];
     for (const seg of pathSegs) {

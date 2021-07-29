@@ -8,7 +8,7 @@ export const InkConsole = () => {
   const count = useCountDown(5, [timestamp]);
   return (
     <>
-      {!!value && !!count && (
+      {!!value?.message && !!count && (
         <Box>
           <Text backgroundColor="blue">Console({count}):</Text>
           <Text>{" " + value.message}</Text>

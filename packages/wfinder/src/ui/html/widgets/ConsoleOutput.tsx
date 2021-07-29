@@ -29,7 +29,7 @@ type Output = {
 };
 
 const OUTPUT_LIMIT = 10000;
-const SHOW_DURATION = 10000;
+const SHOW_DURATION = 5000;
 const SHOW_LENGTH_STEP = 200;
 const typeBgMap = {
   log: "bg-transparent",
@@ -126,16 +126,7 @@ export const ConsoleOutput = defaultPropsFc(
     }, [state.showLog]);
 
     useSubjectCallback(EvUiCmdMessage, (msg) => {
-      const message = msg.message || msg.error || msg.warn;
-      const type = msg.message
-        ? "log"
-        : msg.error
-        ? "error"
-        : msg.warn
-        ? "warn"
-        : "";
-      if (message && type)
-        state.addNewOutput({ from: "UiMessage", message, type });
+      state.addNewOutput({ from: "UiMessage", ...msg });
     });
 
     useSubjectCallback(EvConsole, (log) => {

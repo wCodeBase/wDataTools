@@ -1,3 +1,4 @@
+import { execRoot } from "./../../env";
 import { startIpcServer, USE_IPC_SERVER } from "./ipcServer";
 import { spawn } from "child_process";
 import path from "path";
@@ -18,7 +19,7 @@ export const startElectron = async () => {
     const proc = spawn(
       electron,
       [
-        path.resolve(path.join(__dirname, "./electronMain")),
+        path.resolve(path.join(execRoot, "electronMain")),
         USE_IPC_SERVER,
         String(port),
         address,
@@ -42,7 +43,7 @@ export const startElectron = async () => {
       if (!proc.killed) proc.kill();
     });
   } else if (electron instanceof Object) {
-    require("./electronMain");
+    require("../../electronMain");
   } else {
     console.warn("Electron not found, failed to launch wfinder gui.");
   }

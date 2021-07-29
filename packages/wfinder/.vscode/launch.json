@@ -55,11 +55,12 @@
         },
         {
             "name": "Electron Main",
-            "program": "${workspaceFolder}/dist/ui/electron/electronMain.js",
+            "program": "${workspaceFolder}/dist/electronMain.js",
             "request": "launch",
             "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
             "preLaunchTask": "npm: build-electron",
             "env": {"NODE_ENV":"development"},
+            "cwd": "${workspaceFolder}",
             "skipFiles": [
                 "<node_internals>/**"
             ],

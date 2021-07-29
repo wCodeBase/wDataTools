@@ -254,10 +254,9 @@ export const judgeUiMsgResultType = <T extends keyof TypeCmdUiMsgMap>(
   cmd: T
 ): msg is TypeUiMsgResultMap[T] => msg.cmd === cmd;
 
-export type TypeUiMsgMessage = {
-  message?: string;
-  error?: string;
-  warn?: string;
+export type TypeLogMessage = {
+  message: string;
+  type: "log" | "warn" | "error";
 };
 
 export type MsgHeartbeat = {

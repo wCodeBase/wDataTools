@@ -58,7 +58,9 @@ export const Setting = defaultPropsFc(
       getLocalContext
     );
     return (
-      <div className={"flex flex-col shadow-sm h-full " + props.className}>
+      <div
+        className={"flex flex-col shadow-sm overflow-hidden " + props.className}
+      >
         <div className="flex flex-row items-center text-white text-lg font-bold bg-lightBlue-500 rounded-sm p-0.5 px-2 ">
           <span>Setting</span>
           {context?.isSubDb && (

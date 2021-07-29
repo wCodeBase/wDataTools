@@ -5,7 +5,7 @@ import { getConfig, switchDb } from "../db";
 import * as path from "path";
 import * as fs from "fs";
 import { isPathEqual } from "../../tools/pathTool";
-import { EvLog, EvLogWarn } from "../events/events";
+import { EvFinderStatus, EvLog, EvLogWarn } from "../events/events";
 
 @Entity()
 export class DbIncluded extends BaseDbInfoEntity {
@@ -34,7 +34,7 @@ export class DbIncluded extends BaseDbInfoEntity {
     const { finderRoot } = getConfig();
     const subDbs = await this.find();
     for (const db of subDbs) {
-      if (!fs.statSync(path.join(finderRoot, db.path, db.dbName))) {
+      if (!fs.existsSync(path.join(finderRoot, db.path, db.dbName))) {
         await db.remove();
       }
     }
@@ -50,9 +50,11 @@ SubDatabaseIterators.push(async (cb) => {
     try {
       const dbPath = path.join(finderRoot, db.dbName);
       if (!fs.existsSync(dbPath)) {
-        EvLogWarn(
-          `It's time to rescan, sub database file not exist: ${dbPath}.`
-        );
+        if (!EvFinderStatus.value.scanContextIdAndPathSet.size) {
+          EvLogWarn(
+            `It's time to rescan, sub database file not exist: ${dbPath}.`
+          );
+        }
       } else
         await switchDb(
           {
