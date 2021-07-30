@@ -8,7 +8,10 @@ import {
   BaseEntity,
   Column,
   Entity,
+  FindConditions,
+  FindManyOptions,
   In,
+  Index,
   PrimaryGeneratedColumn,
   RemoveOptions,
   Repository,
@@ -20,13 +23,8 @@ import * as fs from "fs";
 import { interactYield } from "../../tools/tool";
 import { BehaviorSubject } from "rxjs";
 import { FileType } from "../types";
-import {
-  isPathEqual,
-  isPathInclude,
-  joinToAbsolute,
-  splitPath,
-} from "../../tools/pathTool";
-import { ScanPath } from "./ScanPath";
+import { splitPath } from "../../tools/pathTool";
+import hashString from "string-hash";
 
 export const IndexTableName = "fileindex";
 
@@ -36,11 +34,16 @@ export class FileInfo extends BaseDbInfoEntity {
   id!: number;
 
   /** Id of parent directory, value -1 means no parent */
+  @Index()
   @Column()
   parentId: number;
 
   @Column({ type: "text" })
   private name: string;
+
+  @Index()
+  @Column({ default: 0 })
+  nameHash: number;
 
   getName() {
     return restoreText(this.name);
@@ -62,14 +65,22 @@ export class FileInfo extends BaseDbInfoEntity {
     type: FileType,
     ctime: Date,
     parentId = -1,
-    size = 0
+    size = 0,
+    nameHash?: number,
+    nameProcessed = false
   ) {
     super();
-    this.name = processText(name || "");
+    this.name = nameProcessed ? name : processText(name || "");
     this.type = type;
     this.ctime = ctime;
     this.parentId = parentId;
     this.size = size;
+    this.nameHash = nameHash || hashString(this.name);
+  }
+
+  public static processAndHashName(nameStr: string) {
+    const name = processText(nameStr);
+    return [name, hashString(name)] as [string, number];
   }
 
   async save() {
@@ -116,7 +127,7 @@ export class FileInfo extends BaseDbInfoEntity {
         console.error("Clear DbIncluded table failed: ", e);
       });
       return [];
-    });
+    }, false);
   }
 
   static async countAllSubDatabases() {
@@ -376,9 +387,7 @@ export class FileInfo extends BaseDbInfoEntity {
     const fileInfos: FileInfo[] = [];
     for (const seg of pathSegs) {
       const parentId = last(fileInfos)?.id || -1;
-      const fileInfo = await FileInfo.find({
-        where: { parentId, name: processText(seg) },
-      });
+      const fileInfo = await FileInfo.findByNameWhere(seg, { parentId });
       if (fileInfo.length > 1) {
         throw new Error(
           `Faile to remove path, more than one file have thesame name in folder(ID: ${parentId}): ${seg}`
@@ -428,10 +437,29 @@ export class FileInfo extends BaseDbInfoEntity {
     parentId = -1,
     size = 0
   ) {
+    const [processedName, hash] = FileInfo.processAndHashName(name);
     return (
-      (await this.find({ where: { parentId, name: processText(name) } }))[0] ||
-      (await new this(name, type, ctime, parentId, size).save())
+      (
+        await this.find({
+          where: { parentId, nameHash: hash, name: processedName },
+        })
+      )[0] ||
+      (await new this(
+        processedName,
+        type,
+        ctime,
+        parentId,
+        size,
+        hash,
+        true
+      ).save())
     );
+  }
+
+  static findByNameWhere(name: string, where: FindConditions<FileInfo>) {
+    const [processedName, nameHash] = this.processAndHashName(name);
+    const mWhere = { ...(where || {}), nameHash, name: processedName };
+    return FileInfo.find({ where: mWhere });
   }
 }
 
@@ -494,4 +522,4 @@ export const processText = (() => {
 
 const processQueryText = (text: string) => processText(text, " ");
 
-const restoreText = (text: string) => text.replace(/\//g, "");
+export const restoreText = (text: string) => text.replace(/\//g, "");

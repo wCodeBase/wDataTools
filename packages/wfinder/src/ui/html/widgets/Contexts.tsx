@@ -56,7 +56,6 @@ const switchContext = async (
     wEvGlobalState.next({ contextStack: newContexts });
     if (isRestore) message.warn(msg + " success");
     else message.success(msg + " success");
-    console.log(contextStack, newContexts, isNew, contextPos);
   } catch (e) {
     message.error(`${msg} failed: ${e}`);
     const contextToRestore = last(contextStack);

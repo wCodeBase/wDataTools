@@ -91,3 +91,26 @@ export const getIpAddressList = () => {
   });
   return ipList;
 };
+
+export class TimeCouter {
+  lastAt: [number, number];
+  startAt: [number, number];
+  constructor() {
+    this.lastAt = this.startAt = process.hrtime();
+  }
+  count(msg = "") {
+    const now = process.hrtime();
+    console.log(
+      (now[0] - this.lastAt[0]) * 1000000000 + (now[1] - this.lastAt[1]),
+      msg
+    );
+    this.lastAt = now;
+  }
+  cost(msg = "") {
+    const now = process.hrtime();
+    console.log(
+      (now[0] - this.startAt[0]) * 1000000000 + (now[1] - this.startAt[1]),
+      msg
+    );
+  }
+}

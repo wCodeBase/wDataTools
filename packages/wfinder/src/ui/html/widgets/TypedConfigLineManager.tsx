@@ -112,7 +112,7 @@ const genTypedConfigmanager = (
       content: "",
       updatedAt: new Date(),
       createdAt: new Date(),
-      dbInfo: EvDefaultDbInfo.value,
+      dbInfo: undefined,
       type,
     }),
     canApplyToSubDatabases ? AddonButtons : undefined,

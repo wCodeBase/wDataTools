@@ -1,3 +1,4 @@
+import { Config } from "./../common";
 import path from "path";
 import { Subject } from "rxjs";
 import {
@@ -39,15 +40,17 @@ export class BaseDbInfoEntity extends BaseEntity {
 
   public static async queryAllDbIncluded<E extends typeof BaseDbInfoEntity, T>(
     this: E,
-    doQuery: (handle: typeof this) => Promise<T[]>
+    doQuery: (handle: typeof this) => Promise<T[]>,
+    selfFirst = true
   ) {
-    let res: T[] = await doQuery(this);
+    let res: T[] = selfFirst ? await doQuery(this) : [];
     for (const cb of SubDatabaseIterators) {
       await cb(async () => {
         await interactYield();
-        res = res.concat(await this.queryAllDbIncluded(doQuery));
+        res = res.concat(await this.queryAllDbIncluded(doQuery, selfFirst));
       });
     }
+    if (!selfFirst) res = res.concat(await doQuery(this));
     return res;
   }
 
@@ -232,3 +235,15 @@ const triggerChangeMethods = new Set([
     }
   }
 });
+
+const entityTableNameMap = new Map<typeof BaseDbInfoEntity, string>();
+export const getEntityTableName = (entity: typeof BaseDbInfoEntity) => {
+  let tableName = entityTableNameMap.get(entity);
+  if (tableName) return tableName;
+  const connection = getCachedConnection(Config);
+  if (!connection)
+    throw new Error("getEntityTableName cached connection not found.");
+  tableName = connection.getMetadata(entity).tableName;
+  entityTableNameMap.set(entity, tableName);
+  return tableName;
+};

@@ -58,20 +58,7 @@ module.exports = {
           minimize: true,
           minimizer: [
             new TerserPlugin({
-              minify: (file, sourceMap) => {
-                // https://github.com/mishoo/UglifyJS2#minify-options
-                const uglifyJsOptions = {
-                  /* your `uglify-js` package options */
-                };
-
-                if (sourceMap) {
-                  uglifyJsOptions.sourceMap = {
-                    content: sourceMap,
-                  };
-                }
-
-                return require("uglify-js").minify(file, uglifyJsOptions);
-              },
+              terserOptions: { keep_fnames: true },
             }),
           ],
         }),

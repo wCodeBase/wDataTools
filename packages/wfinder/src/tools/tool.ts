@@ -1,13 +1,26 @@
 import dayjs from "dayjs";
 import { isUndefined, omitBy } from "lodash";
 
+/**
+ * @param wait wait milli second each yield.
+ * @param echoInterval 0 for no echo, number in milli second to return true when reach interval
+ */
 export const interactYield = (() => {
   let lastYield = 0;
-  const interval = 1000 / 10;
-  return async (wait = 5) => {
-    if (Date.now() - lastYield < interval) return;
-    lastYield = Date.now();
-    await new Promise((r) => setTimeout(r, wait));
+  const interval = 1000 / 4;
+  let echo = 0;
+  return (wait = 5, echoInterval = 0) => {
+    const now = Date.now();
+    if (now - lastYield < interval) return;
+    lastYield = now;
+    return new Promise<true | void>((r) =>
+      setTimeout(() => {
+        if (echoInterval && lastYield - echo > echoInterval) {
+          echo = lastYield;
+          r(true);
+        } else r();
+      }, wait)
+    );
   };
 })();
 

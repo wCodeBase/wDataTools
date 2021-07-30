@@ -1,4 +1,10 @@
-import { EvFinderReady, EvFinderState, EvUiCmd, EvUiCmdResult } from "./events";
+import {
+  EvDefaultDbInfo,
+  EvFinderReady,
+  EvFinderState,
+  EvUiCmd,
+  EvUiCmdResult,
+} from "./events";
 import {
   ConfigLineType,
   getDbInfoId,

@@ -14,8 +14,7 @@
             "program": "${workspaceRoot}/node_modules/ts-node/dist/bin.js",
             "args": [
                 "./src/main.ts",
-                "-f",
-                "e"
+                "serve",
             ],
             "cwd": "${workspaceFolder}",
             "protocol": "inspector",
@@ -73,6 +72,7 @@
             "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
             "preLaunchTask": "npm: build-electron",
             "env": {"NODE_ENV":"development"},
+            "cwd": "/",
             "args": [
                 "-g",
             ],
@@ -87,6 +87,7 @@
             "name": "Ipc Electron Main",
             "program": "${workspaceFolder}/dist/main.js",
             "preLaunchTask": "npm: build-electron-ipc",
+            // "cwd": "/",
             "args": [
                 "-g",
             ],

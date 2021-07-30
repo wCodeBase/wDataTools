@@ -12,6 +12,7 @@ import {
 } from "./core/coreEvents";
 import {
   EvDatabaseInfos,
+  EvDefaultDbInfo,
   EvFileInfoChange,
   EvFinderState,
   EvUiCmd,
@@ -40,7 +41,6 @@ EvFileInfoChange.subscribe(async () => {
 });
 
 cEvFinderState.subscribe((state) => {
-  networkInterfaces();
   EvFinderState.next({
     config: last(state.configStack),
     remotes: Object.entries(state.linkedRemote).reduce((res, [key, value]) => {

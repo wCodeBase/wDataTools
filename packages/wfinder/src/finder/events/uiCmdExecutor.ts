@@ -36,7 +36,7 @@ import { ScanPath } from "../entities/ScanPath";
 import { joinToAbsolute } from "../../tools/pathTool";
 import { isDev } from "../common";
 
-export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
+export const uiCmdExecutor = async function (msg: TypeUiMsgData | null) {
   if (!msg) return;
   let finished = false;
   const context = msg.context || getConfig();
@@ -55,7 +55,7 @@ export const uiCmdExecutor = async (msg: TypeUiMsgData | null) => {
       msg.cmd === "queryUserDataDir"
     )
       return;
-    const cmdResult = await switchDb(context, async () => {
+    const cmdResult = await switchDb(context, async function () {
       let cmdResult: TypeUiMsgResult;
       if (msg.cmd === "scan") {
         const { cmd } = msg;

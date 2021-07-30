@@ -16,6 +16,7 @@ import { Config, entityChangeWatchingSubjectMap, genConfig } from "./common";
 import { ScanPath } from "./entities/ScanPath";
 import { DbIncluded } from "./entities/DbIncluded";
 import {
+  EvDefaultDbInfo,
   EvFileInfoChange,
   EvLog,
   EvLogError,
@@ -294,6 +295,14 @@ export const {
           database: dbPath,
           entities: AUTO_CONNECT_ENTITIES,
         });
+        if (config === Config && !config.thumbnail) {
+          try {
+            const coreInfo = await getFinderCoreInfo(undefined, connection);
+            config.thumbnail = coreInfo.thumnail;
+          } catch (e) {
+            console.warn("Failed to get thumbnail of  global database");
+          }
+        }
         connectionMap.set(dbPath, connection);
         const close = connection.close.bind(connection);
         connection.close = async () => {
@@ -303,15 +312,6 @@ export const {
         const con = connection;
         blockingResolveMap.get(dbPath)?.forEach((v) => v(con));
         blockingResolveMap.delete(dbPath);
-        if (config === Config && !config.thumbnail) {
-          connectionLockMap.delete(dbPath);
-          try {
-            const coreInfo = await getFinderCoreInfo();
-            config.thumbnail = coreInfo.thumnail;
-          } catch (e) {
-            console.warn("Failed to get thumbnail of  global database");
-          }
-        }
         return connection;
       } finally {
         connectionLockMap.delete(dbPath);
@@ -335,11 +335,15 @@ export const { switchDb, getConfig } = (() => {
     const KEY_CONFIG = "key_config";
     return {
       get: () => (session.get(KEY_CONFIG) || Config) as TypeDbInfo,
-      run: async <T>(config: TypeDbInfo, cb: () => Promise<T>) => {
+      run: async <T>(
+        config: TypeDbInfo,
+        cb: () => Promise<T>,
+        useConnection?: Connection
+      ) => {
         if (config.isSubDb && !fs.existsSync(config.dbPath)) {
           await initDb(config, getConfig());
         }
-        const connection = await getConnection(config);
+        const connection = useConnection || (await getConnection(config));
         return session.runPromise(async () => {
           session.set(KEY_CONFIG, config);
           return await cb();
@@ -355,7 +359,10 @@ export const { switchDb, getConfig } = (() => {
 
 let coreInfo: TypeFinderCoreInfo | undefined;
 let coreInfoDbPath = "";
-export const getFinderCoreInfo = async (notSubDb = false) => {
+export const getFinderCoreInfo = async (
+  notSubDb = false,
+  useConnection?: Connection
+) => {
   const config =
     (notSubDb
       ? cEvFinderState.value.configStack
@@ -364,23 +371,27 @@ export const getFinderCoreInfo = async (notSubDb = false) => {
           .find((v) => !v.isSubDb)
       : Config) || Config;
   if (!coreInfo || config?.dbPath !== coreInfoDbPath) {
-    coreInfo = await switchDb(config || Config, async () => {
-      const info =
-        (
-          await ConfigLine.find({ where: { type: ConfigLineType.coreInfo } })
-        )[0] || new ConfigLine(STR_FINDER_CORE_INFO, ConfigLineType.coreInfo);
-      let json: TypeFinderCoreInfo | undefined;
-      // @ts-ignore
-      if (info.jsonStr) json = JsonMore.parse(info.jsonStr);
-      if (!json) {
-        json = {
-          thumnail: await genDbThumnail(Config.dbPath),
-        };
-        info.jsonStr = JsonMore.stringify(json);
-        await info.save();
-      }
-      return json;
-    });
+    coreInfo = await switchDb(
+      config || Config,
+      async () => {
+        const info =
+          (
+            await ConfigLine.find({ where: { type: ConfigLineType.coreInfo } })
+          )[0] || new ConfigLine(STR_FINDER_CORE_INFO, ConfigLineType.coreInfo);
+        let json: TypeFinderCoreInfo | undefined;
+        // @ts-ignore
+        if (info.jsonStr) json = JsonMore.parse(info.jsonStr);
+        if (!json) {
+          json = {
+            thumnail: await genDbThumnail(Config.dbPath),
+          };
+          info.jsonStr = JsonMore.stringify(json);
+          await info.save();
+        }
+        return json;
+      },
+      useConnection
+    );
     coreInfoDbPath = config.dbPath;
   }
   return coreInfo;

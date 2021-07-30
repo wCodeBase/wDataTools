@@ -27,8 +27,6 @@ export const entityChangeWatchingSubjectMap = new Map<
   Subject<TypeDbInfo | null>
 >();
 
-EvDefaultDbInfo.next(Config);
-
 export const DEFAULT_QUERY_LIMIT = {
   dbThumnailStack: [],
   remoteLimit: 10,

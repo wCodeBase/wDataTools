@@ -326,7 +326,7 @@ export const ScanPathManager = defaultPropsFc(
           records={state.paths}
           onRemove={state.remove}
           onNewRecord={state.addNew}
-          tableTitle="Included paths"
+          tableTitle="Scan paths"
           titleClassName={props.titleClassName}
           context={state.context}
         />

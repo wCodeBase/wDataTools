@@ -4,14 +4,14 @@ import { cEvScanBrake } from "./events/core/coreEvents";
 import { Config, isDev, MAX_PATH_DEPTH } from "./common";
 import * as path from "path";
 import * as fs from "fs";
-import { pathPem } from "../tools/nodeTool";
+import { pathPem, TimeCouter } from "../tools/nodeTool";
 import {
   isPathEqual,
   isPathInclude,
   joinToAbsolute,
   splitPath,
 } from "../tools/pathTool";
-import { FileInfo, processText } from "./entities/FileInfo";
+import { FileInfo, processText, restoreText } from "./entities/FileInfo";
 import { switchDb, getConnection, getConfig } from "./db";
 import { ScanPath } from "./entities/ScanPath";
 import { EvFinderStatus, EvLogError, EvUiCmdMessage } from "./events/events";
@@ -21,6 +21,8 @@ import { ConfigLineType, FileType, getDbInfoId } from "./types";
 import { createNamespace, getNamespace } from "cls-hooked";
 import { SUB_DATABASE_PREFIX } from "../constants";
 import { BehaviorSubject } from "rxjs";
+import { Not } from "typeorm";
+import { getEntityTableName } from "./entities/BaseDbInfoEntity";
 
 export class FileScanError extends Error {}
 
@@ -85,6 +87,7 @@ export const scanPath = async (
       pathOrScanPath instanceof ScanPath ? pathOrScanPath.path : pathOrScanPath
     );
     const { finderRoot } = config;
+    const clsVars = clsScan.get();
     if (!fs.existsSync(pathToScan))
       throw new FileScanError("Path to scan is not exist.");
     if (!isPathInclude(finderRoot, pathToScan))
@@ -101,6 +104,7 @@ export const scanPath = async (
         new Date(),
         parentId
       );
+      clsVars.scanedFileCount++;
       parentId = existPath.id;
     }
     if (fs.statSync(pathToScan).isFile()) {
@@ -112,6 +116,7 @@ export const scanPath = async (
       fileInfo.type = FileType.file;
       fileInfo.size = fs.statSync(pathToScan).size;
       await fileInfo.save();
+      clsVars.scanedFileCount++;
       return errors;
     } else {
       const scanStack = [
@@ -148,7 +153,8 @@ export const scanPath = async (
           return ExcludeType.false;
         };
       })();
-
+      const fileInfoTableName = getEntityTableName(FileInfo);
+      const folderNameQuery = `select name from ${fileInfoTableName} where parentId = ? and type is not ${FileType.file} `;
       while (!scanBrake.value) {
         const item = scanStack.pop();
         if (!item) break;
@@ -159,14 +165,25 @@ export const scanPath = async (
           });
           break;
         }
-        await FileInfo.removeUnexistChildren(
-          item.id,
-          item.restChildren,
-          scanBrake
-        );
+        if (item.changed) {
+          await FileInfo.removeUnexistChildren(
+            item.id,
+            item.restChildren,
+            scanBrake
+          );
+        }
         for (const name of item.restChildren) {
+          clsVars.scanedFileCount++;
           if (scanBrake.value) break;
-          await interactYield();
+          const echo = await interactYield(5, 5000);
+          if (echo) {
+            EvUiCmdMessage.next({
+              type: "log",
+              message:
+                `Current scan (count：${clsVars.scanedFileCount}): ` +
+                item.absPath,
+            });
+          }
           const excludeType = judgeExcludeType(name);
           if (excludeType === ExcludeType.current) {
             await FileInfo.removeChildren(item.id, [name], scanBrake);
@@ -187,9 +204,7 @@ export const scanPath = async (
             const changed =
               ignoreCtime ||
               (
-                await FileInfo.find({
-                  where: { parentId: item.id, name: processText(name) },
-                })
+                await FileInfo.findByNameWhere(name, { parentId: item.id })
               )[0]?.ctime.valueOf() !== stat.ctime.valueOf();
             const info = await FileInfo.getOrInsert(
               name,
@@ -211,10 +226,20 @@ export const scanPath = async (
                   scanBrake
                 ))
               ) {
+                let restChildren: string[];
+                if (changed) restChildren = fs.readdirSync(chilPath);
+                else {
+                  clsVars.scanedFileCount += await FileInfo.count({
+                    where: { parentId: info.id, type: FileType.file },
+                  });
+                  restChildren = (
+                    await FileInfo.query(folderNameQuery, [info.id])
+                  ).map((v: { name: string }) => restoreText(v.name));
+                }
                 scanStack.push({
                   id: info.id,
                   absPath: chilPath,
-                  restChildren: fs.readdirSync(chilPath),
+                  restChildren,
                   ctime: stat.ctime,
                   changed,
                   depth: item.depth + 1,
@@ -274,6 +299,7 @@ const clsScan = (() => {
       Scaned: new Set<string>(),
       limitPathSet: undefined as Set<string> | undefined,
       startConfig: getConfig(),
+      scanedFileCount: 0,
     };
   };
   const defaultScanVar = genScanVars();
@@ -379,10 +405,10 @@ export const doScan = async (
             ? pathToScan.path
             : path.join(config.finderRoot, pathToScan.path)
         );
-        const scanBrake = new BehaviorSubject(false);
+        const mScanBrake = scanBrake || new BehaviorSubject<boolean>(false);
         const brakeSubscribe = cEvScanBrake.subscribe((brake) => {
-          if (brake[absPath]) {
-            scanBrake.next(true);
+          if (brake[path.resolve(absPath)]) {
+            mScanBrake.next(true);
           }
         });
         EvUiCmdMessage.next({ type: "log", message: `Scan path: ${absPath}` });
@@ -405,7 +431,7 @@ export const doScan = async (
               ignoreCtime,
               config,
               currentDepth,
-              scanBrake
+              mScanBrake
             );
             if (testDbPath) {
               pathToScan.dbPath = path.relative(config.finderRoot, testDbPath);
@@ -418,7 +444,7 @@ export const doScan = async (
                   ignoreCtime,
                   config,
                   currentDepth,
-                  scanBrake
+                  mScanBrake
                 )
               );
             }
@@ -444,16 +470,16 @@ export const doScan = async (
               ignoreCtime,
               currentDepth,
               undefined,
-              scanBrake
+              mScanBrake
             );
             pathToScan.lastMessage = scanErrors.join("; \n");
           }
           pathToScan.lastScanedAt = new Date();
-          if (scanBrake.value)
+          if (mScanBrake.value)
             pathToScan.lastMessage = "Scanning is stopped manually.";
           else pathToScan.lastSuccessCost = Date.now() - pathScanStartAt;
           await pathToScan.save();
-          if (scanBrake.value) {
+          if (mScanBrake.value) {
             EvUiCmdMessage.next({
               type: "warn",
               message: `Scan stopped manually: ${absPath}`,
