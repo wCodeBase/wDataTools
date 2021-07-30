@@ -215,6 +215,12 @@ export const FileNameToExcludeChildrenManager = genTypedConfigmanager(
   undefined,
   true
 );
+export const AbsolutePathToExcludeManager = genTypedConfigmanager(
+  ConfigLineType.excludeAbsPath,
+  "Absolute paths to exclude",
+  undefined,
+  true
+);
 export const RemoteWfinderManager = genTypedConfigmanager(
   ConfigLineType.remoteUrl,
   "Remote wfinder to connect to",

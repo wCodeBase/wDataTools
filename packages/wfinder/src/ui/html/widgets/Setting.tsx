@@ -2,6 +2,7 @@ import { defaultPropsFc } from "./../../tools/fc";
 import React from "react";
 import { ScanPathManager } from "./ScanPathManager";
 import {
+  AbsolutePathToExcludeManager,
   FileNameToExcludeChildrenManager,
   FileNameToExcludeManager,
   RemoteWfinderManager,
@@ -29,6 +30,7 @@ const Segments = {
   ScanPathManager,
   FileNameToExcludeManager,
   FileNameToExcludeChildrenManager,
+  AbsolutePathToExcludeManager,
   DbIncludedManager,
   RemoteWfinderManager,
   ...(isWebElectron
@@ -42,6 +44,7 @@ const SubDbSegments = {
   ScanPathManager,
   FileNameToExcludeManager,
   FileNameToExcludeChildrenManager,
+  AbsolutePathToExcludeManager,
   DbIncludedManager,
 };
 

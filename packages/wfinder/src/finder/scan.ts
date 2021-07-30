@@ -153,6 +153,17 @@ export const scanPath = async (
           return ExcludeType.false;
         };
       })();
+      const judgeExcludePath = await (async () => {
+        const regs = (
+          await ConfigLine.find({
+            where: { type: ConfigLineType.excludeAbsPath },
+          })
+        ).map((v) => new RegExp(v.content));
+        if (!regs.length) return undefined;
+        return (absPath: string) => {
+          return regs.some((v) => v.test(absPath));
+        };
+      })();
       const fileInfoTableName = getEntityTableName(FileInfo);
       const folderNameQuery = `select name from ${fileInfoTableName} where parentId = ? and type is not ${FileType.file} `;
       while (!scanBrake.value) {
@@ -184,12 +195,22 @@ export const scanPath = async (
                 item.absPath,
             });
           }
+          const chilPath = path.join(item.absPath, name);
           const excludeType = judgeExcludeType(name);
-          if (excludeType === ExcludeType.current) {
+          if (
+            excludeType === ExcludeType.current ||
+            judgeExcludePath?.(chilPath)
+          ) {
             await FileInfo.removeChildren(item.id, [name], scanBrake);
             continue;
           }
-          const chilPath = path.join(item.absPath, name);
+          if (!fs.existsSync(chilPath)) {
+            EvUiCmdMessage.next({
+              type: "warn",
+              message: "Unexist file path found: " + chilPath,
+            });
+            continue;
+          }
           const stat = fs.statSync(chilPath);
           if (stat.isFile()) {
             if (item.changed)
@@ -235,6 +256,20 @@ export const scanPath = async (
                   restChildren = (
                     await FileInfo.query(folderNameQuery, [info.id])
                   ).map((v: { name: string }) => restoreText(v.name));
+                  if (judgeExcludePath) {
+                    const folderSet = new Set(restChildren);
+                    const toRemoves: string[] = [];
+                    const files = fs.readdirSync(chilPath).filter((v) => {
+                      if (folderSet.has(v)) return false;
+                      if (judgeExcludePath(path.join(chilPath, v))) {
+                        toRemoves.push(v);
+                        return false;
+                      }
+                      return true;
+                    });
+                    await FileInfo.removeChildren(item.id, toRemoves);
+                    restChildren = files.concat(restChildren);
+                  }
                 }
                 scanStack.push({
                   id: info.id,
@@ -498,11 +533,11 @@ export const doScan = async (
           });
           EvUiCmdMessage.next({
             type: "error",
-            message: `Scan path fail, path: ${absPath}, error: ${String(e)}`,
+            message: `Scan path failed, path: ${absPath}, error: ${String(e)}`,
           });
-          errors.push(`Scan path fail: ${absPath}:${e}`);
+          errors.push(`Scan path failed: ${absPath}:${e}`);
           if (isDev) {
-            console.error(`Scan path fail: ${absPath}:${e}`, e.stack);
+            console.error(`Scan path failed: ${absPath}:${e}`, e.stack);
           }
         } finally {
           brakeSubscribe.unsubscribe();

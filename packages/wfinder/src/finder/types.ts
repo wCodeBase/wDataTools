@@ -10,6 +10,7 @@ export enum ConfigLineType {
   coreInfo,
   userPreference,
   serverSetting,
+  excludeAbsPath,
 }
 
 export type TypeServerSetting = {
