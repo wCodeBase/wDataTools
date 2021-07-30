@@ -20,6 +20,7 @@ import { isWebElectron } from "../../../finder/events/webEventTools";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { DbIncludedManager } from "./DbIncludedManager";
 import { RefreshUi } from "./RefreshUi";
+import { About } from "../components/About";
 
 const Segments = {
   ...(isWebElectron
@@ -33,6 +34,7 @@ const Segments = {
   AbsolutePathToExcludeManager,
   DbIncludedManager,
   RemoteWfinderManager,
+  About,
   ...(isWebElectron
     ? {
         RefreshUi,
@@ -46,6 +48,7 @@ const SubDbSegments = {
   FileNameToExcludeChildrenManager,
   AbsolutePathToExcludeManager,
   DbIncludedManager,
+  About,
 };
 
 export const Setting = defaultPropsFc(
