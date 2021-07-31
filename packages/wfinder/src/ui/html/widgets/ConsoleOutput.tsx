@@ -1,22 +1,14 @@
 import {
   CaretDownOutlined,
   ClearOutlined,
-  CloseOutlined,
   FilterFilled,
   LoadingOutlined,
   ProfileOutlined,
 } from "@ant-design/icons";
 import { Input, Popover, Tooltip } from "antd";
-import dayjs from "dayjs";
-import { debounce, first, last, update } from "lodash";
-import React from "react";
-import { useEffect } from "react";
-import { useRef } from "react";
-import {
-  EvConsole,
-  EvLog,
-  EvUiCmdMessage,
-} from "../../../finder/events/events";
+import { debounce } from "lodash";
+import React, { useEffect, useRef } from "react";
+import { EvConsole, EvUiCmdMessage } from "../../../finder/events/events";
 import { formatDate } from "../../../tools/tool";
 import { useStableState, useSubjectCallback } from "../../hooks/hooks";
 import { defaultPropsFc } from "../../tools/fc";

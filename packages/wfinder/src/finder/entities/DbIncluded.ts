@@ -1,11 +1,11 @@
-import { BaseDbInfoEntity, SubDatabaseIterators } from "./BaseDbInfoEntity";
-import { Config } from "./../common";
-import { BaseEntity, Column, Entity, PrimaryColumn } from "typeorm";
-import { getConfig, switchDb } from "../db";
-import * as path from "path";
 import * as fs from "fs";
+import * as path from "path";
+import { Column, Entity, PrimaryColumn } from "typeorm";
 import { isPathEqual } from "../../tools/pathTool";
-import { EvFinderStatus, EvLog, EvLogWarn } from "../events/events";
+import { getConfig, switchDb } from "../db";
+import { EvFinderStatus, EvLogWarn } from "../events/events";
+import { Config } from "./../common";
+import { BaseDbInfoEntity, SubDatabaseIterators } from "./BaseDbInfoEntity";
 
 @Entity()
 export class DbIncluded extends BaseDbInfoEntity {

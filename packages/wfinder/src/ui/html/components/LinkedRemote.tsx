@@ -1,18 +1,9 @@
-import { Popover, Tooltip } from "antd";
+import { Popover } from "antd";
 import { isEmpty } from "lodash";
-import React, { forwardRef } from "react";
-import { useRef } from "react";
-import { useMemo } from "react";
+import React, { forwardRef, useMemo, useRef } from "react";
 import { EvFinderState } from "../../../finder/events/events";
 import { TypeLinkedRemoteItem } from "../../../finder/events/types";
-import {
-  WebEventStatus,
-  wEvEventStatus,
-} from "../../../finder/events/webEvent";
-import {
-  useBehaviorSubjectValue,
-  usePickBehaviorSubjectValue,
-} from "../../hooks/hooks";
+import { usePickBehaviorSubjectValue } from "../../hooks/hooks";
 import { defaultPropsFc } from "../../tools/fc";
 
 const totalLightCount = 3;

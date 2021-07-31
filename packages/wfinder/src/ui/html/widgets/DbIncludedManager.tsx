@@ -1,46 +1,24 @@
-import { defaultPropsFc } from "./../../tools/fc";
-import React, { useEffect } from "react";
 import {
-  EvUiCmdResult,
-  EvUiCmd,
-  EvDefaultDbInfo,
-  useFinderStatus,
-  EvFinderStatus,
-} from "../../../finder/events/events";
+  ExclamationCircleOutlined,
+  QuestionCircleOutlined,
+} from "@ant-design/icons";
+import { Tooltip } from "antd";
+import path from "path";
+import React, { useMemo } from "react";
+import { EvFinderStatus, EvUiCmdResult } from "../../../finder/events/events";
+import { executeUiCmd } from "../../../finder/events/eventTools";
+import { TypeDbIncludedItem } from "../../../finder/events/types";
+import { getLocalContext } from "../../../finder/events/webEvent";
+import { getDbInfoId, TypeDbInfo } from "../../../finder/types";
 import {
   usePickBehaviorSubjectValue,
   useStableState,
   useSubjectCallback,
 } from "../../hooks/hooks";
-import {
-  FinderStatus,
-  TypeDbIncludedItem,
-  TypeMsgPathItem,
-} from "../../../finder/events/types";
-import { Button, message, Popconfirm, Tooltip } from "antd";
-import {
-  genManagerTable,
-  SimplePathEdit,
-  SimpleTextEdit,
-  TypeManagerTableAddonButtonProps,
-  TypeManagerTableAddonOperationProps,
-} from "../components/ManagerTable";
-import { simpleGetKey } from "../../tools";
-import { executeUiCmd } from "../../../finder/events/eventTools";
 import { useFinderReady } from "../../hooks/webHooks";
-import { getLocalContext } from "../../../finder/events/webEvent";
-import { useState } from "react";
-import { getDbInfoId, TypeDbInfo } from "../../../finder/types";
-import {
-  ExclamationCircleFilled,
-  ExclamationCircleOutlined,
-  QuestionCircleOutlined,
-} from "@ant-design/icons";
-import dayjs from "dayjs";
-import { formatDate } from "../../../tools/tool";
-import { useMemo } from "react";
+import { genManagerTable } from "../components/ManagerTable";
 import { messageError } from "../uiTools";
-import path from "path";
+import { defaultPropsFc } from "./../../tools/fc";
 
 const DbIncludedTable = genManagerTable<TypeDbIncludedItem>(
   ["path"],

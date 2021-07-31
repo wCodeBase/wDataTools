@@ -1,9 +1,8 @@
-import { Subject } from "rxjs";
-import { BaseDbInfoEntity } from "./entities/BaseDbInfoEntity";
 import * as path from "path";
-import { EvDefaultDbInfo } from "./events/events";
-import { ConfigLineType, TypeDbInfo, TypeFinderCoreInfo } from "./types";
+import { Subject } from "rxjs";
 import { ObjectType } from "typeorm";
+import { BaseDbInfoEntity } from "./entities/BaseDbInfoEntity";
+import { TypeDbInfo } from "./types";
 
 export const genConfig = (finderRoot: string) => {
   const dbName = "wfinder.db";

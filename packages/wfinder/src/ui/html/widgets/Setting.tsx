@@ -1,26 +1,24 @@
-import { defaultPropsFc } from "./../../tools/fc";
 import React from "react";
+import {
+  getLocalContext,
+  wEvGlobalState,
+} from "../../../finder/events/webEvent";
+import { isWebElectron } from "../../../finder/events/webEventTools";
+import { usePickBehaviorSubjectValue } from "../../hooks/hooks";
+import { About } from "../components/About";
+import { ErrorBoundary } from "../components/ErrorBoundary";
+import { SubDatabaseHint } from "../components/SubDatabaseHint";
+import { defaultPropsFc } from "./../../tools/fc";
+import { DbIncludedManager } from "./DbIncludedManager";
+import { RefreshUi } from "./RefreshUi";
 import { ScanPathManager } from "./ScanPathManager";
+import { ServerSettings } from "./ServerSettings";
 import {
   AbsolutePathToExcludeManager,
   FileNameToExcludeChildrenManager,
   FileNameToExcludeManager,
   RemoteWfinderManager,
 } from "./TypedConfigLineManager";
-import { usePickBehaviorSubjectValue } from "../../hooks/hooks";
-import {
-  getLocalContext,
-  wEvGlobalState,
-} from "../../../finder/events/webEvent";
-import { Tag, Tooltip } from "antd";
-import { InfoCircleFilled, InfoCircleOutlined } from "@ant-design/icons";
-import { SubDatabaseHint } from "../components/SubDatabaseHint";
-import { ServerSettings } from "./ServerSettings";
-import { isWebElectron } from "../../../finder/events/webEventTools";
-import { ErrorBoundary } from "../components/ErrorBoundary";
-import { DbIncludedManager } from "./DbIncludedManager";
-import { RefreshUi } from "./RefreshUi";
-import { About } from "../components/About";
 
 const Segments = {
   ...(isWebElectron

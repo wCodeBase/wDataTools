@@ -1,29 +1,24 @@
-import { defaultPropsFc } from "./../../tools/fc";
-import React, { useEffect } from "react";
-import {
-  EvUiCmdResult,
-  EvUiCmd,
-  EvDefaultDbInfo,
-} from "../../../finder/events/events";
-import { useStableState, useSubjectCallback } from "../../hooks/hooks";
-import { TypeMsgConfigItem } from "../../../finder/events/types";
+import { ExportOutlined, ImportOutlined } from "@ant-design/icons";
 import { Button, Input, message, Popconfirm, Tooltip } from "antd";
+import { isEmpty, isEqual } from "lodash";
+import React from "react";
+import { EvUiCmdResult } from "../../../finder/events/events";
+import { executeUiCmd } from "../../../finder/events/eventTools";
+import { TypeMsgConfigItem } from "../../../finder/events/types";
+import { getLocalContext } from "../../../finder/events/webEvent";
+import { ConfigLineType, getDbInfoId } from "../../../finder/types";
+import { useStableState, useSubjectCallback } from "../../hooks/hooks";
+import { useFinderReady } from "../../hooks/webHooks";
+import { simpleGetKey } from "../../tools";
 import {
   genManagerTable,
   SimpleBooleanEdit,
   SimpleTextEdit,
   TypeManagerTableAddonButtonProps,
   TypeManagerTableAddonOperationProps,
-  TypeTableEditRender,
 } from "../components/ManagerTable";
-import { simpleGetKey } from "../../tools";
-import { executeUiCmd } from "../../../finder/events/eventTools";
-import { ConfigLineType, getDbInfoId, TypeDbInfo } from "../../../finder/types";
-import { useFinderReady } from "../../hooks/webHooks";
-import { isEmpty, isEqual } from "lodash";
-import { getLocalContext } from "../../../finder/events/webEvent";
 import { messageError, showModal } from "../uiTools";
-import { ExportOutlined, ImportOutlined } from "@ant-design/icons";
+import { defaultPropsFc } from "./../../tools/fc";
 
 const isBusy = (props: TypeManagerTableAddonButtonProps<TypeMsgConfigItem>) => {
   return props.isReadonly || props.isTableEdit || props.isTableOnNew;

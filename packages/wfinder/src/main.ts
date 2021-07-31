@@ -1,5 +1,5 @@
+import {} from "./finder/entities/BaseDbInfoEntity";
 import { Command } from "commander";
-import { localhost } from "./constants";
 import {
   addScanPath,
   deleteScanPath,

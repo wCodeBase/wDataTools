@@ -21,5 +21,9 @@ module.exports = {
     "no-constant-condition": "off",
     "@typescript-eslint/no-this-alias": "off",
     "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      { vars: "all", args: "after-used", ignoreRestSiblings: true },
+    ],
   },
 };

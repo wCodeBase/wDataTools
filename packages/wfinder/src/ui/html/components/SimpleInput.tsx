@@ -1,9 +1,7 @@
-import { defaultPropsFc } from "./../../tools/fc";
-import React, { useMemo } from "react";
-import { CloseOutlined } from "@ant-design/icons";
 import { Input, InputProps } from "antd";
-import { useState } from "react";
+import React, { useMemo } from "react";
 import { useStableState } from "../../hooks/hooks";
+import { defaultPropsFc } from "./../../tools/fc";
 
 export const SimpleInput = defaultPropsFc(
   {

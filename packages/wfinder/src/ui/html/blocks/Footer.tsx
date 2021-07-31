@@ -1,21 +1,21 @@
-import React from "react";
 import { LoadingOutlined } from "@ant-design/icons";
+import React from "react";
 import {
   EvDatabaseInfos,
   EvFileInfoChange,
   EvUiCmdResult,
   useFinderStatus,
 } from "../../../finder/events/events";
-import { BUSY_FINDER_STATES, FinderStatus } from "../../../finder/events/types";
-import { defaultPropsFc } from "../../tools/fc";
-import { useStableState, useSubjectCallback } from "../../hooks/hooks";
 import { executeUiCmd } from "../../../finder/events/eventTools";
+import { BUSY_FINDER_STATES, FinderStatus } from "../../../finder/events/types";
 import {
   getLocalContext,
   getLocalRootContext,
   wEvFinderReady,
 } from "../../../finder/events/webEvent";
 import { getDbInfoId } from "../../../finder/types";
+import { useStableState, useSubjectCallback } from "../../hooks/hooks";
+import { defaultPropsFc } from "../../tools/fc";
 import { ConsoleOutput } from "../widgets/ConsoleOutput";
 
 export const TotalFile = defaultPropsFc({ className: "" }, (props) => {
@@ -67,7 +67,7 @@ export const TotalFile = defaultPropsFc({ className: "" }, (props) => {
 export const FinderStatusIndicator = defaultPropsFc(
   { className: "" },
   (props) => {
-    const [finderStatus, subject] = useFinderStatus();
+    const [finderStatus] = useFinderStatus();
     const status = finderStatus.scanContextIdAndPathSet.size
       ? FinderStatus.scanning
       : finderStatus.searchContextIdSet.size

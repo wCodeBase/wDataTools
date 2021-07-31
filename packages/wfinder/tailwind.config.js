@@ -7,7 +7,7 @@ const genPairs = (subffix = "%", fractionPrefix = "") =>
   Array.from(
     new Map(
       _.flatten(
-        range.map((n, i) =>
+        range.map((n) =>
           range.map((d) => [
             (n / d) * 100 + subffix,
             `${fractionPrefix}${n}/${d}`,

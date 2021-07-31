@@ -1,24 +1,21 @@
-import { Config } from "./../../common";
+import { Server } from "http";
+import { BehaviorSubject } from "rxjs";
 import { ObjectType } from "typeorm";
+import WebSocket from "ws";
+import { BaseDbInfoEntity } from "../../entities/BaseDbInfoEntity";
+import { TypeDbInfo } from "../../types";
+import { JsonSubject, ShallowBehaviorSubject } from "../eventLib";
+import { genRemoteCaller, genRemoteExector } from "../eventTools";
+import {
+  TypeLinkedRemoteItem,
+  TypeTransferRemoteStatus,
+  TypeTransferRemoteStatusMap,
+} from "../types";
 import {
   cTypeJsonMoreEntitySpecial,
   cTypeOrmCallDef,
   JsonMoreEntity,
 } from "./coreTypes";
-import WebSocket from "ws";
-import { BehaviorSubject } from "rxjs";
-import { TypeDbInfo } from "../../types";
-import { genRemoteCaller, genRemoteExector, TypeGateway } from "../eventTools";
-import { BaseDbInfoEntity } from "../../entities/BaseDbInfoEntity";
-import { JsonSubject, ShallowBehaviorSubject } from "../eventLib";
-import {
-  TypeTransferRemoteStatusMap,
-  TypeTransferRemote,
-  TypeTransferRemoteStatus,
-  TypeLinkedRemoteItem,
-  TypeServerState,
-} from "../types";
-import { Server } from "http";
 
 export const cEvScanBrake = new BehaviorSubject<{
   [absPath: string]: TypeDbInfo;

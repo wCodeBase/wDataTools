@@ -1,7 +1,7 @@
-import { exAddScanPath, exListScanPath } from "./executors";
-import { getConfig, getConnection } from "./db";
-import { FileInfo } from "./entities/FileInfo";
 import path from "path";
+import { getConnection } from "./db";
+import { FileInfo } from "./entities/FileInfo";
+import { exAddScanPath, exListScanPath } from "./executors";
 
 export const addScanPath = async (scanPath: string) => {
   const res = await exAddScanPath(scanPath);

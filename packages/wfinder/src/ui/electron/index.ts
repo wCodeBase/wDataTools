@@ -1,11 +1,10 @@
-import { execRoot } from "./../../env";
-import { startIpcServer, USE_IPC_SERVER } from "./ipcServer";
 import { spawn } from "child_process";
 import path from "path";
 import { initFinder } from "../../finder";
 import { EvUiLaunched } from "../../finder/events/events";
 import { getElectron } from "../../tools/nodeTool";
-import { getConfig } from "../../finder/db";
+import { execRoot } from "./../../env";
+import { startIpcServer, USE_IPC_SERVER } from "./ipcServer";
 
 export const startElectron = async () => {
   const electron = getElectron();

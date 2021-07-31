@@ -1,14 +1,9 @@
-import { randomPick } from "./../testTools";
-import {
-  testRoots,
-  testFileRoot,
-  simpleTestFileRange,
-} from "./../initializers/index";
+import { expect } from "chai";
+import { last } from "lodash";
 import "mocha";
 import path from "path";
 import { fse, shellJs } from "../imports";
-import { expect } from "chai";
-import { last } from "lodash";
+import { testFileRoot, testRoots } from "./../initializers/index";
 
 const runWfinder = (params: string) => {
   const res = shellJs.exec(

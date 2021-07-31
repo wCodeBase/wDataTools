@@ -1,12 +1,26 @@
-import { execRoot } from "./../../env";
-import {
-  EVENT_ORM_METHOD_WEBSOCKET_ROUTE,
-  EVENT_TRANSFER_WEBSOCKET_ROUTE,
-} from "./../../constants";
+import compression from "compression";
 import * as express from "express";
-import WebSocket from "ws";
 import * as http from "http";
+import { isEmpty } from "lodash";
+import { Socket } from "net";
 import * as path from "path";
+import WebSocket from "ws";
+import { EVENT_WEBSOCKET_ROUTE, localhost } from "../../constants";
+import { JsonMore } from "../../tools/json";
+import { parseAddress } from "../../tools/tool";
+import { Config, isDev } from "../common";
+import { getFinderCoreInfo } from "../db";
+import { cEvFinderState, cTypeServerState } from "../events/core/coreEvents";
+import { waitWsConnected } from "../events/core/coreState";
+import {
+  cTypeJsonMoreEntitySpecial,
+  cTypeOrmCallDef,
+  JsonMoreEntity,
+} from "../events/core/coreTypes";
+import { joinContextPipe, switchEvent } from "../events/eventGateway";
+import { EvUiCmdResult, EvUiLaunched } from "../events/events";
+import { genRemoteExector, TypeGateway } from "../events/eventTools";
+import { uiCmdExecutor } from "../events/uiCmdExecutor";
 import {
   ConfigLineType,
   defaultServerSetting,
@@ -14,27 +28,11 @@ import {
   HttpServerOption,
   TypeServerSetting,
 } from "../types";
-import { isDev } from "../common";
-import { localhost } from "../../constants";
-import { EVENT_WEBSOCKET_ROUTE } from "../../constants";
-import { joinContextPipe, switchEvent } from "../events/eventGateway";
-import { cEvFinderState, cTypeServerState } from "../events/core/coreEvents";
-import { genRemoteExector, TypeGateway } from "../events/eventTools";
 import {
-  cTypeJsonMoreEntitySpecial,
-  cTypeOrmCallDef,
-  JsonMoreEntity,
-} from "../events/core/coreTypes";
-import { getConfig, getFinderCoreInfo } from "../db";
-import { EvUiCmdResult, EvUiLaunched } from "../events/events";
-import { Config } from "../common";
-import { waitWsConnected } from "../events/core/coreState";
-import { uiCmdExecutor } from "../events/uiCmdExecutor";
-import { isEmpty } from "lodash";
-import { JsonMore } from "../../tools/json";
-import { Socket } from "net";
-import { parseAddress } from "../../tools/tool";
-import compression from "compression";
+  EVENT_ORM_METHOD_WEBSOCKET_ROUTE,
+  EVENT_TRANSFER_WEBSOCKET_ROUTE,
+} from "./../../constants";
+import { execRoot } from "./../../env";
 
 const compressor = compression();
 
@@ -183,14 +181,14 @@ export const createHttpServer = async (
         if (!(await filterIp(socket.remoteAddress, mGetSettings))) {
           socket.destroy();
         } else if (request.url === EVENT_WEBSOCKET_ROUTE) {
-          wss.handleUpgrade(request, socket, head, (socket, request) => {
+          wss.handleUpgrade(request, socket, head, (socket) => {
             const gateway = switchEvent((data) => socket.send(data), true);
             socket.on("message", gateway.receive);
             socket.onclose = gateway.destory;
           });
         } else if (request.url === EVENT_TRANSFER_WEBSOCKET_ROUTE) {
           let nextSocket: WebSocket | undefined;
-          wss.handleUpgrade(request, socket, head, (socket, request) => {
+          wss.handleUpgrade(request, socket, head, (socket) => {
             let gateway: TypeGateway | undefined;
             const joint = joinContextPipe({
               isStartJoint: false,
@@ -260,7 +258,7 @@ export const createHttpServer = async (
             };
           });
         } else if (request.url === EVENT_ORM_METHOD_WEBSOCKET_ROUTE) {
-          wss.handleUpgrade(request, socket, head, (socket, request) => {
+          wss.handleUpgrade(request, socket, head, (socket) => {
             if (!cEvFinderState.value.remoteMethodsServe) socket.close();
             else {
               const executor = genRemoteExector<

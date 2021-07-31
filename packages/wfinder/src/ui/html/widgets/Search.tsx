@@ -1,31 +1,23 @@
-import React from "react";
-import { Button, Empty, Input, message, Popover, Table, Tooltip } from "antd";
+import { CaretRightFilled } from "@ant-design/icons";
+import { Button, Empty, Input, message, Table, Tooltip } from "antd";
 import "antd/lib/message/style/css";
-import {
-  EvFinderReady,
-  EvUiCmd,
-  EvUiCmdResult,
-  useFinderStatus,
-} from "../../../finder/events/events";
+import { ColumnsType } from "antd/lib/table";
+import { format } from "d3-format";
+import { debounce } from "lodash";
+import prettyBytes from "pretty-bytes";
+import React, { useEffect, useRef } from "react";
+import { EvFinderReady, useFinderStatus } from "../../../finder/events/events";
+import { executeUiCmd } from "../../../finder/events/eventTools";
 import {
   FinderStatus,
   TypeMsgSearchResultItem,
 } from "../../../finder/events/types";
-import { useStableState, useSubjectCallback } from "../../hooks/hooks";
-import { ColumnsType } from "antd/lib/table";
-import { FileType } from "../../../finder/types";
-import { useRef } from "react";
-import { useEffect } from "react";
-import { debounce } from "lodash";
-import { simpleGetKey } from "../../tools";
-import { executeUiCmd } from "../../../finder/events/eventTools";
-import { useFinderReady } from "../../hooks/webHooks";
 import { getLocalContext } from "../../../finder/events/webEvent";
-import { useState } from "react";
+import { FileType } from "../../../finder/types";
+import { useStableState } from "../../hooks/hooks";
+import { useFinderReady } from "../../hooks/webHooks";
+import { simpleGetKey } from "../../tools";
 import { showModal } from "../uiTools";
-import prettyBytes from "pretty-bytes";
-import { CaretRightFilled } from "@ant-design/icons";
-import { format } from "d3-format";
 
 const _formatNumber = format(".3s");
 const formatNumber = (num: number) => {
@@ -147,7 +139,7 @@ const Columns: ColumnsType<TypeMsgSearchResultItem> = [
 Columns.forEach((v) => (v.align = "center"));
 
 export const Search = ({ className = "" }) => {
-  const [finderStatus, subject] = useFinderStatus();
+  const [finderStatus] = useFinderStatus();
   const [state, setState] = useStableState(() => ({
     skip: 0,
     take: 5,

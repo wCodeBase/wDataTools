@@ -1,41 +1,29 @@
-import { EvLog, EvLogWarn, EvUiCmd, EvUiCmdResult } from "./events";
-import {
-  judgeUiMsgResultType,
-  TypeUiMsgDataMap,
-  TypeUiMsgResultMap,
-  GatewayMessage,
-  RemoteHeartbeat,
-  RemoteMessage,
-  RemoteError,
-  TypeCommonMsgDef,
-  ToCommonMsgData,
-  ToCommonMsgResult,
-  TypeCommonMsgContentDef,
-  ToCommonMsgDataItem,
-  isRemoteHeartBeat,
-  ToCommonMsgItem,
-  isCommonMsgResult,
-  ToCommonMsgResultItem,
-} from "./types";
+import { Subscription } from "rxjs";
+import { JsonMore } from "../../tools/json";
 import {
   TypeDefaultSpecialJsonType,
   TypeJsonData,
-  TypeJsonMore,
-  TypeJsonObject,
   _TypeJsonData,
   _TypeJsonMore,
 } from "./../../tools/json";
-import {
-  BehaviorSubject,
-  observable,
-  Observable,
-  of,
-  Subject,
-  Subscription,
-} from "rxjs";
-import { JsonMore } from "../../tools/json";
 import { ComsumableEvent, JsonBehaviorSubject, JsonSubject } from "./eventLib";
-import { filter } from "rxjs/operators";
+import { EvLogWarn, EvUiCmd, EvUiCmdResult } from "./events";
+import {
+  GatewayMessage,
+  isCommonMsgResult,
+  isRemoteHeartBeat,
+  judgeUiMsgResultType,
+  RemoteError,
+  RemoteHeartbeat,
+  RemoteMessage,
+  ToCommonMsgData,
+  ToCommonMsgItem,
+  ToCommonMsgResult,
+  TypeCommonMsgContentDef,
+  TypeCommonMsgDef,
+  TypeUiMsgDataMap,
+  TypeUiMsgResultMap,
+} from "./types";
 
 export class ErrorExecuteTimeout extends Error {}
 
@@ -269,7 +257,7 @@ export const genRemoteExector = <K, T extends TypeCommonMsgDef<K>>(
             // @ts-ignore
             const callData: TypeMsg[keyof TypeMsg] = msg.data;
             const res = await executor(callData);
-            const { data: _, ...rest } = callData;
+            const { data: _, ...rest } = callData; // eslint-ignore-line @typescript-eslint/no-unused-vars
             const resData: Omit<TypeCommonMsgContentDef<any>, "data"> = {
               ...rest,
               result: res,
@@ -310,7 +298,6 @@ export const keepHeartBeat = (
   interval = uiMsgTimeout / 4
 ) => {
   let tHandle: number | undefined;
-  let stopped = false;
   const heartBeatMsg: RemoteHeartbeat = { label: "RemoteHeartbeat", tag };
   const start = () => {
     if (tHandle !== undefined) clearInterval(tHandle);
@@ -323,7 +310,6 @@ export const keepHeartBeat = (
   start();
   return {
     stop: () => {
-      stopped = true;
       if (tHandle !== undefined) {
         clearInterval(tHandle);
         tHandle = undefined;

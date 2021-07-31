@@ -1,25 +1,14 @@
 import { message, Popover, Tooltip } from "antd";
-import { isEqual, last } from "lodash";
-import React from "react";
-import { useMemo } from "react";
-import { useEffect } from "react";
-import { useRef } from "react";
-import { useCallback } from "react";
+import { last } from "lodash";
+import React, { useRef } from "react";
 import { EvFinderState } from "../../../finder/events/events";
 import {
   WebContext,
-  WebEventStatus,
-  wEvEventStatus,
   wEvFinderReady,
   wEvGlobalState,
-  wEvLocalDbContextChange,
 } from "../../../finder/events/webEvent";
 import { webInitEvent } from "../../../finder/events/webEventTools";
-import {
-  getDbInfoId,
-  getLocalDbInfoStackId,
-  TypeDbInfo,
-} from "../../../finder/types";
+import { getDbInfoId, getLocalDbInfoStackId } from "../../../finder/types";
 import { usePickBehaviorSubjectValue } from "../../hooks/hooks";
 import { SubDatabaseHint } from "../components/SubDatabaseHint";
 

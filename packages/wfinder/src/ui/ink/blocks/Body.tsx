@@ -1,37 +1,35 @@
 import { Box, Text } from "ink";
-import React, { useEffect, useMemo } from "react";
 import SelectInput from "ink-select-input";
-import { CmdInput } from "../components/CmdInput";
-import { useStableState, useSubjectCallback } from "../../hooks/hooks";
-import {
-  FinderStatus,
-  TypeMsgSearchResultItem,
-  TypeUiCmd,
-  TypeLogMessage,
-  UI_CMD_DEF,
-} from "../../../finder/events/types";
+import React, { useEffect, useMemo } from "react";
 import {
   EvLog,
-  EvUiCmd,
-  EvUiCmdResult,
-  EvUiCmdMessage,
-  useFinderStatus,
   EvLogError,
+  EvUiCmd,
+  EvUiCmdMessage,
+  EvUiCmdResult,
+  useFinderStatus,
 } from "../../../finder/events/events";
+import {
+  FinderStatus,
+  TypeLogMessage,
+  TypeMsgSearchResultItem,
+  TypeUiCmd,
+  UI_CMD_DEF,
+} from "../../../finder/events/types";
+import { FileType } from "../../../finder/types";
+import { useStableState, useSubjectCallback } from "../../hooks/hooks";
 import {
   KEY_ARROW_DOWN,
   KEY_ARROW_UP,
   KEY_ESCAPE,
-  KEY_PAGE_DOWN,
-  KEY_PAGE_UP,
   triggerCliKeyCallback,
   useCliEscape,
   useCliKeyPress,
 } from "../../ink/consoleHooks/useCliKeyPress";
-import { doInkExit } from "../exit";
-import { Confirm } from "../components/Confirm";
-import { FileType } from "../../../finder/types";
 import { simpleGetKey } from "../../tools";
+import { CmdInput } from "../components/CmdInput";
+import { Confirm } from "../components/Confirm";
+import { doInkExit } from "../exit";
 import { PathManager } from "./components/PathManager";
 import {
   FileNameToExclude,

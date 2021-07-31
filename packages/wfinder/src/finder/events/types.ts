@@ -1,14 +1,13 @@
+import { ConfigLine } from "../entities/ConfigLine";
+import { DbIncluded } from "../entities/DbIncluded";
+import { FileInfo } from "../entities/FileInfo";
+import { ScanPath } from "../entities/ScanPath";
+import { TypeDbInfo } from "../types";
 import {
-  TypeDefaultSpecialJsonType,
   TypeJsonData,
   TypeSimpleData,
   _TypeJsonData,
 } from "./../../tools/json";
-import { FileInfo } from "../entities/FileInfo";
-import { ScanPath } from "../entities/ScanPath";
-import { ConfigLine } from "../entities/ConfigLine";
-import { TypeDbInfo } from "../types";
-import { DbIncluded } from "../entities/DbIncluded";
 
 export enum FinderStatus {
   idle,

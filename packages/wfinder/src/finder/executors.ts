@@ -1,16 +1,13 @@
-import { last } from "lodash";
-import { waitMilli } from "../tools/tool";
+import path from "path";
+import { In } from "typeorm";
+import { isPathEqual, isPathInclude, joinToAbsolute } from "../tools/pathTool";
 import { getConfig, removeDbFiles, switchDb } from "./db";
 import { ConfigLine } from "./entities/ConfigLine";
 import { DbIncluded } from "./entities/DbIncluded";
 import { FileInfo } from "./entities/FileInfo";
 import { ScanPath } from "./entities/ScanPath";
-import { TypeDbIncludedItem, TypeMsgConfigItem } from "./events/types";
-import { ConfigLineType, TypeDbInfo } from "./types";
-import path from "path";
-import { isPathEqual, isPathInclude, joinToAbsolute } from "../tools/pathTool";
-import fs from "fs";
-import { In } from "typeorm";
+import { TypeMsgConfigItem } from "./events/types";
+import { ConfigLineType } from "./types";
 
 export const exAddScanPath = async (scanPath: string, config = getConfig()) => {
   return await switchDb(config, async () => {
@@ -75,7 +72,7 @@ export const exAddConfigLine = async (
   const results = await Promise.all(
     datas.map(async (data) => {
       return await switchDb(data.dbInfo || config, async () => {
-        const { id, content, type, ...rest } = data;
+        const { content, type, ...rest } = data;
         let result = (await ConfigLine.find({ where: { content, type } }))[0];
         if (!result) {
           result = await Object.assign(new ConfigLine(content, type), {
@@ -123,7 +120,7 @@ export const exApplyConfigLines = async (
       const configIdPairs = configs.map(
         (v) => [getId(v), v] as [string, ConfigLine]
       );
-      await ConfigLine.queryAllDbIncluded(async (handle) => {
+      await ConfigLine.queryAllDbIncluded(async () => {
         const exist = new Set(
           (await ConfigLine.find({ where: { type: In(types) } })).map(getId)
         );
@@ -141,7 +138,7 @@ export const exApplyConfigLines = async (
       });
     } else if (mode === "delete") {
       const included = new Set(configs.map(getId));
-      await ConfigLine.queryAllDbIncluded(async (handle) => {
+      await ConfigLine.queryAllDbIncluded(async () => {
         const toRemoves = (
           await ConfigLine.find({ where: { type: In(types) } })
         ).filter((v) => included.has(getId(v)));

@@ -1,10 +1,9 @@
-import { JsonMore } from "./../../tools/json";
-import fs from "fs";
-import { executeUiCmd } from "../../finder/events/eventTools";
-import { ConfigLineType } from "../../finder/types";
-import { EvFinderReady, EvUiCmd } from "../../finder/events/events";
 import { Config } from "../../finder/common";
+import { EvFinderReady, EvUiCmd } from "../../finder/events/events";
+import { executeUiCmd } from "../../finder/events/eventTools";
 import { TypeMsgConfigItem } from "../../finder/events/types";
+import { ConfigLineType } from "../../finder/types";
+import { JsonMore } from "./../../tools/json";
 
 const userPreference = {
   windowWidth: undefined as number | undefined,

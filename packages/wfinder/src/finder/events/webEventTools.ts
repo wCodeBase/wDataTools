@@ -1,14 +1,12 @@
-import { WebEventStatus, wEvEventStatus } from "./../../finder/events/webEvent";
-import { joinContextPipe, switchEvent } from "../../finder/events/eventGateway";
 import {
   EVENT_TRANSFER_WEBSOCKET_ROUTE,
   EVENT_WEBSOCKET_ROUTE,
 } from "../../constants";
-import { GATEWAY_CHANNEL, CLIENT_READY } from "./eventTools";
-import { Subject } from "rxjs";
+import { joinContextPipe, switchEvent } from "../../finder/events/eventGateway";
 import { TypeDbInfo } from "../types";
-import { JsonMore } from "../../tools/json";
+import { WebEventStatus, wEvEventStatus } from "./../../finder/events/webEvent";
 import { ComsumableEvent } from "./eventLib";
+import { CLIENT_READY, GATEWAY_CHANNEL } from "./eventTools";
 
 const electron = eval(`try{require('electron')}catch(e){}`);
 

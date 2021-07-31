@@ -1,33 +1,25 @@
-import { JsonMore } from "./../tools/json";
+import { createNamespace } from "cls-hooked";
+import * as fs from "fs";
+import inquirer from "inquirer";
 import path from "path";
+import { Connection, createConnection, In } from "typeorm";
+import { STR_FINDER_CORE_INFO } from "../constants";
+import { exit, exitNthTodo, genDbThumnail, pathPem } from "../tools/nodeTool";
+import { JsonMore } from "./../tools/json";
+import { Config, entityChangeWatchingSubjectMap, genConfig } from "./common";
 import {
   cEvConfigLineChange,
   cEvDbIncludedChange,
   cEvFinderState,
   cEvScanPathChange,
 } from "./events/core/coreEvents";
-import { ConfigLine } from "./entities/ConfigLine";
-import inquirer from "inquirer";
-import { Connection, createConnection } from "typeorm";
-import { exit, exitNthTodo, genDbThumnail, pathPem } from "../tools/nodeTool";
-import { FileInfo, IndexTableName } from "./entities/FileInfo";
-import * as fs from "fs";
-import { Config, entityChangeWatchingSubjectMap, genConfig } from "./common";
-import { ScanPath } from "./entities/ScanPath";
-import { DbIncluded } from "./entities/DbIncluded";
-import {
-  EvDefaultDbInfo,
-  EvFileInfoChange,
-  EvLog,
-  EvLogError,
-  EvUiCmd,
-  EvUiLaunched,
-} from "./events/events";
-import { ConfigLineType, TypeDbInfo, TypeFinderCoreInfo } from "./types";
-import { STR_FINDER_CORE_INFO } from "../constants";
+import { EvFileInfoChange, EvLogError, EvUiLaunched } from "./events/events";
 import { executeUiCmd } from "./events/eventTools";
-import { createNamespace, getNamespace } from "cls-hooked";
-import { In } from "typeorm";
+import { ConfigLineType, TypeDbInfo, TypeFinderCoreInfo } from "./types";
+import { ConfigLine } from "./entities/ConfigLine";
+import { DbIncluded } from "./entities/DbIncluded";
+import { FileInfo, IndexTableName } from "./entities/FileInfo";
+import { ScanPath } from "./entities/ScanPath";
 
 export const createFtsTable = async (connection: Connection) => {
   const { tableName } = connection.getMetadata(FileInfo);
@@ -45,7 +37,8 @@ export const initDb = async (
   reInitIfExist = false
 ) => {
   const { dbPath } = config;
-  if (!path.isAbsolute(dbPath)) throw new Error("dbPath should be absolute.");
+  if (!path.isAbsolute(dbPath))
+    throw new Error("dbPath should be absolute: " + JSON.stringify(config));
   let connection: Connection | undefined;
   if (fs.existsSync(config.dbPath)) {
     if (!reInitIfExist) return;
@@ -127,6 +120,7 @@ entityChangeWatchingSubjectMap.set(DbIncluded, cEvDbIncludedChange);
 // Register entity to serve remote orm method.
 cEvFinderState.next({ remoteMethodServeEntityMap: { FileInfo } });
 
+const fakePath = "fakePath";
 export const {
   getConnection,
   getCachedConnection,
@@ -172,7 +166,10 @@ export const {
       ignoreLock = false
     ): Promise<Connection> => {
       const { dbPath } = config;
-      if (!path.isAbsolute(dbPath))
+      if (
+        !path.isAbsolute(dbPath) &&
+        dbPath.slice(0, fakePath.length) !== fakePath
+      )
         throw new Error(
           "dbPath used in getConnection should be absolute: " + dbPath
         );
@@ -296,15 +293,24 @@ export const {
           entities: AUTO_CONNECT_ENTITIES,
         });
         if (!config.thumbnail) {
+          const tmpConfig: TypeDbInfo = {
+            ...config,
+            dbPath:
+              fakePath +
+              (connectionIndex + 1) +
+              Date.now().toString(36) +
+              Math.random().toString(36),
+          };
+          connectionMap.set(tmpConfig.dbPath, connection);
           try {
-            const coreInfo = await getFinderCoreInfo(
-              undefined,
-              connection,
-              config
-            );
+            const coreInfo = await switchDb(tmpConfig, async () => {
+              return await getFinderCoreInfo(undefined, tmpConfig);
+            });
             config.thumbnail = coreInfo.thumnail;
           } catch (e) {
-            console.warn("Failed to get thumbnail of  global database");
+            console.warn("Failed to get thumbnail of database", config, e);
+          } finally {
+            connectionMap.delete(tmpConfig.dbPath);
           }
         }
         connectionMap.set(dbPath, connection);
@@ -339,15 +345,15 @@ export const { switchDb, getConfig } = (() => {
     const KEY_CONFIG = "key_config";
     return {
       get: () => (session.get(KEY_CONFIG) || Config) as TypeDbInfo,
-      run: async <T>(
-        config: TypeDbInfo,
-        cb: () => Promise<T>,
-        useConnection?: Connection
-      ) => {
-        if (config.isSubDb && !fs.existsSync(config.dbPath)) {
+      run: async <T>(config: TypeDbInfo, cb: () => Promise<T>) => {
+        if (
+          config.isSubDb &&
+          config.dbPath.slice(0, fakePath.length) !== fakePath &&
+          !fs.existsSync(config.dbPath)
+        ) {
           await initDb(config, getConfig());
         }
-        const connection = useConnection || (await getConnection(config));
+        await getConnection(config);
         return session.runPromise(async () => {
           session.set(KEY_CONFIG, config);
           return await cb();
@@ -365,7 +371,6 @@ let coreInfo: TypeFinderCoreInfo | undefined;
 let coreInfoDbPath = "";
 export const getFinderCoreInfo = async (
   notSubDb = false,
-  useConnection?: Connection,
   useConfig?: TypeDbInfo
 ) => {
   const config =
@@ -378,27 +383,23 @@ export const getFinderCoreInfo = async (
       : Config) ||
     Config;
   if (!coreInfo || config?.dbPath !== coreInfoDbPath) {
-    coreInfo = await switchDb(
-      config || Config,
-      async () => {
-        const info =
-          (
-            await ConfigLine.find({ where: { type: ConfigLineType.coreInfo } })
-          )[0] || new ConfigLine(STR_FINDER_CORE_INFO, ConfigLineType.coreInfo);
-        let json: TypeFinderCoreInfo | undefined;
-        // @ts-ignore
-        if (info.jsonStr) json = JsonMore.parse(info.jsonStr);
-        if (!json) {
-          json = {
-            thumnail: await genDbThumnail(Config.dbPath),
-          };
-          info.jsonStr = JsonMore.stringify(json);
-          await info.save();
-        }
-        return json;
-      },
-      useConnection
-    );
+    coreInfo = await switchDb(config || Config, async () => {
+      const info =
+        (
+          await ConfigLine.find({ where: { type: ConfigLineType.coreInfo } })
+        )[0] || new ConfigLine(STR_FINDER_CORE_INFO, ConfigLineType.coreInfo);
+      let json: TypeFinderCoreInfo | undefined;
+      // @ts-ignore
+      if (info.jsonStr) json = JsonMore.parse(info.jsonStr);
+      if (!json) {
+        json = {
+          thumnail: await genDbThumnail(Config.dbPath),
+        };
+        info.jsonStr = JsonMore.stringify(json);
+        await info.save();
+      }
+      return json;
+    });
     coreInfoDbPath = config.dbPath;
   }
   return coreInfo;

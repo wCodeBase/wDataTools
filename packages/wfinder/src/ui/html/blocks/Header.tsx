@@ -1,18 +1,13 @@
-import React from "react";
 import { SettingOutlined } from "@ant-design/icons";
-import { Button, Tooltip } from "antd";
-import { Modal, Drawer } from "antd";
-import {
-  useBehaviorSubjectValue,
-  usePickBehaviorSubjectValue,
-  useStableState,
-} from "../../hooks/hooks";
-import { Setting } from "../widgets/Setting";
-import { ConnectionLight } from "../components/ConnectionLight";
+import { Button, Drawer } from "antd";
+import React from "react";
 import { isWebElectron } from "../../../finder/events/webEventTools";
-import { ContextIndicator } from "../widgets/Contexts";
+import { useStableState } from "../../hooks/hooks";
+import { ConnectionLight } from "../components/ConnectionLight";
 import { LinkedRemoteIndicator } from "../components/LinkedRemote";
 import { ServerLight } from "../components/ServerLight";
+import { ContextIndicator } from "../widgets/Contexts";
+import { Setting } from "../widgets/Setting";
 
 const SettingButton = React.memo(() => {
   const [state, setState] = useStableState(() => ({

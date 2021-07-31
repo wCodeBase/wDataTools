@@ -1,6 +1,5 @@
-import React, { ErrorInfo } from "react";
-import { PureComponent } from "react";
-import { EvLog, EvLogError } from "../../../finder/events/events";
+import React, { ErrorInfo, PureComponent } from "react";
+import { EvLogError } from "../../../finder/events/events";
 
 export class ErrorBoundary extends PureComponent<{ errorTitle?: string }> {
   state = {

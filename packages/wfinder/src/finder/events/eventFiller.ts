@@ -1,9 +1,9 @@
-import { watchServerSettings } from "./../server/httpServer";
 import { last, pick } from "lodash";
-import { debounceTime } from "rxjs/operators";
+import { getIpAddressList } from "../../tools/nodeTool";
 import { Config } from "../common";
-import { getConfig, getConnection, switchDb } from "../db";
+import { switchDb } from "../db";
 import { FileInfo } from "../entities/FileInfo";
+import { watchServerSettings } from "./../server/httpServer";
 import {
   cEvConfigLineChange,
   cEvDbIncludedChange,
@@ -12,11 +12,8 @@ import {
 } from "./core/coreEvents";
 import {
   EvDatabaseInfos,
-  EvDefaultDbInfo,
   EvFileInfoChange,
   EvFinderState,
-  EvUiCmd,
-  EvUiCmdResult,
   EvUiLaunched,
 } from "./events";
 import {
@@ -25,9 +22,6 @@ import {
   TypeServerState,
 } from "./types";
 import { uiCmdExecutor } from "./uiCmdExecutor";
-import { TypeServerSetting } from "../types";
-import { networkInterfaces } from "os";
-import { getIpAddressList } from "../../tools/nodeTool";
 
 cEvScanPathChange.subscribe((v) => EvFileInfoChange.next(v));
 cEvDbIncludedChange.subscribe((v) => EvFileInfoChange.next(v));

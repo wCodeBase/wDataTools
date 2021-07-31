@@ -1,10 +1,8 @@
-import { last } from "lodash";
-import { initDb } from "./../../src/finder/db";
+import { last, range } from "lodash";
 import path from "path";
-import { fse, shellJs } from "../imports";
-import { range } from "lodash";
 import { Config } from "../../src/finder/common";
-import assert from "assert";
+import { fse, shellJs } from "../imports";
+import { initDb } from "./../../src/finder/db";
 
 export const testFileRoot = path.resolve(__dirname, "../testFileFolder");
 

@@ -1,30 +1,26 @@
 import { Box, Text } from "ink";
 import React, { useEffect, useMemo } from "react";
-import { CmdInput } from "../../components/CmdInput";
-import { useStableState, useSubjectCallback } from "../../../hooks/hooks";
-import {
-  TypeMsgConfigItem,
-  TypeMsgPathItem,
-} from "../../../../finder/events/types";
 import {
   EvLog,
   EvLogError,
   EvUiCmd,
   EvUiCmdResult,
 } from "../../../../finder/events/events";
+import { TypeMsgConfigItem } from "../../../../finder/events/types";
+import { ConfigLineType } from "../../../../finder/types";
+import { useStableState, useSubjectCallback } from "../../../hooks/hooks";
 import {
   KEY_ARROW_DOWN,
   KEY_ARROW_UP,
-  KEY_ESCAPE,
   KEY_PAGE_DOWN,
   KEY_PAGE_UP,
   useCliEscape,
   useCliKeyPress,
 } from "../../../ink/consoleHooks/useCliKeyPress";
+import { simpleGetKey } from "../../../tools";
+import { CmdInput } from "../../components/CmdInput";
 import { Confirm } from "../../components/Confirm";
 import { HorizontalSelect } from "../../components/HorizontalSelect";
-import { simpleGetKey } from "../../../tools";
-import { ConfigLineType } from "../../../../finder/types";
 
 export const genConfigLineManager = (type: ConfigLineType) => () => {
   const [state, setState] = useStableState(() => ({

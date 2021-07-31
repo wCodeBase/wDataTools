@@ -1,11 +1,9 @@
-import { Config, isDev } from "./common";
-import { getConnection } from "./db";
 import { renderInkUi } from "../ui/ink";
-import { linkRemotes } from "./events/core/coreState";
+import { Config } from "./common";
+import { getConnection } from "./db";
 import { cEvFinderState } from "./events/core/coreEvents";
+import { linkRemotes } from "./events/core/coreState";
 import { EvDefaultDbInfo, EvFinderReady } from "./events/events";
-import { FileInfo } from "./entities/FileInfo";
-import { FileType } from "./types";
 
 export const initFinder = async () => {
   await getConnection();

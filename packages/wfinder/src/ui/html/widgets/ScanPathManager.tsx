@@ -1,33 +1,29 @@
-import { defaultPropsFc } from "./../../tools/fc";
-import React, { useEffect } from "react";
+import { ExclamationCircleFilled } from "@ant-design/icons";
+import { Button, message, Popconfirm, Tooltip } from "antd";
+import prettyMs from "pretty-ms";
+import React, { useMemo, useState } from "react";
 import {
-  EvUiCmdResult,
-  EvUiCmd,
   EvDefaultDbInfo,
+  EvUiCmd,
+  EvUiCmdResult,
   useFinderStatus,
 } from "../../../finder/events/events";
+import { executeUiCmd } from "../../../finder/events/eventTools";
+import { TypeMsgPathItem } from "../../../finder/events/types";
+import { getLocalContext } from "../../../finder/events/webEvent";
+import { getDbInfoId, TypeDbInfo } from "../../../finder/types";
+import { formatDate } from "../../../tools/tool";
 import { useStableState, useSubjectCallback } from "../../hooks/hooks";
-import { FinderStatus, TypeMsgPathItem } from "../../../finder/events/types";
-import { Button, message, Popconfirm, Tooltip } from "antd";
+import { useFinderReady } from "../../hooks/webHooks";
+import { simpleGetKey } from "../../tools";
 import {
   genManagerTable,
   SimplePathEdit,
-  SimpleTextEdit,
   TypeManagerTableAddonButtonProps,
   TypeManagerTableAddonOperationProps,
 } from "../components/ManagerTable";
-import { simpleGetKey } from "../../tools";
-import { executeUiCmd } from "../../../finder/events/eventTools";
-import { useFinderReady } from "../../hooks/webHooks";
-import { getLocalContext } from "../../../finder/events/webEvent";
-import { useState } from "react";
-import { getDbInfoId, TypeDbInfo } from "../../../finder/types";
-import { ExclamationCircleFilled } from "@ant-design/icons";
-import dayjs from "dayjs";
-import { formatDate } from "../../../tools/tool";
-import { useMemo } from "react";
 import { messageError } from "../uiTools";
-import prettyMs from "pretty-ms";
+import { defaultPropsFc } from "./../../tools/fc";
 
 const usePathScanning = (records: TypeMsgPathItem[], context?: TypeDbInfo) => {
   const [finderStatus] = useFinderStatus();

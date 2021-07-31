@@ -1,33 +1,30 @@
-import React from "react";
-import { useEffect } from "react";
-import { Body } from "../blocks/Body";
-import { Footer } from "../blocks/Footer";
-import { Header } from "../blocks/Header";
+import { InfoCircleOutlined } from "@ant-design/icons";
+import { Button, Input, Radio } from "antd";
+import React, { useEffect } from "react";
 import {
-  EvConsole,
   EvFinderReady,
   EvFinderState,
   EvUiCmd,
-  EvUiCmdMessage,
   EvUiCmdResult,
 } from "../../../finder/events/events";
-import {
-  isWebElectron,
-  webInitEvent,
-} from "../../../finder/events/webEventTools";
 import {
   executeUiCmd,
   executeUiCmdInterceptors,
 } from "../../../finder/events/eventTools";
+import { TypeUiMsgData } from "../../../finder/events/types";
 import {
   WebEventStatus,
   wEvEventStatus,
   wEvGlobalState,
 } from "../../../finder/events/webEvent";
-import { Button, Input, Modal, Radio, Tooltip } from "antd";
+import {
+  isWebElectron,
+  webInitEvent,
+} from "../../../finder/events/webEventTools";
+import { Body } from "../blocks/Body";
+import { Footer } from "../blocks/Footer";
+import { Header } from "../blocks/Header";
 import { showModal, TypeShowModalHandle } from "../uiTools";
-import { InfoCircleOutlined } from "@ant-design/icons";
-import { TypeUiMsgData } from "../../../finder/events/types";
 
 export const FinderUi = () => {
   useEffect(() => {
@@ -59,7 +56,7 @@ export const FinderUi = () => {
           handle = undefined;
         }
       }),
-      EvUiCmd.subscribe(async (msg) => {
+      EvUiCmd.subscribe((msg) => {
         if (msg?.cmd === "requestChooseFinderRoot") {
           if (currentUiCmdMsg?.tag && msg.tag === currentUiCmdMsg?.tag) return;
           currentUiCmdMsg = msg;
@@ -67,7 +64,7 @@ export const FinderUi = () => {
             handle.destory();
             handle = undefined;
           }
-          await new Promise((res) => {
+          {
             const { cwd, userDataDir, message } = msg.data;
             let inputValue = "";
             let selectPath: number | string = "";
@@ -188,7 +185,7 @@ export const FinderUi = () => {
                 </div>
               ),
             }));
-          });
+          }
         }
       }),
     ];

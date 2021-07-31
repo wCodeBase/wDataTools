@@ -1,22 +1,17 @@
-import { executeUiCmd, genRemoteCaller, uiMsgTimeout } from "../eventTools";
+import { isEqual } from "lodash";
+import { Subscription } from "rxjs";
+import { debounceTime } from "rxjs/operators";
+import Websocket from "ws";
+import { EVENT_ORM_METHOD_WEBSOCKET_ROUTE } from "../../../constants";
+import { ConfigLine } from "../../entities/ConfigLine";
+import { ConfigLineType } from "../../types";
+import { genRemoteCaller, uiMsgTimeout } from "../eventTools";
 import {
-  EVENT_ORM_METHOD_WEBSOCKET_ROUTE,
-  EVENT_TRANSFER_WEBSOCKET_ROUTE,
-} from "../../../constants";
-import {
+  cEvConfigLineChange,
   cEvFinderState,
   cTypeLinkedRemote,
-  cTypeTransferRemote,
 } from "./coreEvents";
-import { cEvConfigLineChange } from "./coreEvents";
-import { ConfigLine } from "../../entities/ConfigLine";
-import { debounceTime } from "rxjs/operators";
-import { ConfigLineType } from "../../types";
-import Websocket from "ws";
 import { JsonMoreEntity } from "./coreTypes";
-import { switchEvent } from "../eventGateway";
-import { isEqual } from "lodash";
-import { Subject, Subscription } from "rxjs";
 
 export function waitWsConnected(
   url: string,

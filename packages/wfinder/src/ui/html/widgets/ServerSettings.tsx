@@ -1,23 +1,18 @@
 import { LoadingOutlined } from "@ant-design/icons";
-import { Input, message, Modal, Spin, Switch, Tag as AntTag } from "antd";
-import { cloneDeep, isEmpty, isEqual, parseInt } from "lodash";
-import { type } from "os";
-import React, { useEffect } from "react";
+import { message, Modal, Spin, Switch, Tag as AntTag } from "antd";
+import { isEmpty } from "lodash";
+import React from "react";
 import {
   EvFinderState,
   EvLog,
   EvUiCmdResult,
 } from "../../../finder/events/events";
 import { executeUiCmd } from "../../../finder/events/eventTools";
-import {
-  getLocalContext,
-  getLocalRootContext,
-} from "../../../finder/events/webEvent";
+import { getLocalRootContext } from "../../../finder/events/webEvent";
 import {
   ConfigLineType,
   defaultServerSetting,
   getDbInfoId,
-  TypeDbInfo,
   TypeServerSetting,
 } from "../../../finder/types";
 import { parseAddress } from "../../../tools/tool";

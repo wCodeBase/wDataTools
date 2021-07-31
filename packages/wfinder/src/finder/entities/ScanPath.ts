@@ -1,15 +1,14 @@
-import { BaseDbInfoEntity, SubDatabaseIterators } from "./BaseDbInfoEntity";
+import fs from "fs";
 import {
-  BaseEntity,
   Column,
   CreateDateColumn,
   Entity,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { joinToAbsolute, isPathInclude } from "../../tools/pathTool";
-import fs from "fs";
-import { EvFinderStatus, EvLog, EvLogWarn } from "../events/events";
+import { isPathInclude, joinToAbsolute } from "../../tools/pathTool";
 import { getConfig, switchDb } from "../db";
+import { EvFinderStatus, EvLogWarn } from "../events/events";
+import { BaseDbInfoEntity, SubDatabaseIterators } from "./BaseDbInfoEntity";
 
 @Entity()
 export class ScanPath extends BaseDbInfoEntity {

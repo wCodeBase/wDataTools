@@ -1,25 +1,25 @@
+import { merge } from "rxjs";
 import { debounceTime, throttleTime } from "rxjs/operators";
-import {
-  FinderStatus,
-  MsgHeartbeat,
-  TypeDatabaseInfos,
-  TypeFinderStatus,
-  TypeLinkedRemote,
-  TypeOsInfo,
-  TypeServerState,
-  TypeUiMsgData,
-  TypeLogMessage,
-  TypeUiMsgResult,
-  TypeUiStatus,
-} from "./types";
+import { useBehaviorSubjectValue } from "../../ui/hooks/hooks";
 import { TypeDbInfo } from "../types";
 import {
   JsonBehaviorSubject,
   JsonSubject,
   ShallowJsonBehaviorSubject,
 } from "./eventLib";
-import { useBehaviorSubjectValue } from "../../ui/hooks/hooks";
-import { concat, merge } from "rxjs";
+import {
+  FinderStatus,
+  MsgHeartbeat,
+  TypeDatabaseInfos,
+  TypeFinderStatus,
+  TypeLinkedRemote,
+  TypeLogMessage,
+  TypeOsInfo,
+  TypeServerState,
+  TypeUiMsgData,
+  TypeUiMsgResult,
+  TypeUiStatus,
+} from "./types";
 
 export const EvFinderStatus = new ShallowJsonBehaviorSubject<TypeFinderStatus>({
   status: FinderStatus.idle,

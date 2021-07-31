@@ -1,10 +1,5 @@
-import { useRef } from "react";
-import {
-  WebEventStatus,
-  wEvEventStatus,
-  wEvFinderReady,
-} from "./../../finder/events/webEvent";
-import { useEffect, useReducer } from "react";
+import { useEffect } from "react";
+import { wEvFinderReady } from "./../../finder/events/webEvent";
 import { useUpdate } from "./hooks";
 
 export const useFinderReady = (effect: React.EffectCallback) => {

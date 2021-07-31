@@ -1,30 +1,25 @@
-import { EvLogError } from "./../events/events";
-import { createFtsTable, getConnection } from "../db";
-import { DEFAULT_QUERY_LIMIT } from "./../common";
-import { BaseDbInfoEntity } from "./BaseDbInfoEntity";
-import { getConfig, switchDb } from "./../db";
-import { DbIncluded } from "./DbIncluded";
+import { last, sum, sumBy } from "lodash";
+import * as path from "path";
+import { BehaviorSubject } from "rxjs";
+import hashString from "string-hash";
 import {
-  BaseEntity,
   Column,
   Entity,
   FindConditions,
-  FindManyOptions,
   In,
   Index,
   PrimaryGeneratedColumn,
   RemoveOptions,
-  Repository,
 } from "typeorm";
-import * as path from "path";
-import { EvLog } from "../events/events";
-import { last, sum, sumBy } from "lodash";
-import * as fs from "fs";
-import { interactYield } from "../../tools/tool";
-import { BehaviorSubject } from "rxjs";
-import { FileType } from "../types";
 import { splitPath } from "../../tools/pathTool";
-import hashString from "string-hash";
+import { interactYield } from "../../tools/tool";
+import { createFtsTable, getConnection } from "../db";
+import { FileType } from "../types";
+import { DEFAULT_QUERY_LIMIT } from "./../common";
+import { getConfig, switchDb } from "./../db";
+import { EvLogError } from "./../events/events";
+import { BaseDbInfoEntity } from "./BaseDbInfoEntity";
+import { DbIncluded } from "./DbIncluded";
 
 export const IndexTableName = "fileindex";
 

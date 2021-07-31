@@ -1,14 +1,7 @@
-import {
-  ApartmentOutlined,
-  ApiFilled,
-  ExclamationCircleFilled,
-  ExclamationCircleOutlined,
-  HddFilled,
-} from "@ant-design/icons";
+import { ApiFilled, ExclamationCircleOutlined } from "@ant-design/icons";
 import { Popover, Tooltip } from "antd";
 import { isEmpty } from "lodash";
-import React from "react";
-import { useRef } from "react";
+import React, { useRef } from "react";
 import { EvFinderState } from "../../../finder/events/events";
 import { usePickBehaviorSubjectValue } from "../../hooks/hooks";
 import { defaultPropsFc } from "../../tools/fc";

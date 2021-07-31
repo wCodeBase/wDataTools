@@ -1,28 +1,27 @@
-import { interactYield } from "./../tools/tool";
-import { ConfigLine } from "./entities/ConfigLine";
-import { cEvScanBrake } from "./events/core/coreEvents";
-import { Config, isDev, MAX_PATH_DEPTH } from "./common";
-import * as path from "path";
+import { createNamespace } from "cls-hooked";
 import * as fs from "fs";
-import { pathPem, TimeCouter } from "../tools/nodeTool";
+import * as path from "path";
+import { BehaviorSubject } from "rxjs";
+import { SUB_DATABASE_PREFIX } from "../constants";
+import { pathPem } from "../tools/nodeTool";
 import {
   isPathEqual,
   isPathInclude,
   joinToAbsolute,
   splitPath,
 } from "../tools/pathTool";
-import { FileInfo, processText, restoreText } from "./entities/FileInfo";
-import { switchDb, getConnection, getConfig } from "./db";
+import { interactYield } from "./../tools/tool";
+import { Config, isDev, MAX_PATH_DEPTH } from "./common";
+import { getConfig, getConnection, switchDb } from "./db";
+import { getEntityTableName } from "./entities/BaseDbInfoEntity";
+import { ConfigLine } from "./entities/ConfigLine";
+import { DbIncluded } from "./entities/DbIncluded";
+import { FileInfo, restoreText } from "./entities/FileInfo";
 import { ScanPath } from "./entities/ScanPath";
+import { cEvScanBrake } from "./events/core/coreEvents";
 import { EvFinderStatus, EvLogError, EvUiCmdMessage } from "./events/events";
 import { FinderStatus } from "./events/types";
-import { DbIncluded } from "./entities/DbIncluded";
 import { ConfigLineType, FileType, getDbInfoId } from "./types";
-import { createNamespace, getNamespace } from "cls-hooked";
-import { SUB_DATABASE_PREFIX } from "../constants";
-import { BehaviorSubject } from "rxjs";
-import { Not } from "typeorm";
-import { getEntityTableName } from "./entities/BaseDbInfoEntity";
 
 export class FileScanError extends Error {}
 

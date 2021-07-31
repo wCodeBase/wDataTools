@@ -1,3 +1,9 @@
+import { joinToAbsolute } from "../../tools/pathTool";
+import { waitMilli } from "../../tools/tool";
+import { isDev } from "../common";
+import { getConfig, initDb, removeDbFiles, switchDb } from "../db";
+import { FileInfo } from "../entities/FileInfo";
+import { ScanPath } from "../entities/ScanPath";
 import { Config } from "./../common";
 import {
   exAddConfigLine,
@@ -12,16 +18,9 @@ import {
   exListScanPath,
   exSaveConfigLine,
 } from "./../executors";
-
-import { FileInfo } from "../entities/FileInfo";
 import { doScan, genExternalSubDbPath, stopScan } from "./../scan";
-import {
-  EvFinderStatus,
-  EvLog,
-  EvLogError,
-  EvUiCmd,
-  EvUiCmdResult,
-} from "./events";
+import { EvFinderStatus, EvLogError, EvUiCmd, EvUiCmdResult } from "./events";
+import { uiMsgTimeout } from "./eventTools";
 import {
   FinderStatus,
   TypeMsgConfigItem,
@@ -29,13 +28,6 @@ import {
   TypeUiMsgData,
   TypeUiMsgResult,
 } from "./types";
-import { waitMilli } from "../../tools/tool";
-import { uiMsgTimeout } from "./eventTools";
-import { DbIncluded } from "../entities/DbIncluded";
-import { getConfig, initDb, removeDbFiles, switchDb } from "../db";
-import { ScanPath } from "../entities/ScanPath";
-import { joinToAbsolute } from "../../tools/pathTool";
-import { isDev } from "../common";
 
 export const uiCmdExecutor = async function (msg: TypeUiMsgData | null) {
   if (!msg) return;

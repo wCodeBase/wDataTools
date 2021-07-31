@@ -1,20 +1,9 @@
-import {
-  EvDefaultDbInfo,
-  EvFinderReady,
-  EvFinderState,
-  EvUiCmd,
-  EvUiCmdResult,
-} from "./events";
-import {
-  ConfigLineType,
-  getDbInfoId,
-  getLocalDbInfoStackId,
-  TypeDbInfo,
-} from "./../types";
-import { BehaviorSubject, merge, Subject } from "rxjs";
-import { ShallowBehaviorSubject } from "./eventLib";
 import { first, isEmpty, isEqual, last } from "lodash";
+import { BehaviorSubject, merge, Subject } from "rxjs";
 import { joinToAbsolute } from "../../tools/pathTool";
+import { ConfigLineType, getDbInfoId, TypeDbInfo } from "./../types";
+import { ShallowBehaviorSubject } from "./eventLib";
+import { EvFinderReady, EvFinderState, EvUiCmd, EvUiCmdResult } from "./events";
 
 export enum WebEventStatus {
   none,

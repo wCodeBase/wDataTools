@@ -1,39 +1,26 @@
-import { Config } from "./../common";
-import path from "path";
-import { Subject } from "rxjs";
 import {
   BaseEntity,
   FindConditions,
   ObjectID,
-  ObjectType,
   RemoveOptions,
   SaveOptions,
 } from "typeorm";
 import { TypeJsonData } from "../../tools/json";
-import {
-  isPathEqual,
-  joinToAbsolute,
-  isPathInclude,
-} from "../../tools/pathTool";
 import { interactYield } from "../../tools/tool";
 import { entityChangeWatchingSubjectMap } from "../common";
-import {
-  getConnection,
-  getFinderCoreInfo,
-  getConfig,
-  getCachedConnection,
-  switchDb,
-} from "../db";
+import { getCachedConnection, getConfig, getFinderCoreInfo } from "../db";
 import { cEvFinderState } from "../events/core/coreEvents";
 import { cTypeImplementedOrmCall } from "../events/core/coreTypes";
-import { EvLog, EvLogError } from "../events/events";
+import { EvLogError } from "../events/events";
 import { TypeQueryLimit } from "../types";
+import { Config } from "./../common";
 
 export type SubDatabaseIterator = (cb: () => Promise<void>) => Promise<void>;
 
 export const SubDatabaseIterators: SubDatabaseIterator[] = [];
 
 export class BaseDbInfoEntity extends BaseEntity {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   constructor(...v: any) {
     super();
   }
