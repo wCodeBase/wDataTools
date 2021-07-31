@@ -44,7 +44,8 @@ npm install -g wtoolbox
 ```
 2. 使用二进制安装包安装:
 
-从release页面下载所需的安装包.
+    从release页面下载所需的安装包: 
+    https://github.com/wCodeBase/wDataTools/releases/tag/wfinder-0.0.1-alpha-1.
 
 ---
 ## 用户界面

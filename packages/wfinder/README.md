@@ -46,7 +46,7 @@ npm install -g wtoolbox
 ```
 2. Install using binary package:
 
-    Download binary package you want from release page.
+    Download binary package you want from release page: https://github.com/wCodeBase/wDataTools/releases/tag/wfinder-0.0.1-alpha-1.
 
 ---
 ## User interfaces
