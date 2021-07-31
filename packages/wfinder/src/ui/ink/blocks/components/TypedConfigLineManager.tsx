@@ -205,7 +205,7 @@ export const genConfigLineManager = (type: ConfigLineType) => () => {
                   if (confirm) {
                     EvUiCmd.next({
                       cmd: "addConfig",
-                      data: { content: state.newConfig, type },
+                      data: [{ content: state.newConfig, type }],
                     });
                     setState({ waitingForCmdResult: true });
                   } else {

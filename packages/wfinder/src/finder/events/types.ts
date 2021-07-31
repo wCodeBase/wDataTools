@@ -130,8 +130,8 @@ type TypeMsgConfigLineDef = {
 
 type TypeMsgConfigLineManage = {
   addConfig: {
-    data: Pick<TypeMsgConfigItem, "dbInfo" | "type" | "content"> &
-      Partial<TypeMsgConfigItem>;
+    data: (Pick<TypeMsgConfigItem, "dbInfo" | "type" | "content"> &
+      Partial<TypeMsgConfigItem>)[];
   } & TypeMsgConfigLineDef;
   deleteConfig: {
     data: Pick<TypeMsgConfigItem, "dbInfo" | "type" | "content">;

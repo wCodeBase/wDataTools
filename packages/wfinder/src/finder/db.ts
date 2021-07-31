@@ -295,9 +295,13 @@ export const {
           database: dbPath,
           entities: AUTO_CONNECT_ENTITIES,
         });
-        if (config === Config && !config.thumbnail) {
+        if (!config.thumbnail) {
           try {
-            const coreInfo = await getFinderCoreInfo(undefined, connection);
+            const coreInfo = await getFinderCoreInfo(
+              undefined,
+              connection,
+              config
+            );
             config.thumbnail = coreInfo.thumnail;
           } catch (e) {
             console.warn("Failed to get thumbnail of  global database");
@@ -361,15 +365,18 @@ let coreInfo: TypeFinderCoreInfo | undefined;
 let coreInfoDbPath = "";
 export const getFinderCoreInfo = async (
   notSubDb = false,
-  useConnection?: Connection
+  useConnection?: Connection,
+  useConfig?: TypeDbInfo
 ) => {
   const config =
+    useConfig ||
     (notSubDb
       ? cEvFinderState.value.configStack
           .slice(0, cEvFinderState.value.configIndex)
           .reverse()
           .find((v) => !v.isSubDb)
-      : Config) || Config;
+      : Config) ||
+    Config;
   if (!coreInfo || config?.dbPath !== coreInfoDbPath) {
     coreInfo = await switchDb(
       config || Config,

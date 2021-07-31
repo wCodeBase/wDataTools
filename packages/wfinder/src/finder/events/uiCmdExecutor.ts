@@ -1,3 +1,4 @@
+import { Config } from "./../common";
 import {
   exAddConfigLine,
   exAddScanPath,
@@ -39,7 +40,7 @@ import { isDev } from "../common";
 export const uiCmdExecutor = async function (msg: TypeUiMsgData | null) {
   if (!msg) return;
   let finished = false;
-  const context = msg.context || getConfig();
+  const context = msg.context || Config;
   try {
     const triggerHeartBeat = async () => {
       const { tag } = msg;
@@ -153,14 +154,8 @@ export const uiCmdExecutor = async function (msg: TypeUiMsgData | null) {
         cmdResult = { cmd, result: {} };
       } else if (msg.cmd === "addConfig") {
         const { cmd, data } = msg;
-        let error = "";
-        const res = await exAddConfigLine(data, data.dbInfo);
-        const results: TypeMsgConfigItem[] = [];
-        if (res.error === undefined) {
-          results.push(res.result.toItem());
-        } else {
-          error = res.error;
-        }
+        const error = "";
+        const { results } = await exAddConfigLine(data);
         cmdResult = { cmd, result: { results, error } };
       } else if (msg.cmd === "deleteConfig") {
         const { cmd, data } = msg;
@@ -186,11 +181,12 @@ export const uiCmdExecutor = async function (msg: TypeUiMsgData | null) {
         };
       } else if (msg.cmd === "saveConfig" || msg.cmd === "saveOrCreateConfig") {
         const { cmd } = msg;
-        let { result, error = "" } = await exSaveConfigLine(msg.data);
+        const res = await exSaveConfigLine(msg.data);
+        let { result } = res;
+        const error = res.error || "";
         if ((error || !result?.length) && msg.cmd === "saveOrCreateConfig") {
-          const res = await exAddConfigLine(msg.data);
-          result = res.result ? [res.result] : [];
-          error = res.error || "";
+          const res = await exAddConfigLine([msg.data]);
+          result = res.results;
         }
         cmdResult = {
           cmd,

@@ -64,25 +64,31 @@ export const exListScanPath = async (config = getConfig()) => {
   });
 };
 
+/**
+ * Config will be added only if no config has the same content and type exists.
+ */
 export const exAddConfigLine = async (
-  data: Pick<TypeMsgConfigItem, "type" | "content"> &
-    Partial<TypeMsgConfigItem>,
+  datas: (Pick<TypeMsgConfigItem, "type" | "content"> &
+    Partial<TypeMsgConfigItem>)[],
   config = getConfig()
 ) => {
-  return await switchDb(data.dbInfo || config, async () => {
-    const { id, content, type, ...rest } = data;
-    if (await ConfigLine.count({ where: { content, type } })) {
-      const error = `Content already exist: ${content}.`;
-      return { error };
-    } else {
-      const result = await Object.assign(new ConfigLine(content, type), {
-        content,
-        type,
-        ...rest,
-      }).save();
-      return { result };
-    }
-  });
+  const results = await Promise.all(
+    datas.map(async (data) => {
+      return await switchDb(data.dbInfo || config, async () => {
+        const { id, content, type, ...rest } = data;
+        let result = (await ConfigLine.find({ where: { content, type } }))[0];
+        if (!result) {
+          result = await Object.assign(new ConfigLine(content, type), {
+            content,
+            type,
+            ...rest,
+          }).save();
+        }
+        return result;
+      });
+    })
+  );
+  return { results };
 };
 
 export const exSaveConfigLine = async (

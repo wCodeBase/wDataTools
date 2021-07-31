@@ -101,6 +101,7 @@ export type TypeManagerTableAddonButtonProps<T> = {
   isTableOnNew: boolean;
   isReadonly: boolean;
   records: T[];
+  context: TypeDbInfo | undefined;
 };
 
 export type TypeManagerTableAddonOperationProps<T> = Omit<
@@ -289,6 +290,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                               isReadonly={props.readOnly}
                               record={record}
                               index={index}
+                              context={props.context}
                             />
                           )}
                         </div>
@@ -361,6 +363,7 @@ export const genManagerTable = <T extends Record<string, unknown>>(
                 isTableOnNew={state.editType === "new"}
                 isReadonly={props.readOnly}
                 records={props.records}
+                context={props.context}
               />
             )}
           </div>

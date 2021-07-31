@@ -54,6 +54,12 @@ module.exports = {
         auto: "auto",
         ...theme("spacing"),
       }),
+      maxHeight: {
+        ...screenHeights,
+      },
+      minHeight: {
+        ...screenHeights,
+      },
       scale: {
         ...percent25,
       },

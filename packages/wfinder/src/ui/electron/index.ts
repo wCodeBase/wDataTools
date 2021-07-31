@@ -5,6 +5,7 @@ import path from "path";
 import { initFinder } from "../../finder";
 import { EvUiLaunched } from "../../finder/events/events";
 import { getElectron } from "../../tools/nodeTool";
+import { getConfig } from "../../finder/db";
 
 export const startElectron = async () => {
   const electron = getElectron();

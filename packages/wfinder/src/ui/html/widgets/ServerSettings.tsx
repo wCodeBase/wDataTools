@@ -3,7 +3,11 @@ import { Input, message, Modal, Spin, Switch, Tag as AntTag } from "antd";
 import { cloneDeep, isEmpty, isEqual, parseInt } from "lodash";
 import { type } from "os";
 import React, { useEffect } from "react";
-import { EvFinderState, EvUiCmdResult } from "../../../finder/events/events";
+import {
+  EvFinderState,
+  EvLog,
+  EvUiCmdResult,
+} from "../../../finder/events/events";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import {
   getLocalContext,
@@ -66,6 +70,18 @@ export const ServerSettings = defaultPropsFc(
     });
 
     useSubjectCallback(EvUiCmdResult, (res) => {
+      if (
+        res.cmd === "listConfig" &&
+        !res.result.error &&
+        (res.result.oriData.type === ConfigLineType.serverSetting ||
+          isEmpty(res.result.oriData))
+      ) {
+        EvLog(
+          getDbInfoId(res.context) === getDbInfoId(getLocalRootContext()),
+          JSON.stringify(getLocalRootContext()),
+          JSON.stringify(res)
+        );
+      }
       if (
         res.cmd === "listConfig" &&
         !res.result.error &&

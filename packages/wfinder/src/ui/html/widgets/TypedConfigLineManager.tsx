@@ -7,7 +7,7 @@ import {
 } from "../../../finder/events/events";
 import { useStableState, useSubjectCallback } from "../../hooks/hooks";
 import { TypeMsgConfigItem } from "../../../finder/events/types";
-import { Button, message, Popconfirm, Tooltip } from "antd";
+import { Button, Input, message, Popconfirm, Tooltip } from "antd";
 import {
   genManagerTable,
   SimpleBooleanEdit,
@@ -22,7 +22,12 @@ import { ConfigLineType, getDbInfoId, TypeDbInfo } from "../../../finder/types";
 import { useFinderReady } from "../../hooks/webHooks";
 import { isEmpty, isEqual } from "lodash";
 import { getLocalContext } from "../../../finder/events/webEvent";
-import { messageError } from "../uiTools";
+import { messageError, showModal } from "../uiTools";
+import { ExportOutlined, ImportOutlined } from "@ant-design/icons";
+
+const isBusy = (props: TypeManagerTableAddonButtonProps<TypeMsgConfigItem>) => {
+  return props.isReadonly || props.isTableEdit || props.isTableOnNew;
+};
 
 const genApplyToSubDatabaseButton = (mode: "add" | "delete") => {
   const title =
@@ -31,13 +36,7 @@ const genApplyToSubDatabaseButton = (mode: "add" | "delete") => {
       : "Are you sure to remove config line from here and all sub databases? ";
   const text = mode === "add" ? "Apply" : "abolish";
   return (props: TypeManagerTableAddonButtonProps<TypeMsgConfigItem>) => {
-    if (
-      props.isReadonly ||
-      props.isTableEdit ||
-      props.isTableOnNew ||
-      !props.records.length
-    )
-      return null;
+    if (isBusy(props) || !props.records.length) return null;
     const [state, setState] = useStableState(() => ({
       loading: false,
       onClick: async () => {
@@ -99,8 +98,116 @@ const genTypedConfigmanager = (
   type: ConfigLineType,
   tableTitle: string | JSX.Element,
   moreColumns: (keyof TypeMsgConfigItem)[] = [],
-  canApplyToSubDatabases = false
+  canApplyToSubDatabases = false,
+  contentLineImportable = false
 ) => {
+  const ImportExport = React.memo(
+    (props: TypeManagerTableAddonButtonProps<TypeMsgConfigItem>) => {
+      if (isBusy(props)) return null;
+      const showImportModal = (isImport = true) => {
+        const handle = showModal(() => ({
+          centered: true,
+          title: (
+            <div className="flex flex-row items-center">
+              {isImport ? <ImportOutlined /> : <ExportOutlined />}{" "}
+              <span className="ml-2">{tableTitle}</span>
+            </div>
+          ),
+          footer: false,
+          render: () => {
+            const Fc = () => {
+              const [state, setState] = useStableState(() => ({
+                input: "",
+                loading: false,
+              }));
+              return (
+                <div>
+                  <div className="text-sm opacity-70">
+                    {isImport
+                      ? "Add configs you want to import to input area, seperate by enter."
+                      : "Export output is ready in input area bellow."}
+                  </div>
+                  <Input.TextArea
+                    autoSize={{ minRows: 5, maxRows: 10 }}
+                    value={
+                      isImport
+                        ? undefined
+                        : props.records.map((v) => v.content).join("\n")
+                    }
+                    onChange={(ev) => setState({ input: ev.target.value })}
+                    readOnly={!isImport}
+                  />
+                  {isImport && (
+                    <div className="flex flex-row justify-end mt-2">
+                      <Button
+                        type="primary"
+                        disabled={!state.input}
+                        loading={state.loading}
+                        onClick={async () => {
+                          setState({ loading: true });
+                          const res = await messageError(
+                            executeUiCmd("addConfig", {
+                              cmd: "addConfig",
+                              data: state.input
+                                .split("\n")
+                                .filter((v) => v)
+                                .map((v) => ({ type, content: v })),
+                              context: props.context,
+                            })
+                          );
+                          if (res) message.success("Import success.");
+                          setState({ loading: false });
+                          handle.destory();
+                        }}
+                      >
+                        Import
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            };
+            return <Fc />;
+          },
+        }));
+      };
+      return (
+        <>
+          <span className="flex mx-0.5">
+            <Tooltip title="Import configs">
+              <Button
+                icon={
+                  <div className="flex flex-row items-center justify-center">
+                    <ImportOutlined />
+                  </div>
+                }
+                type="primary"
+                size="small"
+                onClick={() => showImportModal(true)}
+              />
+            </Tooltip>
+          </span>
+          {!!props.records.length && (
+            <span className="flex mx-0.5">
+              <Tooltip title="Export configs">
+                <Button
+                  icon={
+                    <div className="flex flex-row items-center justify-center">
+                      <ExportOutlined />
+                    </div>
+                  }
+                  type="primary"
+                  size="small"
+                  onClick={() => showImportModal(false)}
+                />
+              </Tooltip>
+            </span>
+          )}
+        </>
+      );
+    }
+  );
+
   const TypedConfigTable = genManagerTable<TypeMsgConfigItem>(
     ["content", "updatedAt", ...moreColumns],
     {},
@@ -115,7 +222,14 @@ const genTypedConfigmanager = (
       dbInfo: undefined,
       type,
     }),
-    canApplyToSubDatabases ? AddonButtons : undefined,
+    canApplyToSubDatabases || contentLineImportable
+      ? (props) => (
+          <>
+            {canApplyToSubDatabases && <AddonButtons {...props} />}
+            {contentLineImportable && <ImportExport {...props} />}
+          </>
+        )
+      : undefined,
     canApplyToSubDatabases ? AddonOperationButtons : undefined
   );
   const listConfigData = { type };
@@ -138,7 +252,7 @@ const genTypedConfigmanager = (
             const res = await messageError(
               executeUiCmd("addConfig", {
                 cmd: "addConfig",
-                data: v,
+                data: [v],
                 context: props.contexted ? getLocalContext() : undefined,
               })
             );
@@ -207,18 +321,21 @@ export const FileNameToExcludeManager = genTypedConfigmanager(
   ConfigLineType.excludeFileName,
   "File names to exclude",
   undefined,
+  true,
   true
 );
 export const FileNameToExcludeChildrenManager = genTypedConfigmanager(
   ConfigLineType.excludeChildrenFolderName,
   "File names to exclude children",
   undefined,
+  true,
   true
 );
 export const AbsolutePathToExcludeManager = genTypedConfigmanager(
   ConfigLineType.excludeAbsPath,
   "Absolute paths to exclude",
   undefined,
+  true,
   true
 );
 export const RemoteWfinderManager = genTypedConfigmanager(
