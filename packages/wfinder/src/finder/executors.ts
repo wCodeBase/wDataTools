@@ -72,7 +72,7 @@ export const exAddConfigLine = async (
   const results = await Promise.all(
     datas.map(async (data) => {
       return await switchDb(data.dbInfo || config, async () => {
-        const { content, type, ...rest } = data;
+        const { id, content, type, ...rest } = data;
         let result = (await ConfigLine.find({ where: { content, type } }))[0];
         if (!result) {
           result = await Object.assign(new ConfigLine(content, type), {
