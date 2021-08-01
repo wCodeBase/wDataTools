@@ -31,7 +31,8 @@
             "args": [
                 "node_modules/.bin/mocha",
                 "./test/index.ts",
-                "./cli/index.ts"
+                // "./cli/index.ts",
+                "./unit/index.ts",
             ],
             "cwd": "${workspaceFolder}",
             "protocol": "inspector",

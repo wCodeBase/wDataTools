@@ -19,3 +19,28 @@ export const ensureJsFile = (filePath: string) => {
   }
   return filePath;
 };
+
+export const joinPropertyPath = (...paths: string[]) => {
+  return paths
+    .filter((v) => v)
+    .map((v) => v.replace(/^\./, "").replace(/\.$/, ""))
+    .join(".");
+};
+
+export const traversalObject = (
+  data: any,
+  callback: (v: any, path: string) => void,
+  parentPath = ""
+) => {
+  if (data instanceof Array) {
+    data.forEach((v, index) =>
+      traversalObject(v, callback, joinPropertyPath(parentPath, index + ""))
+    );
+  } else if (data instanceof Object) {
+    Object.entries(data).forEach(([key, v]) =>
+      traversalObject(v, callback, joinPropertyPath(parentPath, key))
+    );
+  } else {
+    callback(data, parentPath);
+  }
+};

@@ -91,7 +91,9 @@ app.whenReady().then(async () => {
           }
         } catch (e) {
           console.log(
-            `Failed to parse ipcServer data from server: ${socket.address()}`,
+            `Failed to parse ipcServer data from server: ${JSON.stringify(
+              socket.address()
+            )}`,
             e
           );
         }

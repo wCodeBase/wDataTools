@@ -49,6 +49,7 @@ const specialValueNameMap = new Map<any, string>(specialValuePackers);
 const nameSpecialValueMap = new Map(
   specialValuePackers.map(([a, b]) => [b, a])
 );
+const SP_THESAME = "sp_thesame";
 
 export type _TypeJsonMore<T> = {
   stringify: (data: _TypeJsonData<T>) => string;
@@ -57,7 +58,6 @@ export type _TypeJsonMore<T> = {
 
 export type TypeJsonMore = _TypeJsonMore<any>;
 
-// TODO: store thesame data in one object.
 export const buildJsonMore = <T>(
   specialPackers: TypeSpecialJsonPacker<T>[]
 ): _TypeJsonMore<T> => {
@@ -80,9 +80,11 @@ export const buildJsonMore = <T>(
     data: _TypeJsonData<void>;
     special: { type: string; path: TypeKey[] }[];
   };
-
+  const canSkipValue = Symbol();
   return {
     stringify: (data: TypeJsonData) => {
+      const existObjPathMap = new Map<any, TypeKey[]>();
+
       const res: JsonMoreData = {
         label: "JsonMoreData",
         data: undefined,
@@ -102,11 +104,17 @@ export const buildJsonMore = <T>(
           pathStack.push({ path: [...path.slice(0, -1), first], rest });
         }
         const srcValue: TypeJsonData = get(src, path);
-        let value: _TypeJsonData<void>;
+        let value: _TypeJsonData<void> | typeof canSkipValue = canSkipValue;
         const special = specialValueNameMap.get(srcValue);
+        const exist =
+          special || !(srcValue instanceof Object)
+            ? undefined
+            : existObjPathMap.get(srcValue);
         if (special) {
-          value = special;
           res.special.push({ type: special, path });
+        } else if (exist) {
+          value = exist;
+          res.special.push({ type: SP_THESAME, path });
         } else if (
           srcValue === null ||
           srcValue === undefined ||
@@ -115,6 +123,7 @@ export const buildJsonMore = <T>(
           // @ts-ignore
           value = srcValue;
         } else if (srcValue instanceof Array) {
+          existObjPathMap.set(srcValue, path);
           if (srcValue.length)
             pathStack.push({
               path: [...path, 0],
@@ -126,6 +135,7 @@ export const buildJsonMore = <T>(
           // @ts-ignore
           const packer = constructorPackerMap.get(srcValue["constructor"]);
           if (packer) {
+            existObjPathMap.set(srcValue, path);
             // @ts-ignore
             value = packer.pack(srcValue);
             res.special.push({
@@ -134,6 +144,7 @@ export const buildJsonMore = <T>(
             });
           }
         } else if (srcValue instanceof Object) {
+          existObjPathMap.set(srcValue, path);
           const [first, ...rest] = Object.keys(srcValue);
           if (first !== undefined)
             pathStack.push({ path: [...path, first], rest });
@@ -143,7 +154,7 @@ export const buildJsonMore = <T>(
             `Failed to pack jsonMore value, unknown type: ${srcValue}`
           );
         }
-        setWith(res, path, value, Object);
+        if (value !== canSkipValue) setWith(res, path, value, Object);
       }
       return JSON.stringify(res);
     },
@@ -152,7 +163,9 @@ export const buildJsonMore = <T>(
       if (json.label !== "JsonMoreData") return json as _TypeJsonData<T>;
       json.special.forEach((special) => {
         const { type, path } = special;
-        if (nameSpecialValueMap.has(type)) {
+        if (type === SP_THESAME) {
+          setWith(json, path, get(json, get(json, path)), Object);
+        } else if (nameSpecialValueMap.has(type)) {
           setWith(json, path, nameSpecialValueMap.get(type), Object);
         } else {
           const packer = namePackerMap.get(type);
@@ -172,7 +185,11 @@ export const buildJsonMore = <T>(
 export class ErrorSpecialDataUnpack extends Error {}
 export class ErrorSpecialDatapack extends Error {}
 
-export type TypeDefaultSpecialJsonType = Date | BigInt | Set<TypeJsonData>;
+export type TypeDefaultSpecialJsonType =
+  | Date
+  | BigInt
+  | Set<TypeJsonData>
+  | Map<TypeJsonData, TypeJsonData>;
 
 export const defaultPackers: TypeSpecialJsonPacker<TypeDefaultSpecialJsonType>[] =
   [
@@ -207,6 +224,17 @@ export const defaultPackers: TypeSpecialJsonPacker<TypeDefaultSpecialJsonType>[]
       unpack: (data) => {
         if (typeof data !== "string") throw new ErrorSpecialDataUnpack();
         return new Set(JsonMore.parse(data) as any[]);
+      },
+    },
+    {
+      constructor: Map,
+      pack: (data) => {
+        if (!data || !(data instanceof Map)) throw new ErrorSpecialDatapack();
+        return JsonMore.stringify(Array.from(data));
+      },
+      unpack: (data) => {
+        if (typeof data !== "string") throw new ErrorSpecialDataUnpack();
+        return new Map(JsonMore.parse(data) as any[]);
       },
     },
   ];

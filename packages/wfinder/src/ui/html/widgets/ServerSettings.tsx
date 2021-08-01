@@ -69,18 +69,6 @@ export const ServerSettings = defaultPropsFc(
         res.cmd === "listConfig" &&
         !res.result.error &&
         (res.result.oriData.type === ConfigLineType.serverSetting ||
-          isEmpty(res.result.oriData))
-      ) {
-        EvLog(
-          getDbInfoId(res.context) === getDbInfoId(getLocalRootContext()),
-          JSON.stringify(getLocalRootContext()),
-          JSON.stringify(res)
-        );
-      }
-      if (
-        res.cmd === "listConfig" &&
-        !res.result.error &&
-        (res.result.oriData.type === ConfigLineType.serverSetting ||
           isEmpty(res.result.oriData)) &&
         getDbInfoId(res.context) === getDbInfoId(getLocalRootContext())
       ) {
