@@ -7,7 +7,11 @@ import { executeUiCmd } from "../../../finder/events/eventTools";
 import { TypeMsgConfigItem } from "../../../finder/events/types";
 import { getLocalContext } from "../../../finder/events/webEvent";
 import { ConfigLineType, getDbInfoId } from "../../../finder/types";
-import { useStableState, useSubjectCallback } from "../../hooks/hooks";
+import {
+  useLaterEffect,
+  useStableState,
+  useSubjectCallback,
+} from "../../hooks/hooks";
 import { useFinderReady } from "../../hooks/webHooks";
 import { simpleGetKey } from "../../tools";
 import {
@@ -30,44 +34,53 @@ const genApplyToSubDatabaseButton = (mode: "add" | "delete") => {
       ? "Add Config to all sub databases? "
       : "Are you sure to remove config line from here and all sub databases? ";
   const text = mode === "add" ? "Apply" : "abolish";
-  return (props: TypeManagerTableAddonButtonProps<TypeMsgConfigItem>) => {
-    if (isBusy(props) || !props.records.length) return null;
-    const [state, setState] = useStableState(() => ({
-      loading: false,
-      onClick: async () => {
-        const item = props.records[0];
-        if (!item) return;
-        setState({ loading: true });
-        const res = await messageError(
-          executeUiCmd("applyConfigsToSunDatabases", {
-            cmd: "applyConfigsToSunDatabases",
-            data: { ids: props.records.map((v) => v.id), mode },
-            context: item.dbInfo || getLocalContext(),
-          })
-        );
-        if (res) message.success("Modify config success");
-        setState({ loading: false });
-      },
-    }));
-    return (
-      <Popconfirm
-        title={title}
-        disabled={state.loading}
-        onConfirm={state.onClick}
-      >
-        <span className="m-0.5">
-          <Button
-            size="small"
-            type="primary"
-            danger={mode === "delete"}
-            loading={state.loading}
-          >
-            <div className="flex flex-row items-center">{text}</div>
-          </Button>
-        </span>
-      </Popconfirm>
-    );
-  };
+  return React.memo(
+    (props: TypeManagerTableAddonButtonProps<TypeMsgConfigItem>) => {
+      const [state, setState] = useStableState(() => ({
+        loading: false,
+        records: props.records,
+        onClick: async () => {
+          const item = state.records[0];
+          if (!item) return;
+          setState({ loading: true });
+          const res = await messageError(
+            executeUiCmd("applyConfigsToSunDatabases", {
+              cmd: "applyConfigsToSunDatabases",
+              data: { ids: state.records.map((v) => v.id), mode },
+              context: item.dbInfo || getLocalContext(),
+            })
+          );
+          if (res) message.success("Modify config success");
+          setState({ loading: false });
+        },
+      }));
+
+      useLaterEffect(() => {
+        state.records = props.records;
+      }, [props.records]);
+
+      if (isBusy(props) || !props.records.length) return null;
+
+      return (
+        <Popconfirm
+          title={title}
+          disabled={state.loading}
+          onConfirm={state.onClick}
+        >
+          <span className="m-0.5">
+            <Button
+              size="small"
+              type="primary"
+              danger={mode === "delete"}
+              loading={state.loading}
+            >
+              {text}
+            </Button>
+          </span>
+        </Popconfirm>
+      );
+    }
+  );
 };
 const ApplyToSubDatabaseButton = genApplyToSubDatabaseButton("add");
 const DeleteFromSubDatabaseButton = genApplyToSubDatabaseButton("delete");
@@ -329,6 +342,13 @@ export const FileNameToExcludeChildrenManager = genTypedConfigmanager(
 export const AbsolutePathToExcludeManager = genTypedConfigmanager(
   ConfigLineType.excludeAbsPath,
   "Absolute paths to exclude",
+  undefined,
+  true,
+  true
+);
+export const RelativePathToExcludeManager = genTypedConfigmanager(
+  ConfigLineType.excludePathRelativeToCurrent,
+  "Relative paths to exclude",
   undefined,
   true,
   true

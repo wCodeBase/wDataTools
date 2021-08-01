@@ -11,6 +11,7 @@ export enum ConfigLineType {
   userPreference,
   serverSetting,
   excludeAbsPath,
+  excludePathRelativeToCurrent,
 }
 
 export type TypeServerSetting = {

@@ -158,9 +158,16 @@ export const scanPath = async (
             where: { type: ConfigLineType.excludeAbsPath },
           })
         ).map((v) => new RegExp(v.content));
+        const relativeRegs = (
+          await ConfigLine.find({
+            where: { type: ConfigLineType.excludePathRelativeToCurrent },
+          })
+        ).map((v) => new RegExp(v.content));
         if (!regs.length) return undefined;
         return (absPath: string) => {
-          return regs.some((v) => v.test(absPath));
+          if (regs.some((v) => v.test(absPath))) return true;
+          const relativePath = path.relative(config.finderRoot, absPath);
+          return !!relativeRegs.some((v) => v.test(relativePath));
         };
       })();
       const fileInfoTableName = getEntityTableName(FileInfo);

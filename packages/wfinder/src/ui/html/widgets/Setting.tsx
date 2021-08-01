@@ -17,6 +17,7 @@ import {
   AbsolutePathToExcludeManager,
   FileNameToExcludeChildrenManager,
   FileNameToExcludeManager,
+  RelativePathToExcludeManager,
   RemoteWfinderManager,
 } from "./TypedConfigLineManager";
 
@@ -29,6 +30,7 @@ const Segments = {
   ScanPathManager,
   FileNameToExcludeManager,
   FileNameToExcludeChildrenManager,
+  RelativePathToExcludeManager,
   AbsolutePathToExcludeManager,
   DbIncludedManager,
   RemoteWfinderManager,
@@ -44,6 +46,7 @@ const SubDbSegments = {
   ScanPathManager,
   FileNameToExcludeManager,
   FileNameToExcludeChildrenManager,
+  RelativePathToExcludeManager,
   AbsolutePathToExcludeManager,
   DbIncludedManager,
   About,

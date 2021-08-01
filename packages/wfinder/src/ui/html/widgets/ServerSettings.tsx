@@ -2,11 +2,7 @@ import { LoadingOutlined } from "@ant-design/icons";
 import { message, Modal, Spin, Switch, Tag as AntTag } from "antd";
 import { isEmpty } from "lodash";
 import React from "react";
-import {
-  EvFinderState,
-  EvLog,
-  EvUiCmdResult,
-} from "../../../finder/events/events";
+import { EvFinderState, EvUiCmdResult } from "../../../finder/events/events";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import { getLocalRootContext } from "../../../finder/events/webEvent";
 import {
