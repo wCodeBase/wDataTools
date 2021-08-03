@@ -17,7 +17,7 @@ import { FileType } from "../../../finder/types";
 import { useStableState } from "../../hooks/hooks";
 import { useFinderReady } from "../../hooks/webHooks";
 import { simpleGetKey } from "../../tools";
-import { showModal } from "../uiTools";
+import { messageError, showModal } from "../uiTools";
 
 const _formatNumber = format(".3s");
 const formatNumber = (num: number) => {
@@ -150,7 +150,7 @@ export const Search = ({ className = "" }) => {
     regMatchInput: "",
     searching: false,
     complexSearch: false,
-    records: null as TypeMsgSearchResultItem[] | null,
+    records: undefined as TypeMsgSearchResultItem[] | undefined,
     switchComplexSearch: () => {
       setState({ complexSearch: !state.complexSearch });
     },
@@ -175,26 +175,21 @@ export const Search = ({ className = "" }) => {
       }
       setState({ searching: true });
       const { records, ...rest } = state;
-      const res = await executeUiCmd("search", {
-        cmd: "search",
-        data: {
-          ...rest,
-          ...(state.complexSearch
-            ? {}
-            : { fullMatchInput: "", regMatchInput: "" }),
-        },
-        context: getLocalContext(),
-      }).catch((e) => {
-        message.error(String(e));
-        return null;
-      });
+      const res = await messageError(
+        executeUiCmd("search", {
+          cmd: "search",
+          data: {
+            ...rest,
+            ...(state.complexSearch
+              ? {}
+              : { fullMatchInput: "", regMatchInput: "" }),
+          },
+          context: getLocalContext(),
+        })
+      );
       if (res) {
-        if (res.result.error) {
-          message.error(res.result.error);
-        } else {
-          const { records, skip, total } = res.result;
-          setState({ records, skip, total });
-        }
+        const { records, skip, total } = res.result;
+        setState({ records, skip, total });
       }
       setState({ searching: false });
     },
@@ -210,7 +205,7 @@ export const Search = ({ className = "" }) => {
   }));
 
   useFinderReady(() => {
-    setState({ skip: 0, total: 0, records: null, keywords: [] });
+    setState({ skip: 0, total: 0, records: undefined, keywords: [] });
   });
 
   const tableAreaRef = useRef<HTMLDivElement>(null);
@@ -314,7 +309,7 @@ export const Search = ({ className = "" }) => {
         ref={tableAreaRef}
         className="overflow-auto mt-2 flex-grow p-1 rounded-sm shadow-sm bg-white flex justify-center items-center"
       >
-        {!state.records?.length ? (
+        {!state.records?.length && !state.skip ? (
           <Empty />
         ) : (
           <Table

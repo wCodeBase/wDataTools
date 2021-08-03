@@ -47,3 +47,10 @@ export const parseAddress = (address: string) => {
   const port = parseInt(portStr);
   return { host, port };
 };
+
+export const concatUrls = (...urls: string[]): string => {
+  if (urls.length <= 1) return urls[0] || "";
+  const [url, ...rest] = urls;
+  rest[0] = url.replace(/\/+$/, "") + rest[0].replace(/^\/*/, "/");
+  return concatUrls(...rest);
+};

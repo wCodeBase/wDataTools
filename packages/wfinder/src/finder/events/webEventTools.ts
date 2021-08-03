@@ -3,6 +3,7 @@ import {
   EVENT_WEBSOCKET_ROUTE,
 } from "../../constants";
 import { joinContextPipe, switchEvent } from "../../finder/events/eventGateway";
+import { concatUrls } from "../../tools/tool";
 import { TypeDbInfo } from "../types";
 import { WebEventStatus, wEvEventStatus } from "./../../finder/events/webEvent";
 import { ComsumableEvent } from "./eventLib";
@@ -24,9 +25,10 @@ export const webInitEvent = (() => {
     throwError?: boolean
   ): Promise<void>;
   async function initEvent(
-    remoteContext?: string[],
+    _remoteContext?: string[],
     throwError = false
   ): Promise<TypeDbInfo | void> {
+    const remoteContext = _remoteContext ? [..._remoteContext] : undefined;
     gatewaySend.destory();
     let currentGatewaySend = (gatewaySend = new ComsumableEvent<string>());
     wEvEventStatus.next(WebEventStatus.connecting);
@@ -54,9 +56,10 @@ export const webInitEvent = (() => {
           if (!isWebElectron) remoteContext.unshift(location.origin);
         }
         const url = remoteContext?.shift() || location.origin;
-        const wss = `${url.replace(/^http/, "ws")}${
+        const wss = concatUrls(
+          url.replace(/^http/, "ws"),
           remoteContext ? EVENT_TRANSFER_WEBSOCKET_ROUTE : EVENT_WEBSOCKET_ROUTE
-        }`;
+        );
         const tryReconnect = () => setTimeout(() => connect(true), 3000);
         let currentSocket: WebSocket | undefined;
         const closeCurrentSocket = () => {
@@ -116,7 +119,8 @@ export const webInitEvent = (() => {
                   rej(
                     `Failed to switch remote context: ${msg.result.error.msg}, occurred on context: ${msg.result.error.context}`
                   );
-                } else result = msg.result.data;
+                } else
+                  result = { ...msg.result.data, remoteUrls: _remoteContext };
               }
               socket.onclose = () => {
                 wEvEventStatus.next(WebEventStatus.broken);

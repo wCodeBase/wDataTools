@@ -46,18 +46,18 @@ export const ConsoleOutput = defaultPropsFc(
       errorCount: 0,
       warningCount: 0,
       lastImportOutput: null as null | Output,
-      addNewOutput: (msg: Omit<Output, "at">) => {
-        if (!msg.message) return;
-        const output = { at: new Date(), ...msg };
+      addNewOutput: (output: Output) => {
+        if (!output.message) return;
+        if (Date.now() - output.at.valueOf() > 5000) return;
         state.outputs.unshift(output);
         if (state.outputs.length > 1.2 * OUTPUT_LIMIT)
           state.outputs = state.outputs.slice(0, OUTPUT_LIMIT);
         state.showShine = true;
-        if (msg.type === "error") state.errorCount++;
-        else if (msg.type === "warn") state.warningCount++;
+        if (output.type === "error") state.errorCount++;
+        else if (output.type === "warn") state.warningCount++;
         const lastImportant =
           typeImportanceMap[state.lastImportOutput?.type || "log"];
-        if (typeImportanceMap[msg.type] >= lastImportant)
+        if (typeImportanceMap[output.type] >= lastImportant)
           state.lastImportOutput = output;
         update();
         state.hideOutput();

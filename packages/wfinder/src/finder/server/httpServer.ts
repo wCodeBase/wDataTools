@@ -7,9 +7,9 @@ import * as path from "path";
 import WebSocket from "ws";
 import { EVENT_WEBSOCKET_ROUTE, localhost } from "../../constants";
 import { JsonMore } from "../../tools/json";
-import { parseAddress } from "../../tools/tool";
+import { concatUrls, parseAddress } from "../../tools/tool";
 import { Config, isDev } from "../common";
-import { getFinderCoreInfo } from "../db";
+import { getFinderCoreInfo, switchDb } from "../db";
 import { cEvFinderState, cTypeServerState } from "../events/core/coreEvents";
 import { waitWsConnected } from "../events/core/coreState";
 import {
@@ -221,7 +221,7 @@ export const createHttpServer = async (
                 if (url) {
                   const doConnect = async () => {
                     const newNext = await waitWsConnected(
-                      url + EVENT_TRANSFER_WEBSOCKET_ROUTE,
+                      concatUrls(url, EVENT_TRANSFER_WEBSOCKET_ROUTE),
                       true
                     );
                     nextSocket = newNext;
@@ -289,10 +289,8 @@ export const createHttpServer = async (
                     throw new Error(
                       `callOrmMethod failed, method not found: ${data.data.method}`
                     );
-                  const res = await method.call(
-                    entity,
-                    ...data.data.args,
-                    data.data.queryLimit
+                  const res: any = await switchDb(Config, () =>
+                    method.call(entity, ...data.data.args, data.data.queryLimit)
                   );
                   return res;
                 }

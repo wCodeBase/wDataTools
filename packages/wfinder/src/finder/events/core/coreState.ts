@@ -3,12 +3,15 @@ import { Subscription } from "rxjs";
 import { debounceTime } from "rxjs/operators";
 import Websocket from "ws";
 import { EVENT_ORM_METHOD_WEBSOCKET_ROUTE } from "../../../constants";
+import { concatUrls } from "../../../tools/tool";
 import { ConfigLine } from "../../entities/ConfigLine";
 import { ConfigLineType } from "../../types";
+import { EvLog, EvLogWarn } from "../events";
 import { genRemoteCaller, uiMsgTimeout } from "../eventTools";
 import {
   cEvConfigLineChange,
   cEvFinderState,
+  cEvRefreshRemote,
   cTypeLinkedRemote,
 } from "./coreEvents";
 import { JsonMoreEntity } from "./coreTypes";
@@ -73,15 +76,15 @@ export function waitWsConnected(
 
 export const { linkRemotes, unlinkRemotes } = (() => {
   let interval: NodeJS.Timeout | undefined;
-  let subscribe: Subscription | undefined;
+  let subscribes: Subscription[] | undefined;
   const doClear = () => {
     if (interval) {
       clearInterval(interval);
       interval = undefined;
     }
-    if (subscribe) {
-      subscribe.unsubscribe;
-      subscribe = undefined;
+    if (subscribes) {
+      subscribes.forEach((s) => s.unsubscribe());
+      subscribes = undefined;
     }
   };
   const linkRemotes = (retryInterval = 60000) => {
@@ -96,7 +99,8 @@ export const { linkRemotes, unlinkRemotes } = (() => {
         (v) =>
           !v.disabled &&
           (!linkedRemote[v.content] ||
-            (retry && linkedRemote[v.content].unavailable))
+            (retry && linkedRemote[v.content].unavailable) ||
+            linkedRemote[v.content].broken)
       );
       const urlRemoteMap = new Map(remotes.map((v) => [v.content, v]));
       const toDestoryLinks = Object.entries(linkedRemote).filter(
@@ -113,14 +117,17 @@ export const { linkRemotes, unlinkRemotes } = (() => {
           link.caller = undefined;
           link.socket?.close();
         });
-        const doLink = async (v: ConfigLine) => {
+        const doLink = async (
+          v: ConfigLine,
+          linkedRemote = newLinkedRemote
+        ) => {
           const socket = await waitWsConnected(
-            v.content + EVENT_ORM_METHOD_WEBSOCKET_ROUTE,
+            concatUrls(v.content, EVENT_ORM_METHOD_WEBSOCKET_ROUTE),
             false,
             retry
           );
           if (!socket) {
-            newLinkedRemote[v.content] = { unavailable: true };
+            linkedRemote[v.content] = { unavailable: true };
           } else {
             const caller = genRemoteCaller(
               (data) => socket.send(data),
@@ -134,19 +141,21 @@ export const { linkRemotes, unlinkRemotes } = (() => {
                 if (res.reconnectTimeout) clearTimeout(res.reconnectTimeout);
                 if (!cEvFinderState.value.linkedRemote[v.content]) return;
                 res.reconnectTimeout = setTimeout(() => {
-                  doLink(v).then(() => {
+                  doLink(v, cEvFinderState.value.linkedRemote).then(() => {
                     cEvFinderState.next({
                       linkedRemote: { ...cEvFinderState.value.linkedRemote },
                     });
+                    EvLog("Reconnect to remote : " + v.content);
                   });
                 }, 10000);
                 cEvFinderState.next({
                   linkedRemote: { ...cEvFinderState.value.linkedRemote },
                 });
+                EvLogWarn("Remote connection broken: " + v.content);
               }
             });
             const res: cTypeLinkedRemote = { socket, caller };
-            newLinkedRemote[v.content] = res;
+            linkedRemote[v.content] = res;
           }
         };
         await Promise.all(toLinkRemotes.map((v) => doLink(v)));
@@ -159,9 +168,10 @@ export const { linkRemotes, unlinkRemotes } = (() => {
           });
       }
     };
-    subscribe = cEvConfigLineChange
-      .pipe(debounceTime(500))
-      .subscribe(() => sync());
+    subscribes = [
+      cEvConfigLineChange.pipe(debounceTime(500)).subscribe(() => sync()),
+      cEvRefreshRemote.subscribe(() => sync(true)),
+    ];
     interval = setInterval(() => sync(true), retryInterval);
     sync();
   };

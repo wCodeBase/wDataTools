@@ -4,6 +4,7 @@ import { joinToAbsolute } from "../../tools/pathTool";
 import { ConfigLineType, getDbInfoId, TypeDbInfo } from "./../types";
 import { ShallowBehaviorSubject } from "./eventLib";
 import { EvFinderReady, EvFinderState, EvUiCmd, EvUiCmdResult } from "./events";
+import immer from "immer";
 
 export enum WebEventStatus {
   none,
@@ -22,6 +23,7 @@ export type WebContext = {
   localOptions?: TypeDbInfo[];
   remoteOptionUrls?: string[];
   remoteUrls?: string[];
+  loading?: boolean;
 };
 
 export const wEvGlobalState = new ShallowBehaviorSubject({
@@ -45,20 +47,23 @@ EvUiCmdResult.subscribe((msg) => {
     if (!type || (type === ConfigLineType.remoteUrl && isEmpty(rest))) {
       if (!wEvFinderReady.value || !EvFinderState.value.config) return;
       const dbId = getDbInfoId(msg.context);
-      const context = wEvGlobalState.value.contextStack.find(
-        (v) => getDbInfoId(last(v.localContexts)) === dbId
-      );
-      if (context) {
-        const newRemotes = msg.result.results
-          .filter((v) => v.type === ConfigLineType.remoteUrl && !v.disabled)
-          .map((v) => v.content);
-        if (!isEqual(newRemotes, context.remoteOptionUrls)) {
-          context.remoteOptionUrls = newRemotes;
-          wEvGlobalState.next({
-            contextStack: [...wEvGlobalState.value.contextStack],
-          });
+      const contextStack = immer(
+        wEvGlobalState.value.contextStack,
+        (contextStack) => {
+          const context = contextStack.find(
+            (v) => getDbInfoId(last(v.localContexts)) === dbId
+          );
+          if (context) {
+            const newRemotes = msg.result.results
+              .filter((v) => v.type === ConfigLineType.remoteUrl && !v.disabled)
+              .map((v) => v.content);
+            if (!isEqual(newRemotes, context.remoteOptionUrls)) {
+              context.remoteOptionUrls = newRemotes;
+            }
+          }
         }
-      }
+      );
+      wEvGlobalState.next({ contextStack });
     }
   }
   // Update sub-database or ScanPath external database context options

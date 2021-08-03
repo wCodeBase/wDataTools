@@ -1,3 +1,4 @@
+import { LoadingOutlined } from "@ant-design/icons";
 import { message, Popover, Tooltip } from "antd";
 import { last } from "lodash";
 import React, { useRef } from "react";
@@ -38,8 +39,11 @@ const switchContext = async (
     if (!remoteUrls) {
       await webInitEvent(undefined, true);
     } else {
+      context.loading = true;
       wEvGlobalState.next({ contextStack: newContexts });
-      const res = await webInitEvent(remoteUrls, true);
+      const res = await webInitEvent(remoteUrls, true).finally(
+        () => (context.loading = false)
+      );
       if (!context.localContexts.length) context.localContexts = [res];
     }
     wEvGlobalState.next({ contextStack: newContexts });
@@ -56,9 +60,9 @@ const switchContext = async (
 };
 
 export const ContextPannel = React.memo(() => {
-  const [{ contextStack: contexts }] = usePickBehaviorSubjectValue(
+  const [contexts] = usePickBehaviorSubjectValue(
     wEvGlobalState,
-    (v) => v
+    (v) => v.contextStack
   );
 
   return (
@@ -89,11 +93,18 @@ export const ContextPannel = React.memo(() => {
                     {last(context.localContexts)?.isSubDb && (
                       <SubDatabaseHint className="ml-0.5" />
                     )}
+                    {context.loading && (
+                      <span className="ml-0.5 inline-block">
+                        <span className="flex">
+                          <LoadingOutlined />
+                        </span>
+                      </span>
+                    )}
                   </div>
                   {!!context.localContexts[0]?.remoteUrls && (
                     <div>
                       <div className="flex flex-row overflow-x-auto text-amber-400 font-bold">
-                        Remote paths:
+                        <span className="mr-0.5">Remote paths:</span>
                         {context.localContexts[0].remoteUrls.join(" >> ")}
                       </div>
                     </div>

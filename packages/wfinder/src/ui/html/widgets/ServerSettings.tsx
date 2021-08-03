@@ -4,7 +4,11 @@ import { isEmpty } from "lodash";
 import React from "react";
 import { EvFinderState, EvUiCmdResult } from "../../../finder/events/events";
 import { executeUiCmd } from "../../../finder/events/eventTools";
-import { getLocalRootContext } from "../../../finder/events/webEvent";
+import {
+  getLocalRootContext,
+  wEvGlobalState,
+} from "../../../finder/events/webEvent";
+import { isWebElectron } from "../../../finder/events/webEventTools";
 import {
   ConfigLineType,
   defaultServerSetting,
@@ -23,8 +27,10 @@ import { SimpleInput } from "../components/SimpleInput";
 import { Tag } from "../components/Tag";
 import { messageError } from "../uiTools";
 
-export const ServerSettings = defaultPropsFc(
-  { titleClassName: "", className: "" },
+const defaultServerSettingProps = { titleClassName: "", className: "" };
+
+export const MServerSettings = defaultPropsFc(
+  defaultServerSettingProps,
   (props) => {
     const [state, setState] = useStableState(() => ({
       setting: defaultServerSetting,
@@ -259,6 +265,17 @@ export const ServerSettings = defaultPropsFc(
         </Spin>
       </div>
     );
+  },
+  true
+);
+
+export const ServerSettings = defaultPropsFc(
+  defaultServerSettingProps,
+  (props) => {
+    // Only in electron root context can change server settings.
+    if (!isWebElectron || wEvGlobalState.value.contextStack.length > 1)
+      return null;
+    return <MServerSettings {...props} />;
   },
   true
 );

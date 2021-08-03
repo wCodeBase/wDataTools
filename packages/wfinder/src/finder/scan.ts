@@ -19,7 +19,12 @@ import { DbIncluded } from "./entities/DbIncluded";
 import { FileInfo, restoreText } from "./entities/FileInfo";
 import { ScanPath } from "./entities/ScanPath";
 import { cEvScanBrake } from "./events/core/coreEvents";
-import { EvFinderStatus, EvLogError, EvUiCmdMessage } from "./events/events";
+import {
+  EvFinderStatus,
+  EvLogError,
+  EvUiCmdMessage,
+  sendUiCmdMessage,
+} from "./events/events";
 import { FinderStatus } from "./events/types";
 import { ConfigLineType, FileType, getDbInfoId } from "./types";
 
@@ -39,7 +44,7 @@ const testAndScanSubDb = async (
     fs.statSync(testDbPath).isFile() &&
     pathPem.canWrite(testDbPath)
   ) {
-    EvUiCmdMessage.next({
+    sendUiCmdMessage({
       type: "log",
       message: `Sub database found: ${testDbPath}`,
     });
@@ -176,7 +181,7 @@ export const scanPath = async (
         const item = scanStack.pop();
         if (!item) break;
         if (item.depth > MAX_PATH_DEPTH) {
-          EvUiCmdMessage.next({
+          sendUiCmdMessage({
             type: "error",
             message: `Error: Reach max path depth(${MAX_PATH_DEPTH}): ${item.absPath}`,
           });
@@ -194,7 +199,7 @@ export const scanPath = async (
           if (scanBrake.value) break;
           const echo = await interactYield(5, 5000);
           if (echo) {
-            EvUiCmdMessage.next({
+            sendUiCmdMessage({
               type: "log",
               message:
                 `Current scan (count：${clsVars.scanedFileCount}): ` +
@@ -211,7 +216,7 @@ export const scanPath = async (
             continue;
           }
           if (!fs.existsSync(chilPath)) {
-            EvUiCmdMessage.next({
+            sendUiCmdMessage({
               type: "warn",
               message: "Unexist file path found: " + chilPath,
             });
@@ -391,11 +396,11 @@ export const doScan = async (
       });
       await doScan(config, ignoreCtime, false);
       if (await checkScanBrake(paths, config))
-        EvUiCmdMessage.next({
+        sendUiCmdMessage({
           type: "warn",
           message: "Scan stopped manually.",
         });
-      EvUiCmdMessage.next({
+      sendUiCmdMessage({
         type: "log",
         message: `Scan finished, cost ${
           Date.now() - clsScan.get().startAt.valueOf()
@@ -427,14 +432,14 @@ export const doScan = async (
         scanPaths.find((v) => v.path !== "./") &&
         !scanPaths.find((v) => v.path === "./")
       ) {
-        EvUiCmdMessage.next({
+        sendUiCmdMessage({
           type: "warn",
           message: `Only partial sub path will be scan in ${
             config.finderRoot
           }: ${scanPaths.map((v) => v.path).join(";")} `,
         });
       }
-      EvUiCmdMessage.next({
+      sendUiCmdMessage({
         type: "log",
         message: `${scanPaths.length} path to scan.`,
       });
@@ -452,7 +457,7 @@ export const doScan = async (
             mScanBrake.next(true);
           }
         });
-        EvUiCmdMessage.next({ type: "log", message: `Scan path: ${absPath}` });
+        sendUiCmdMessage({ type: "log", message: `Scan path: ${absPath}` });
         try {
           const pathPerm = pathPem.getPem(absPath);
           const pathScanStartAt = Date.now();
@@ -460,7 +465,7 @@ export const doScan = async (
             throw new Error("Path to scan is no readable: " + absPath);
           } else if (isPathInclude(config.finderRoot, absPath)) {
             if (clsScan.get().Scaned.has(absPath)) {
-              EvUiCmdMessage.next({
+              sendUiCmdMessage({
                 type: "warn",
                 message: "Skip scaned path: " + absPath,
               });
@@ -490,7 +495,7 @@ export const doScan = async (
               );
             }
           } else {
-            EvUiCmdMessage.next({
+            sendUiCmdMessage({
               type: "log",
               message: "Switch to external scan path: " + absPath,
             });
@@ -521,13 +526,13 @@ export const doScan = async (
           else pathToScan.lastSuccessCost = Date.now() - pathScanStartAt;
           await pathToScan.save();
           if (mScanBrake.value) {
-            EvUiCmdMessage.next({
+            sendUiCmdMessage({
               type: "warn",
               message: `Scan stopped manually: ${absPath}`,
             });
             continue;
           }
-          EvUiCmdMessage.next({
+          sendUiCmdMessage({
             type: "log",
             message: `Path scan finished: ${absPath}`,
           });
@@ -537,7 +542,7 @@ export const doScan = async (
           await pathToScan.save().catch((e) => {
             EvLogError("Error: Save scan path failed: ", e);
           });
-          EvUiCmdMessage.next({
+          sendUiCmdMessage({
             type: "error",
             message: `Scan path failed, path: ${absPath}, error: ${String(e)}`,
           });

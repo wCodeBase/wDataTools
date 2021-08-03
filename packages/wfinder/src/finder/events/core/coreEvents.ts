@@ -1,5 +1,5 @@
 import { Server } from "http";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, Subject } from "rxjs";
 import { ObjectType } from "typeorm";
 import WebSocket from "ws";
 import { BaseDbInfoEntity } from "../../entities/BaseDbInfoEntity";
@@ -77,3 +77,5 @@ export const cEvConfigLineChange = new JsonSubject<TypeDbInfo | null>();
 
 export const cEvScanPathChange = new JsonSubject<TypeDbInfo | null>();
 export const cEvDbIncludedChange = new JsonSubject<TypeDbInfo | null>();
+
+export const cEvRefreshRemote = new Subject<void>();

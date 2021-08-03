@@ -201,6 +201,7 @@ type TypeMsgCoreManage = {
       total: number;
     };
   };
+  refreshRemote: {}; // eslint-disable-line
 };
 
 export type TypeDbIncludedItem = Pick<DbIncluded, "path" | "dbName" | "dbInfo">;
@@ -255,6 +256,7 @@ export const judgeUiMsgResultType = <T extends keyof TypeCmdUiMsgMap>(
 
 export type TypeLogMessage = {
   message: string;
+  at: Date;
   type: "log" | "warn" | "error";
 };
 

@@ -120,6 +120,7 @@ export const DbIncludedManager = defaultPropsFc(
           tableTitle={tableTitle}
           titleClassName={props.titleClassName}
           context={state.context}
+          readOnly={scanning}
         />
       </div>
     );

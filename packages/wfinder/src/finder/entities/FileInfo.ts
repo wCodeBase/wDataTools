@@ -167,7 +167,7 @@ export class FileInfo extends BaseDbInfoEntity {
       ? query(this)
       : this.queryAllDbIncluded(query));
     let rTotal = 0;
-    if (!getConfig().isSubDb) {
+    if (!onlyCurrentDb && !getConfig().isSubDb) {
       const remoteQuery = this.callRemoteStaticMethod(
         "countByMatchName",
         [keywords, fullMatchStr, regMatchStr, onlyCurrentDb],
@@ -255,7 +255,13 @@ export class FileInfo extends BaseDbInfoEntity {
     if (pos < end && !getConfig().isSubDb) {
       const remoteQuery = this.callRemoteStaticMethod(
         "findByMatchName",
-        [keywords, fullMatchStr, regMatchStr, take, skip],
+        [
+          keywords,
+          fullMatchStr,
+          regMatchStr,
+          end - pos,
+          Math.max(0, skip - pos),
+        ],
         queryLimit
       );
       let rRes = await remoteQuery.next();

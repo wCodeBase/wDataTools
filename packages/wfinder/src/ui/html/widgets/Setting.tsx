@@ -22,11 +22,7 @@ import {
 } from "./TypedConfigLineManager";
 
 const Segments = {
-  ...(isWebElectron
-    ? {
-        ServerSettings,
-      }
-    : {}),
+  ServerSettings,
   ScanPathManager,
   FileNameToExcludeManager,
   FileNameToExcludeChildrenManager,

@@ -19,6 +19,7 @@ import {
   exSaveConfigLine,
 } from "./../executors";
 import { doScan, genExternalSubDbPath, stopScan } from "./../scan";
+import { cEvRefreshRemote } from "./core/coreEvents";
 import { EvFinderStatus, EvLogError, EvUiCmd, EvUiCmdResult } from "./events";
 import { uiMsgTimeout } from "./eventTools";
 import {
@@ -224,6 +225,9 @@ export const uiCmdExecutor = async function (msg: TypeUiMsgData | null) {
             total: await FileInfo.countAllSubDatabases(),
           },
         };
+      } else if (msg.cmd === "refreshRemote") {
+        cEvRefreshRemote.next();
+        cmdResult = { cmd: "refreshRemote", result: {} };
       } else {
         throw new Error(`Command will not be processed.`);
       }

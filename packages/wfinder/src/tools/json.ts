@@ -144,11 +144,15 @@ export const buildJsonMore = <T>(
             });
           }
         } else if (srcValue instanceof Object) {
-          existObjPathMap.set(srcValue, path);
-          const [first, ...rest] = Object.keys(srcValue);
-          if (first !== undefined)
-            pathStack.push({ path: [...path, first], rest });
-          value = {};
+          if (srcValue instanceof Function) {
+            value = canSkipValue;
+          } else {
+            existObjPathMap.set(srcValue, path);
+            const [first, ...rest] = Object.keys(srcValue);
+            if (first !== undefined)
+              pathStack.push({ path: [...path, first], rest });
+            value = {};
+          }
         } else {
           throw new Error(
             `Failed to pack jsonMore value, unknown type: ${srcValue}`

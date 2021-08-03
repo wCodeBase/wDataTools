@@ -1,10 +1,13 @@
-import { Popover } from "antd";
+import { message, Popover } from "antd";
 import { isEmpty } from "lodash";
-import React, { forwardRef, useMemo, useRef } from "react";
+import React, { forwardRef, useCallback, useMemo, useRef } from "react";
 import { EvFinderState } from "../../../finder/events/events";
+import { executeUiCmd } from "../../../finder/events/eventTools";
 import { TypeLinkedRemoteItem } from "../../../finder/events/types";
 import { usePickBehaviorSubjectValue } from "../../hooks/hooks";
 import { defaultPropsFc } from "../../tools/fc";
+import { messageError } from "../uiTools";
+import { RefreshIcon } from "./RefreshIcon";
 
 const totalLightCount = 3;
 const lightArray = new Array(totalLightCount).fill(null);
@@ -78,6 +81,13 @@ export const LinkedRemoteStatusList = defaultPropsFc(
       (v) => v.remotes
     );
 
+    const refresh = useCallback(async () => {
+      const res = await messageError(
+        executeUiCmd("refreshRemote", { cmd: "refreshRemote" })
+      );
+      if (res) message.success("Refresh remote success");
+    }, []);
+
     return (
       <div
         className={
@@ -85,7 +95,10 @@ export const LinkedRemoteStatusList = defaultPropsFc(
           props.className
         }
       >
-        <div className="font-bold">Remote connections:</div>
+        <div className="font-bold">
+          Remote connections
+          <RefreshIcon onClick={refresh} />:
+        </div>
         <div className="overflow-auto">
           {Object.entries(remotes).map(([url, remote], index) => {
             const status = getRemoteItemStatus(remote);

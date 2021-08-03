@@ -56,17 +56,20 @@ export const EvConsole = new JsonBehaviorSubject<TypeLogMessage | undefined>(
 );
 
 export const EvLog = (...args: any[]) =>
-  EvConsole.next({ type: "log", message: args.join(", ") });
+  EvConsole.next({ type: "log", message: args.join(", "), at: new Date() });
 export const EvLogError = (...args: any[]) =>
-  EvConsole.next({ type: "error", message: args.join(", ") });
+  EvConsole.next({ type: "error", message: args.join(", "), at: new Date() });
 export const EvLogWarn = (...args: any[]) =>
-  EvConsole.next({ type: "warn", message: args.join(", ") });
+  EvConsole.next({ type: "warn", message: args.join(", "), at: new Date() });
 
 export const EvUiCmd = new JsonBehaviorSubject<TypeUiMsgData | null>(null);
 
 export const EvUiCmdResult = new JsonSubject<TypeUiMsgResult | MsgHeartbeat>();
 
 export const EvUiCmdMessage = new JsonSubject<TypeLogMessage>();
+
+export const sendUiCmdMessage = (msg: Omit<TypeLogMessage, "at">) =>
+  EvUiCmdMessage.next({ ...msg, at: new Date() });
 
 export const EvUiLaunched = new ShallowJsonBehaviorSubject<TypeUiStatus>({});
 
