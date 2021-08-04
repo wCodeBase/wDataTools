@@ -132,6 +132,35 @@ export class FileInfo extends BaseDbInfoEntity {
     return sum(res);
   }
 
+  /**
+   * Count local and remote FileInfo
+   * @returns [localCount + remoteTotal, localCount, remoteTotal]
+   */
+  static async countAllDatabases(queryLimit = DEFAULT_QUERY_LIMIT) {
+    const localCount = await this.countAllSubDatabases();
+    let remoteTotal = 0;
+    if (!getConfig().isSubDb) {
+      const remoteQuery = this.callRemoteStaticMethod(
+        "countAllDatabases",
+        [],
+        queryLimit
+      );
+      let rRes = await remoteQuery.next();
+      while (!rRes.done) {
+        const { result } = rRes.value.rRes;
+        if (result instanceof Array) remoteTotal += result[0] as number;
+        else {
+          EvLogError(
+            `Error: remote call countByMatchName return invalid value: `,
+            result
+          );
+        }
+        rRes = await remoteQuery.next();
+      }
+    }
+    return [localCount + remoteTotal, localCount, remoteTotal];
+  }
+
   static async countByMatchName(
     keywords: string[],
     fullMatchStr?: string,

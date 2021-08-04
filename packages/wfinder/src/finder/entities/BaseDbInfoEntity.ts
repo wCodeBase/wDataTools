@@ -95,9 +95,9 @@ export class BaseDbInfoEntity extends BaseEntity {
   ) {
     if (queryLimit.remoteLimit < 1) return undefined;
     const newQueryLimit: TypeQueryLimit = {
-      dbThumnailStack: [
-        ...queryLimit.dbThumnailStack,
-        (await getFinderCoreInfo()).thumnail,
+      dbThumbnailStack: [
+        ...queryLimit.dbThumbnailStack,
+        (await getFinderCoreInfo()).thumbnail,
       ],
       remoteLimit: queryLimit.remoteLimit - 1,
     };

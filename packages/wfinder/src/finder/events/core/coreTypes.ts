@@ -28,7 +28,10 @@ export const JsonMoreEntity = buildJsonMoreWithDefaultPackers([
 ]);
 
 export type cTypeJsonMoreEntitySpecial = FileInfo | TypeDefaultSpecialJsonType;
-export type cTypeImplementedOrmCall = "countByMatchName" | "findByMatchName";
+export type cTypeImplementedOrmCall =
+  | "countByMatchName"
+  | "findByMatchName"
+  | "countAllDatabases";
 export type cTypeOrmCallDef = {
   callOrmMethod: {
     data: {

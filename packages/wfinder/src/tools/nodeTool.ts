@@ -9,7 +9,7 @@ export const exit = (reason: string) => {
   process.exit();
 };
 
-export const genDbThumnail = (dbPath: string) => {
+export const genDbThumbnail = (dbPath: string) => {
   const hash = createHash("sha256");
   hash.update(Date.now().toString());
   hash.update(

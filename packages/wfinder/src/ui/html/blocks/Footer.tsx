@@ -1,65 +1,22 @@
 import { LoadingOutlined } from "@ant-design/icons";
 import React from "react";
-import {
-  EvDatabaseInfos,
-  EvFileInfoChange,
-  EvUiCmdResult,
-  useFinderStatus,
-} from "../../../finder/events/events";
-import { executeUiCmd } from "../../../finder/events/eventTools";
+import { useFinderStatus } from "../../../finder/events/events";
 import { BUSY_FINDER_STATES, FinderStatus } from "../../../finder/events/types";
-import {
-  getLocalContext,
-  getLocalRootContext,
-  wEvFinderReady,
-} from "../../../finder/events/webEvent";
-import { getDbInfoId } from "../../../finder/types";
-import { useStableState, useSubjectCallback } from "../../hooks/hooks";
+import { wEvGlobalState } from "../../../finder/events/webEvent";
+import { useBehaviorSubjectValue } from "../../hooks/hooks";
 import { defaultPropsFc } from "../../tools/fc";
 import { ConsoleOutput } from "../widgets/ConsoleOutput";
 
 export const TotalFile = defaultPropsFc({ className: "" }, (props) => {
-  const [state, setState] = useStableState(() => ({
-    total: 0,
-    getTotal: async () => {
-      if (getLocalContext() !== getLocalRootContext()) {
-        await executeUiCmd("countAllFileInfo", {
-          cmd: "countAllFileInfo",
-          context: getLocalContext(),
-        });
-      }
-    },
-  }));
-
-  useSubjectCallback(EvDatabaseInfos, (v) => {
-    if (getLocalContext() === getLocalRootContext()) {
-      setState({ total: v.fileInfoCount });
-    }
-  });
-
-  useSubjectCallback(EvFileInfoChange, () => {
-    if (!wEvFinderReady.value) return;
-    state.getTotal();
-  });
-
-  useSubjectCallback(EvUiCmdResult, (msg) => {
-    if (
-      msg.cmd === "countAllFileInfo" &&
-      !msg.result.error &&
-      getDbInfoId(msg.context) === getDbInfoId(getLocalContext())
-    ) {
-      setState({ total: msg.result.total });
-    }
-  });
-
-  useSubjectCallback(wEvFinderReady, (ready) => {
-    if (ready) state.getTotal();
-  });
+  const [state] = useBehaviorSubjectValue(wEvGlobalState);
 
   return (
     <div className={" " + props.className}>
-      <span className="font-bold">Total file: </span>
-      <span>{state.total}</span>
+      {/* <span className="font-bold">Total file: </span> */}
+      <span>
+        {state.total} files
+        {!!state.remoteTotal && <span>, {state.localTotal} in local</span>}
+      </span>
     </div>
   );
 });

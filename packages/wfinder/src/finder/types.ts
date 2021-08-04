@@ -63,11 +63,11 @@ export type HttpServerOption = {
 };
 
 export type TypeFinderCoreInfo = {
-  thumnail: string;
+  thumbnail: string;
 };
 
 export type TypeQueryLimit = {
-  dbThumnailStack: string[];
+  dbThumbnailStack: string[];
   remoteLimit: number;
 };
 

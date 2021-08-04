@@ -25,7 +25,7 @@ export const Header = () => {
         <Box marginLeft={2}>
           <Text>file count: </Text>
           <Box>
-            <Text color="blueBright">{String(dbInfo.fileInfoCount)}</Text>
+            <Text color="blueBright">{String(dbInfo.totalFileInfoCount)}</Text>
           </Box>
         </Box>
       </Box>

@@ -27,7 +27,7 @@ export const entityChangeWatchingSubjectMap = new Map<
 >();
 
 export const DEFAULT_QUERY_LIMIT = {
-  dbThumnailStack: [],
+  dbThumbnailStack: [],
   remoteLimit: 10,
 };
 

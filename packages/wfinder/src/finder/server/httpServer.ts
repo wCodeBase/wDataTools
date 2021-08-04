@@ -269,10 +269,12 @@ export const createHttpServer = async (
                 JsonMoreEntity
               )(async (data) => {
                 if (data.cmd === "callOrmMethod") {
-                  const dbThumnail = (await getFinderCoreInfo()).thumnail;
-                  if (data.data.queryLimit.dbThumnailStack.includes(dbThumnail))
+                  const dbThumbnail = (await getFinderCoreInfo()).thumbnail;
+                  if (
+                    data.data.queryLimit.dbThumbnailStack.includes(dbThumbnail)
+                  )
                     throw new Error(
-                      `callOrmMethod failed, conflict in finder stack: ${dbThumnail}`
+                      `callOrmMethod failed, conflict in finder stack with thumbnail: ${dbThumbnail}`
                     );
                   const entity =
                     cEvFinderState.value.remoteMethodServeEntityMap[

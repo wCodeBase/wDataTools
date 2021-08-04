@@ -219,10 +219,14 @@ export const uiCmdExecutor = async function (msg: TypeUiMsgData | null) {
           },
         };
       } else if (msg.cmd === "countAllFileInfo") {
+        const [total, localTotal, remoteTotal] =
+          await FileInfo.countAllDatabases();
         cmdResult = {
           cmd: msg.cmd,
           result: {
-            total: await FileInfo.countAllSubDatabases(),
+            total,
+            remoteTotal,
+            localTotal,
           },
         };
       } else if (msg.cmd === "refreshRemote") {

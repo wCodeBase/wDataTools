@@ -48,7 +48,9 @@ export const EvFileInfoChange = (() => {
 })();
 
 export const EvDatabaseInfos = new JsonBehaviorSubject<TypeDatabaseInfos>({
-  fileInfoCount: 0,
+  totalFileInfoCount: 0,
+  localFileInfoCount: 0,
+  remoteFileInfoCount: 0,
 });
 
 export const EvConsole = new JsonBehaviorSubject<TypeLogMessage | undefined>(

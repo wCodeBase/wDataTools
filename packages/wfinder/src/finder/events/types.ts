@@ -198,7 +198,10 @@ type TypeMsgCoreManage = {
   };
   countAllFileInfo: {
     result: {
+      /** Total count of both remove and local */
       total: number;
+      remoteTotal: number;
+      localTotal: number;
     };
   };
   refreshRemote: {}; // eslint-disable-line
@@ -266,7 +269,9 @@ export type MsgHeartbeat = {
 };
 
 export type TypeDatabaseInfos = {
-  fileInfoCount: number;
+  totalFileInfoCount: number;
+  localFileInfoCount: number;
+  remoteFileInfoCount: number;
 };
 
 export type TypeUiStatus = {
@@ -357,7 +362,7 @@ export const isCommonMsgResult = <
 export type TypeTransferRemoteStatus = "linking" | "linked" | "broken";
 
 export type TypeTransferRemoteStatusMap = {
-  [thumnail: string]: TypeTransferRemoteStatus;
+  [thumbnail: string]: TypeTransferRemoteStatus;
 };
 
 export type TypeTransferRemote = {

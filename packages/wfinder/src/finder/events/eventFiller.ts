@@ -22,15 +22,33 @@ import {
   TypeServerState,
 } from "./types";
 import { uiCmdExecutor } from "./uiCmdExecutor";
+import { merge } from "rxjs";
+import {
+  distinctUntilChanged,
+  map,
+  debounceTime,
+  throttleTime,
+} from "rxjs/operators";
+import { isEqual } from "lodash";
 
 cEvScanPathChange.subscribe((v) => EvFileInfoChange.next(v));
 cEvDbIncludedChange.subscribe((v) => EvFileInfoChange.next(v));
 
-EvFileInfoChange.subscribe(async () => {
+const fileInfoChangeSource = merge(
+  EvFileInfoChange,
+  EvFinderState.pipe(map((v) => v.remotes)).pipe(distinctUntilChanged(isEqual))
+);
+merge(
+  fileInfoChangeSource.pipe(debounceTime(500)),
+  fileInfoChangeSource.pipe(throttleTime(500))
+).subscribe(async () => {
+  const [totalFileInfoCount, localFileInfoCount, remoteFileInfoCount] =
+    await switchDb(Config, () => FileInfo.countAllDatabases());
+
   EvDatabaseInfos.next({
-    fileInfoCount: await switchDb(Config, () =>
-      FileInfo.countAllSubDatabases()
-    ),
+    totalFileInfoCount,
+    localFileInfoCount,
+    remoteFileInfoCount,
   });
 });
 

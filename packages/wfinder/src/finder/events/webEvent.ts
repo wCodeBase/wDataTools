@@ -3,8 +3,17 @@ import { BehaviorSubject, merge, Subject } from "rxjs";
 import { joinToAbsolute } from "../../tools/pathTool";
 import { ConfigLineType, getDbInfoId, TypeDbInfo } from "./../types";
 import { ShallowBehaviorSubject } from "./eventLib";
-import { EvFinderReady, EvFinderState, EvUiCmd, EvUiCmdResult } from "./events";
+import {
+  EvDatabaseInfos,
+  EvFileInfoChange,
+  EvFinderReady,
+  EvFinderState,
+  EvUiCmd,
+  EvUiCmdResult,
+} from "./events";
 import immer from "immer";
+import { executeUiCmd } from "./eventTools";
+import { messageError } from "../../ui/html/uiTools";
 
 export enum WebEventStatus {
   none,
@@ -28,6 +37,9 @@ export type WebContext = {
 
 export const wEvGlobalState = new ShallowBehaviorSubject({
   contextStack: [] as WebContext[],
+  total: 0,
+  remoteTotal: 0,
+  localTotal: 0,
 });
 
 export const getLocalContext = () =>
@@ -117,6 +129,42 @@ EvUiCmdResult.subscribe((msg) => {
       });
     }
   }
+  // Update total file count
+  else if (
+    msg.cmd === "countAllFileInfo" &&
+    !msg.result.error &&
+    getDbInfoId(msg.context) === getDbInfoId(getLocalContext())
+  ) {
+    wEvGlobalState.next({ ...wEvGlobalState.value, ...msg.result });
+  }
+});
+
+EvDatabaseInfos.subscribe((state) => {
+  if (getLocalContext() === getLocalRootContext()) {
+    const { totalFileInfoCount, localFileInfoCount, remoteFileInfoCount } =
+      state;
+    wEvGlobalState.next({
+      ...wEvGlobalState.value,
+      total: totalFileInfoCount,
+      localTotal: localFileInfoCount,
+      remoteTotal: remoteFileInfoCount,
+    });
+  }
+});
+
+const getTotalFile = () => {
+  if (getLocalContext() !== getLocalRootContext()) {
+    messageError(
+      executeUiCmd("countAllFileInfo", {
+        cmd: "countAllFileInfo",
+        context: getLocalContext(),
+      })
+    );
+  }
+};
+
+EvFileInfoChange.subscribe(() => {
+  if (wEvFinderReady.value) getTotalFile();
 });
 
 EvFinderReady.subscribe((ready) => {
@@ -131,6 +179,8 @@ EvFinderReady.subscribe((ready) => {
       cmd: "listDbIncluded",
       context: getLocalContext(),
     });
+
+    getTotalFile();
   }
 });
 

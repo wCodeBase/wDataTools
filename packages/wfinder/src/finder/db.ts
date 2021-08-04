@@ -4,7 +4,7 @@ import inquirer from "inquirer";
 import path from "path";
 import { Connection, createConnection, In } from "typeorm";
 import { STR_FINDER_CORE_INFO } from "../constants";
-import { exit, exitNthTodo, genDbThumnail, pathPem } from "../tools/nodeTool";
+import { exit, exitNthTodo, genDbThumbnail, pathPem } from "../tools/nodeTool";
 import { JsonMore } from "./../tools/json";
 import { Config, entityChangeWatchingSubjectMap, genConfig } from "./common";
 import {
@@ -306,7 +306,7 @@ export const {
             const coreInfo = await switchDb(tmpConfig, async () => {
               return await getFinderCoreInfo(undefined, tmpConfig);
             });
-            config.thumbnail = coreInfo.thumnail;
+            config.thumbnail = coreInfo.thumbnail;
           } catch (e) {
             console.warn("Failed to get thumbnail of database", config, e);
           } finally {
@@ -391,9 +391,10 @@ export const getFinderCoreInfo = async (
       let json: TypeFinderCoreInfo | undefined;
       // @ts-ignore
       if (info.jsonStr) json = JsonMore.parse(info.jsonStr);
-      if (!json) {
+      if (!json?.thumbnail) {
         json = {
-          thumnail: await genDbThumnail(Config.dbPath),
+          ...(json || {}),
+          thumbnail: await genDbThumbnail(Config.dbPath),
         };
         info.jsonStr = JsonMore.stringify(json);
         await info.save();

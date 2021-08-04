@@ -1,4 +1,4 @@
-import { CaretRightFilled } from "@ant-design/icons";
+import { CaretRightFilled, LoadingOutlined } from "@ant-design/icons";
 import { Button, Empty, Input, message, Table, Tooltip } from "antd";
 import "antd/lib/message/style/css";
 import { ColumnsType } from "antd/lib/table";
@@ -12,11 +12,16 @@ import {
   FinderStatus,
   TypeMsgSearchResultItem,
 } from "../../../finder/events/types";
-import { getLocalContext } from "../../../finder/events/webEvent";
+import {
+  getLocalContext,
+  wEvFinderReady,
+  wEvGlobalState,
+} from "../../../finder/events/webEvent";
 import { FileType } from "../../../finder/types";
-import { useStableState } from "../../hooks/hooks";
+import { useBehaviorSubjectValue, useStableState } from "../../hooks/hooks";
 import { useFinderReady } from "../../hooks/webHooks";
 import { simpleGetKey } from "../../tools";
+import { defaultPropsFc } from "../../tools/fc";
 import { messageError, showModal } from "../uiTools";
 
 const _formatNumber = format(".3s");
@@ -309,8 +314,10 @@ export const Search = ({ className = "" }) => {
         ref={tableAreaRef}
         className="overflow-auto mt-2 flex-grow p-1 rounded-sm shadow-sm bg-white flex justify-center items-center"
       >
-        {!state.records?.length && !state.skip ? (
-          <Empty />
+        {!state.records ? (
+          <FinderStateInfo searching={state.searching} />
+        ) : !state.records.length && !state.skip ? (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No Result" />
         ) : (
           <Table
             className="w-full h-full"
@@ -340,3 +347,50 @@ export const Search = ({ className = "" }) => {
     </div>
   );
 };
+
+const FinderStateInfo = defaultPropsFc(
+  { className: "", searching: false },
+  (props) => {
+    const [ready] = useBehaviorSubjectValue(wEvFinderReady);
+    const [globalState] = useBehaviorSubjectValue(wEvGlobalState);
+    if (!ready || props.searching)
+      return (
+        <div
+          className={
+            "flex flex-row items-center text-lg font-bold text-gray-600 " +
+            (props.className || "")
+          }
+        >
+          {!ready ? "Preparing wfinder" : "Searching"}{" "}
+          <LoadingOutlined className="ml-2" />
+        </div>
+      );
+    return (
+      <div
+        className={
+          "flex flex-col items-center justify-center text-center break-all text-base text-gray-600 p-6 " +
+          (props.className || "")
+        }
+      >
+        <div className="text-lg">Current wfinder infos:</div>
+        <div className="my-3">
+          <span>File count: </span>
+          <br />
+          {globalState.remoteTotal && (
+            <span>
+              local {globalState.localTotal}, remote {globalState.remoteTotal},{" "}
+            </span>
+          )}
+          <span>total {globalState.total}</span>
+        </div>
+        <div>
+          <span>Current path: </span>
+          <br />
+          <span>{getLocalContext()?.finderRoot}</span>
+        </div>
+        <div></div>
+      </div>
+    );
+  },
+  true
+);
