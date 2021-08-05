@@ -19,7 +19,7 @@ import {
 } from "../../../finder/events/webEvent";
 import { FileType } from "../../../finder/types";
 import { useBehaviorSubjectValue, useStableState } from "../../hooks/hooks";
-import { useFinderReady } from "../../hooks/webHooks";
+import { useFinderReady, useWindowSize } from "../../hooks/webHooks";
 import { simpleGetKey } from "../../tools";
 import { defaultPropsFc } from "../../tools/fc";
 import { messageError, showModal } from "../uiTools";
@@ -224,6 +224,8 @@ export const Search = ({ className = "" }) => {
     }
   }, []);
 
+  const windowSize = useWindowSize();
+
   return (
     <div className={"rounded-sm flex flex-col flex-grow " + className}>
       {/* Search input area. */}
@@ -253,7 +255,7 @@ export const Search = ({ className = "" }) => {
                 "mr-1 font-bold " + (state.complexSearch ? "" : "hidden")
               }
             >
-              Keywords match:
+              Keywords<span className="hidden sm:visible"> match</span>:
             </div>
             <Input
               disabled={!EvFinderReady.value}
@@ -304,7 +306,7 @@ export const Search = ({ className = "" }) => {
             loading={state.searching}
             onClick={state.onSearch}
           >
-            Search
+            {!state.complexSearch || windowSize.width > 400 ? "Search" : "Go"}
           </Button>
         </div>
       </div>
@@ -365,6 +367,8 @@ const FinderStateInfo = defaultPropsFc(
           <LoadingOutlined className="ml-2" />
         </div>
       );
+
+    const context = getLocalContext();
     return (
       <div
         className={
@@ -376,7 +380,7 @@ const FinderStateInfo = defaultPropsFc(
         <div className="my-3">
           <span>File count: </span>
           <br />
-          {globalState.remoteTotal && (
+          {!!globalState.remoteTotal && (
             <span>
               local {globalState.localTotal}, remote {globalState.remoteTotal},{" "}
             </span>
@@ -386,7 +390,12 @@ const FinderStateInfo = defaultPropsFc(
         <div>
           <span>Current path: </span>
           <br />
-          <span>{getLocalContext()?.finderRoot}</span>
+          {context?.remoteUrls?.length && (
+            <span className="text-amber-400 font-bold">
+              {context.remoteUrls.join(" >> ") + " >> "}
+            </span>
+          )}
+          <span>{context?.finderRoot}</span>
         </div>
         <div></div>
       </div>

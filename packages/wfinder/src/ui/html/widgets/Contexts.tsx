@@ -66,7 +66,7 @@ export const ContextPannel = React.memo(() => {
   );
 
   return (
-    <div className="w-vw9/10 max-w-3xl mhvh4/5 flex flex-col break-all">
+    <div className="w-vw9/10 max-w-3xl max-h-vh3/5 flex flex-col break-all">
       <div className="text-lg font-bold p-2 pb-0">Database context</div>
       <div className="flex-grow overflow-y-auto p-2">
         {contexts.map((context, index) => {
@@ -224,9 +224,8 @@ export const ContextIndicator = React.memo(() => {
               )}
               <Tooltip title={finderRoot}>
                 <div className="flex flex-row flex-shrink truncate ml-1">
-                  <span>{finderRoot?.slice(0, 15)}</span>
                   <div className="truncate text-rtl flex-shrink">
-                    {finderRoot?.slice(15)}
+                    {finderRoot}
                   </div>
                 </div>
               </Tooltip>

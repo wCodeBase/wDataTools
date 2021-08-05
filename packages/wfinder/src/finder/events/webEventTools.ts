@@ -123,8 +123,8 @@ export const webInitEvent = (() => {
                   result = { ...msg.result.data, remoteUrls: _remoteContext };
               }
               socket.onclose = () => {
-                wEvEventStatus.next(WebEventStatus.broken);
                 if (!currentGatewaySend.isDestoried()) {
+                  wEvEventStatus.next(WebEventStatus.broken);
                   currentGatewaySend.destory();
                   currentGatewaySend = gatewaySend =
                     new ComsumableEvent<string>();

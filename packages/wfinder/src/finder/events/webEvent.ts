@@ -8,6 +8,7 @@ import {
   EvFileInfoChange,
   EvFinderReady,
   EvFinderState,
+  EvLog,
   EvUiCmd,
   EvUiCmdResult,
 } from "./events";

@@ -3,6 +3,7 @@ import { Button, Drawer } from "antd";
 import React from "react";
 import { isWebElectron } from "../../../finder/events/webEventTools";
 import { useStableState } from "../../hooks/hooks";
+import { useWindowSize } from "../../hooks/webHooks";
 import { ConnectionLight } from "../components/ConnectionLight";
 import { LinkedRemoteIndicator } from "../components/LinkedRemote";
 import { ServerLight } from "../components/ServerLight";
@@ -16,6 +17,9 @@ const SettingButton = React.memo(() => {
       setState({ showSetting: false });
     },
   }));
+
+  const windowSize = useWindowSize();
+
   return (
     <>
       <Button
@@ -33,12 +37,20 @@ const SettingButton = React.memo(() => {
 
       <Drawer
         closable={false}
-        width="80%"
+        width={
+          windowSize.width > 1280
+            ? 1024
+            : windowSize.width > 640
+            ? "80%"
+            : windowSize.width > 540
+            ? "90%"
+            : "100%"
+        }
         bodyStyle={{ padding: 0 }}
         visible={state.showSetting}
         onClose={state.hideSetting}
       >
-        <div className="flex flex-col h-full overflow-y-auto p-3 bg-gradient-to-tr from-cyan-700 to-lightBlue-700">
+        <div className="flex flex-col h-full overflow-y-auto p-3 bg-gradient-to-tr from-cyan-700 to-lightBlue-700 ">
           <div className="flex justify-end">
             <Button type="primary" onClick={state.hideSetting} className="mb-2">
               Close

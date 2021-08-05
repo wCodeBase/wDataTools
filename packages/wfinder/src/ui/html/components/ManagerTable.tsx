@@ -337,23 +337,25 @@ export const genManagerTable = <T extends Record<string, unknown>>(
           <div className={props.titleClassName + " flex flex-row items-center"}>
             {props.tableTitle}
             <div className="flex-grow" />
-            {!props.readOnly && props.onNewRecord && !state.editType && (
-              <Button type="primary" size="small" onClick={state.addRecord}>
-                <div className="flex items-center">
-                  <PlusOutlined />
-                  Add
-                </div>
-              </Button>
-            )}
-            {AddonButton && (
-              <AddonButton
-                isTableEdit={state.editType === "edit"}
-                isTableOnNew={state.editType === "new"}
-                isReadonly={props.readOnly}
-                records={props.records}
-                context={props.context}
-              />
-            )}
+            <div className="flex flex-row flex-wrap justify-center items-center">
+              {!props.readOnly && props.onNewRecord && !state.editType && (
+                <Button type="primary" size="small" onClick={state.addRecord}>
+                  <div className="flex items-center">
+                    <PlusOutlined />
+                    Add
+                  </div>
+                </Button>
+              )}
+              {AddonButton && (
+                <AddonButton
+                  isTableEdit={state.editType === "edit"}
+                  isTableOnNew={state.editType === "new"}
+                  isReadonly={props.readOnly}
+                  records={props.records}
+                  context={props.context}
+                />
+              )}
+            </div>
           </div>
           <div className="flex overflow-auto">
             {state.dataSource.length ? (

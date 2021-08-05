@@ -15,7 +15,11 @@ export const TotalFile = defaultPropsFc({ className: "" }, (props) => {
       {/* <span className="font-bold">Total file: </span> */}
       <span>
         {state.total} files
-        {!!state.remoteTotal && <span>, {state.localTotal} in local</span>}
+        {!!state.remoteTotal && (
+          <span className="hidden sm:inline">
+            , {state.localTotal} in local
+          </span>
+        )}
       </span>
     </div>
   );
@@ -32,7 +36,11 @@ export const FinderStatusIndicator = defaultPropsFc(
       : finderStatus.status;
     return (
       <div className={"flex items-center " + props.className}>
-        <span className="font-bold">Finder state:</span> {FinderStatus[status]}
+        <span className="font-bold">
+          <span className="hidden sm:inline mr-0.5">Finder state:</span>
+          <span className="sm:hidden inline mr-0.5">State:</span>
+        </span>{" "}
+        {FinderStatus[status]}
         {!!BUSY_FINDER_STATES.includes(status) && (
           <LoadingOutlined className="m-1" />
         )}
