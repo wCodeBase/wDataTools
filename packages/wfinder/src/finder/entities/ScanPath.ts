@@ -5,7 +5,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { isPathInclude, joinToAbsolute } from "../../tools/pathTool";
+import { isPathInclude, joinToAbsolute } from "wjstools";
 import { getConfig, switchDb } from "../db";
 import { EvFinderStatus, EvLogWarn } from "../events/events";
 import { BaseDbInfoEntity, SubDatabaseIterators } from "./BaseDbInfoEntity";

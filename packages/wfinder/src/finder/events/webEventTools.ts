@@ -3,10 +3,10 @@ import {
   EVENT_WEBSOCKET_ROUTE,
 } from "../../constants";
 import { joinContextPipe, switchEvent } from "../../finder/events/eventGateway";
-import { concatUrls } from "../../tools/tool";
+import { concatUrls } from "wjstools";
 import { TypeDbInfo } from "../types";
 import { WebEventStatus, wEvEventStatus } from "./../../finder/events/webEvent";
-import { ComsumableEvent } from "./eventLib";
+import { ComsumableEvent } from "wjstools";
 import { CLIENT_READY, GATEWAY_CHANNEL } from "./eventTools";
 
 const electron = eval(`try{require('electron')}catch(e){}`);

@@ -6,7 +6,7 @@ import {
 } from "../../../finder/events/events";
 import Spinner from "ink-spinner";
 import { FinderStatus } from "../../../finder/events/types";
-import { useBehaviorSubjectValue } from "../../hooks/hooks";
+import { useBehaviorSubjectValue } from "wjstools";
 
 export const Header = () => {
   const [finderStatus] = useFinderStatus();

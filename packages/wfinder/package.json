@@ -1,6 +1,6 @@
 {
   "name": "wfinder",
-  "version": "0.0.1-alpha-6",
+  "version": "0.0.1-alpha-8",
   "description": "A local file indexing and searching tool.",
   "homepage": "https://github.com/wCodeBase/wDataTools/tree/main/packages/wfinder",
   "email": "wcodebase@126.com",
@@ -123,6 +123,8 @@
     "webpack-bundle-analyzer": "^4.4.2",
     "webpack-cli": "^4.7.2",
     "webpack-dev-server": "^3.11.2",
+    "wjstools": "^0.0.0",
+    "wnodetools": "^0.0.0",
     "ws": "^7.5.3"
   },
   "peerDependencies": {

@@ -12,8 +12,8 @@ import {
   HttpServerOption,
   TypeServerSetting,
 } from "./finder/types";
-import { isNodeElectron } from "./tools/nodeTool";
-import { parseAddress } from "./tools/tool";
+import { isNodeElectron } from "wnodetools";
+import { parseAddress } from "wjstools";
 
 const program = new Command();
 const defaultServerAddress = defaultServerSetting.bindAddressList[0];

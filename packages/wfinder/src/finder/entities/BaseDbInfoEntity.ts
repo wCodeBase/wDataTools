@@ -5,8 +5,8 @@ import {
   RemoveOptions,
   SaveOptions,
 } from "typeorm";
-import { TypeJsonData } from "../../tools/json";
-import { interactYield } from "../../tools/tool";
+import { TypeJsonData } from "wjstools";
+import { interactYield } from "wjstools";
 import { entityChangeWatchingSubjectMap } from "../common";
 import { getCachedConnection, getConfig, getFinderCoreInfo } from "../db";
 import { cEvFinderState } from "../events/core/coreEvents";

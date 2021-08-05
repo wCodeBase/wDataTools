@@ -3,7 +3,7 @@ import { EvFinderReady, EvUiCmd } from "../../finder/events/events";
 import { executeUiCmd } from "../../finder/events/eventTools";
 import { TypeMsgConfigItem } from "../../finder/events/types";
 import { ConfigLineType } from "../../finder/types";
-import { JsonMore } from "./../../tools/json";
+import { JsonMore } from "wjstools";
 
 const userPreference = {
   windowWidth: undefined as number | undefined,

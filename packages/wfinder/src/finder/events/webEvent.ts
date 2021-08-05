@@ -1,8 +1,8 @@
 import { first, isEmpty, isEqual, last } from "lodash";
 import { BehaviorSubject, merge, Subject } from "rxjs";
-import { joinToAbsolute } from "../../tools/pathTool";
+import { joinToAbsolute } from "wjstools";
 import { ConfigLineType, getDbInfoId, TypeDbInfo } from "./../types";
-import { ShallowBehaviorSubject } from "./eventLib";
+import { ShallowBehaviorSubject } from "wjstools";
 import {
   EvDatabaseInfos,
   EvFileInfoChange,

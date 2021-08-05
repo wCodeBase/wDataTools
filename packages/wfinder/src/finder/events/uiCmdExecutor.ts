@@ -1,5 +1,4 @@
-import { joinToAbsolute } from "../../tools/pathTool";
-import { waitMilli } from "../../tools/tool";
+import { joinToAbsolute } from "wjstools";
 import { isDev } from "../common";
 import { getConfig, initDb, removeDbFiles, switchDb } from "../db";
 import { FileInfo } from "../entities/FileInfo";
@@ -29,6 +28,7 @@ import {
   TypeUiMsgData,
   TypeUiMsgResult,
 } from "./types";
+import { waitMilli } from "wjstools";
 
 export const uiCmdExecutor = async function (msg: TypeUiMsgData | null) {
   if (!msg) return;

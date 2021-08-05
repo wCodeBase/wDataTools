@@ -4,7 +4,7 @@ import {
   wEvGlobalState,
 } from "../../../finder/events/webEvent";
 import { isWebElectron } from "../../../finder/events/webEventTools";
-import { usePickBehaviorSubjectValue } from "../../hooks/hooks";
+import { usePickBehaviorSubjectValue } from "wjstools";
 import { About } from "../components/About";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { SubDatabaseHint } from "../components/SubDatabaseHint";

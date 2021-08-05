@@ -7,7 +7,7 @@ import {
   ErrorSpecialDataUnpack,
   _TypeJsonData,
   TypeDefaultSpecialJsonType,
-} from "./../../../tools/json";
+} from "wjstools";
 import { TypeDbInfo, TypeQueryLimit } from "../../types";
 
 export const JsonMoreEntity = buildJsonMoreWithDefaultPackers([

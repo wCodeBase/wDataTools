@@ -27,18 +27,18 @@ export const joinPropertyPath = (...paths: string[]) => {
     .join(".");
 };
 
-export const traversalObject = (
+export const traverseObject = (
   data: any,
   callback: (v: any, path: string) => void,
   parentPath = ""
 ) => {
   if (data instanceof Array) {
     data.forEach((v, index) =>
-      traversalObject(v, callback, joinPropertyPath(parentPath, index + ""))
+      traverseObject(v, callback, joinPropertyPath(parentPath, index + ""))
     );
   } else if (data instanceof Object) {
     Object.entries(data).forEach(([key, v]) =>
-      traversalObject(v, callback, joinPropertyPath(parentPath, key))
+      traverseObject(v, callback, joinPropertyPath(parentPath, key))
     );
   } else {
     callback(data, parentPath);

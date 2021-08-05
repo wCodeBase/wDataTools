@@ -7,7 +7,7 @@ import { executeUiCmd } from "../../../finder/events/eventTools";
 import { isWebElectron } from "../../../finder/events/webEventTools";
 import { TypeDbInfo } from "../../../finder/types";
 import { formatDate } from "../../../tools/tool";
-import { useLaterEffect, useStableState } from "../../hooks/hooks";
+import { useLaterEffect, useStableState } from "wjstools";
 import { defaultPropsFc } from "./../../tools/fc";
 import { Empty } from "./Empty";
 

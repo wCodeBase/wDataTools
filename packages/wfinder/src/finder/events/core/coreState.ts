@@ -3,7 +3,7 @@ import { Subscription } from "rxjs";
 import { debounceTime } from "rxjs/operators";
 import Websocket from "ws";
 import { EVENT_ORM_METHOD_WEBSOCKET_ROUTE } from "../../../constants";
-import { concatUrls } from "../../../tools/tool";
+import { concatUrls } from "wjstools";
 import { ConfigLine } from "../../entities/ConfigLine";
 import { ConfigLineType } from "../../types";
 import { EvLog, EvLogWarn } from "../events";

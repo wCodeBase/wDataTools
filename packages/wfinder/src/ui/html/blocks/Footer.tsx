@@ -3,7 +3,7 @@ import React from "react";
 import { useFinderStatus } from "../../../finder/events/events";
 import { BUSY_FINDER_STATES, FinderStatus } from "../../../finder/events/types";
 import { wEvGlobalState } from "../../../finder/events/webEvent";
-import { useBehaviorSubjectValue } from "../../hooks/hooks";
+import { useBehaviorSubjectValue } from "wjstools";
 import { defaultPropsFc } from "../../tools/fc";
 import { ConsoleOutput } from "../widgets/ConsoleOutput";
 

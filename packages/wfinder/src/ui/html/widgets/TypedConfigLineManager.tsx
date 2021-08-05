@@ -8,10 +8,11 @@ import { TypeMsgConfigItem } from "../../../finder/events/types";
 import { getLocalContext } from "../../../finder/events/webEvent";
 import { ConfigLineType, getDbInfoId } from "../../../finder/types";
 import {
+  showModal,
   useLaterEffect,
   useStableState,
   useSubjectCallback,
-} from "../../hooks/hooks";
+} from "wjstools";
 import { useFinderReady } from "../../hooks/webHooks";
 import { simpleGetKey } from "../../tools";
 import {
@@ -21,7 +22,7 @@ import {
   TypeManagerTableAddonButtonProps,
   TypeManagerTableAddonOperationProps,
 } from "../components/ManagerTable";
-import { messageError, showModal } from "../uiTools";
+import { messageError } from "../uiTools";
 import { defaultPropsFc } from "./../../tools/fc";
 
 const isBusy = (props: TypeManagerTableAddonButtonProps<TypeMsgConfigItem>) => {

@@ -14,7 +14,7 @@ import {
   usePickBehaviorSubjectValue,
   useStableState,
   useSubjectCallback,
-} from "../../hooks/hooks";
+} from "wjstools";
 import { useFinderReady } from "../../hooks/webHooks";
 import { genManagerTable } from "../components/ManagerTable";
 import { messageError } from "../uiTools";

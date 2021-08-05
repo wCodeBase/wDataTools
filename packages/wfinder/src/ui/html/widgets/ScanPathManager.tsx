@@ -13,7 +13,7 @@ import { TypeMsgPathItem } from "../../../finder/events/types";
 import { getLocalContext } from "../../../finder/events/webEvent";
 import { getDbInfoId, TypeDbInfo } from "../../../finder/types";
 import { formatDate } from "../../../tools/tool";
-import { useStableState, useSubjectCallback } from "../../hooks/hooks";
+import { useStableState, useSubjectCallback } from "wjstools";
 import { useFinderReady } from "../../hooks/webHooks";
 import { simpleGetKey } from "../../tools";
 import {

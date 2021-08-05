@@ -1,16 +1,13 @@
 import {
   JsonMore,
+  switchEventInSubjects,
   TypeDefaultSpecialJsonType,
   TypeJsonData,
-} from "../../tools/json";
+} from "wjstools";
 import { TypeDbInfo } from "./../types";
-import { ComsumableEvent } from "./eventLib";
+import { ComsumableEvent } from "wjstools";
 import * as subjects from "./events";
-import {
-  executeRemoteMsg,
-  keepHeartBeat,
-  switchEventInSubjects,
-} from "./eventTools";
+import { executeRemoteMsg, keepHeartBeat } from "./eventTools";
 import {
   isCommonMsgResult,
   ToCommonMsgData,

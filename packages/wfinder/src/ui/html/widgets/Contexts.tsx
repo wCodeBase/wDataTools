@@ -10,7 +10,7 @@ import {
 } from "../../../finder/events/webEvent";
 import { webInitEvent } from "../../../finder/events/webEventTools";
 import { getDbInfoId, getLocalDbInfoStackId } from "../../../finder/types";
-import { usePickBehaviorSubjectValue } from "../../hooks/hooks";
+import { usePickBehaviorSubjectValue } from "wjstools";
 import { SubDatabaseHint } from "../components/SubDatabaseHint";
 
 const switchContext = async (

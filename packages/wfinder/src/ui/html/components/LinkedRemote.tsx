@@ -4,7 +4,7 @@ import React, { forwardRef, useCallback, useMemo, useRef } from "react";
 import { EvFinderState } from "../../../finder/events/events";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import { TypeLinkedRemoteItem } from "../../../finder/events/types";
-import { usePickBehaviorSubjectValue } from "../../hooks/hooks";
+import { usePickBehaviorSubjectValue } from "wjstools";
 import { defaultPropsFc } from "../../tools/fc";
 import { messageError } from "../uiTools";
 import { RefreshIcon } from "./RefreshIcon";

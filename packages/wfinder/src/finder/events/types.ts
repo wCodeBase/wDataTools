@@ -3,11 +3,7 @@ import { DbIncluded } from "../entities/DbIncluded";
 import { FileInfo } from "../entities/FileInfo";
 import { ScanPath } from "../entities/ScanPath";
 import { TypeDbInfo } from "../types";
-import {
-  TypeJsonData,
-  TypeSimpleData,
-  _TypeJsonData,
-} from "./../../tools/json";
+import { TypeJsonData, TypeSimpleData, _TypeJsonData } from "wjstools";
 
 export enum FinderStatus {
   idle,
@@ -278,13 +274,6 @@ export type TypeUiStatus = {
   ink?: boolean;
   electron?: boolean;
   web?: boolean;
-};
-
-export type GatewayMessage = {
-  label: "GatewayMessage";
-  subjectName: string;
-  data: TypeJsonData;
-  fromMaster: boolean;
 };
 
 export type RemoteMessage<K> = {

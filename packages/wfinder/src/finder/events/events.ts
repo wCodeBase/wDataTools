@@ -1,12 +1,12 @@
 import { merge } from "rxjs";
 import { debounceTime, throttleTime } from "rxjs/operators";
-import { useBehaviorSubjectValue } from "../../ui/hooks/hooks";
+import { useBehaviorSubjectValue } from "wjstools";
 import { TypeDbInfo } from "../types";
 import {
   JsonBehaviorSubject,
   JsonSubject,
   ShallowJsonBehaviorSubject,
-} from "./eventLib";
+} from "wjstools";
 import {
   FinderStatus,
   MsgHeartbeat,

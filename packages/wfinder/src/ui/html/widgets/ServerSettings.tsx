@@ -15,12 +15,12 @@ import {
   getDbInfoId,
   TypeServerSetting,
 } from "../../../finder/types";
-import { parseAddress } from "../../../tools/tool";
+import { parseAddress } from "wjstools";
 import {
   usePickBehaviorSubjectValue,
   useStableState,
   useSubjectCallback,
-} from "../../hooks/hooks";
+} from "wjstools";
 import { useFinderReady } from "../../hooks/webHooks";
 import { defaultPropsFc } from "../../tools/fc";
 import { SimpleInput } from "../components/SimpleInput";

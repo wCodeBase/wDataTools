@@ -10,7 +10,7 @@ import { debounce } from "lodash";
 import React, { useEffect, useRef } from "react";
 import { EvConsole, EvUiCmdMessage } from "../../../finder/events/events";
 import { formatDate } from "../../../tools/tool";
-import { useStableState, useSubjectCallback } from "../../hooks/hooks";
+import { useStableState, useSubjectCallback } from "wjstools";
 import { defaultPropsFc } from "../../tools/fc";
 
 type Output = {

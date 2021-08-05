@@ -2,7 +2,7 @@ import React, { useCallback } from "react";
 import Input from "ink-text-input";
 import { defaultPropsFc } from "../../tools/fc";
 import { Box, Text } from "ink";
-import { useStableState } from "../../hooks/hooks";
+import { useStableState } from "wjstools";
 import { useCliEscape } from "../consoleHooks/useCliKeyPress";
 
 export const CmdInput = defaultPropsFc(

@@ -4,7 +4,7 @@ import { ObjectType } from "typeorm";
 import WebSocket from "ws";
 import { BaseDbInfoEntity } from "../../entities/BaseDbInfoEntity";
 import { TypeDbInfo } from "../../types";
-import { JsonSubject, ShallowBehaviorSubject } from "../eventLib";
+import { JsonSubject, ShallowBehaviorSubject } from "wjstools";
 import { genRemoteCaller, genRemoteExector } from "../eventTools";
 import {
   TypeLinkedRemoteItem,

@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { Column, Entity, PrimaryColumn } from "typeorm";
-import { isPathEqual } from "../../tools/pathTool";
+import { isPathEqual } from "wjstools";
 import { getConfig, switchDb } from "../db";
 import { EvFinderStatus, EvLogWarn } from "../events/events";
 import { Config } from "./../common";

@@ -24,7 +24,7 @@ import {
 import { Body } from "../blocks/Body";
 import { Footer } from "../blocks/Footer";
 import { Header } from "../blocks/Header";
-import { showModal, TypeShowModalHandle } from "../uiTools";
+import { showModal, TypeShowModalHandle } from "wjstools";
 
 export const FinderUi = () => {
   useEffect(() => {

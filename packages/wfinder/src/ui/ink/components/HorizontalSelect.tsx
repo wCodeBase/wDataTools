@@ -1,7 +1,7 @@
 import { Box, Text, useInput } from "ink";
 import React from "react";
 import { EvLogWarn } from "../../../finder/events/events";
-import { useStableState } from "../../hooks/hooks";
+import { useStableState } from "wjstools";
 
 export type TypeSelectOption<T> = { label: string; value: T };
 

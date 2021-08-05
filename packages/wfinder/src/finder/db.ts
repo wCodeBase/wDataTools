@@ -4,8 +4,8 @@ import inquirer from "inquirer";
 import path from "path";
 import { Connection, createConnection, In } from "typeorm";
 import { STR_FINDER_CORE_INFO } from "../constants";
-import { exit, exitNthTodo, genDbThumbnail, pathPem } from "../tools/nodeTool";
-import { JsonMore } from "./../tools/json";
+import { exit, exitNthTodo, genDbThumbnail, pathPem } from "wnodetools";
+import { JsonMore } from "wjstools";
 import { Config, entityChangeWatchingSubjectMap, genConfig } from "./common";
 import {
   cEvConfigLineChange,

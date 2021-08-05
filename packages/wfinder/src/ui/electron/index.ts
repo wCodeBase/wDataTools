@@ -2,7 +2,7 @@ import { spawn } from "child_process";
 import path from "path";
 import { initFinder } from "../../finder";
 import { EvUiLaunched } from "../../finder/events/events";
-import { getElectron } from "../../tools/nodeTool";
+import { getElectron } from "wnodetools";
 import { execRoot } from "./../../env";
 import { startIpcServer, USE_IPC_SERVER } from "./ipcServer";
 

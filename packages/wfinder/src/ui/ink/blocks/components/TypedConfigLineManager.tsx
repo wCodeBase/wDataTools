@@ -8,7 +8,7 @@ import {
 } from "../../../../finder/events/events";
 import { TypeMsgConfigItem } from "../../../../finder/events/types";
 import { ConfigLineType } from "../../../../finder/types";
-import { useStableState, useSubjectCallback } from "../../../hooks/hooks";
+import { useStableState, useSubjectCallback } from "wjstools";
 import {
   KEY_ARROW_DOWN,
   KEY_ARROW_UP,

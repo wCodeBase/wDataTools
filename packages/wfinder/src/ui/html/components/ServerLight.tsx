@@ -3,7 +3,7 @@ import { Popover, Tooltip } from "antd";
 import { isEmpty } from "lodash";
 import React, { useRef } from "react";
 import { EvFinderState } from "../../../finder/events/events";
-import { usePickBehaviorSubjectValue } from "../../hooks/hooks";
+import { usePickBehaviorSubjectValue } from "wjstools";
 import { defaultPropsFc } from "../../tools/fc";
 
 export const ServerStatePannel = defaultPropsFc(

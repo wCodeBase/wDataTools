@@ -1,5 +1,5 @@
 import { last, pick } from "lodash";
-import { getIpAddressList } from "../../tools/nodeTool";
+import { getIpAddressList } from "wnodetools";
 import { Config } from "../common";
 import { switchDb } from "../db";
 import { FileInfo } from "../entities/FileInfo";

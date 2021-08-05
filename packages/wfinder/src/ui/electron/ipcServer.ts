@@ -3,7 +3,7 @@ import { switchEvent } from "./../../finder/events/eventGateway";
 import net from "net";
 import { isDev } from "../../finder/common";
 import { localhost } from "../../constants";
-import { TypeGateway } from "../../finder/events/eventTools";
+import { TypeGateway } from "wjstools";
 
 export const USE_IPC_SERVER = "useIpcServer";
 

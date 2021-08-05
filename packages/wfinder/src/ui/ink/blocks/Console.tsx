@@ -1,7 +1,7 @@
 import { Box, Text } from "ink";
 import React from "react";
 import { EvConsole } from "../../../finder/events/events";
-import { useBehaviorSubjectValue, useCountDown } from "../../hooks/hooks";
+import { useBehaviorSubjectValue, useCountDown } from "wjstools";
 
 export const InkConsole = () => {
   const [value, , timestamp] = useBehaviorSubjectValue(EvConsole);

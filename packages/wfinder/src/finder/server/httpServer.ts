@@ -6,8 +6,8 @@ import { Socket } from "net";
 import * as path from "path";
 import WebSocket from "ws";
 import { EVENT_WEBSOCKET_ROUTE, localhost } from "../../constants";
-import { JsonMore } from "../../tools/json";
-import { concatUrls, parseAddress } from "../../tools/tool";
+import { JsonMore, TypeGateway } from "wjstools";
+import { concatUrls, parseAddress } from "wjstools";
 import { Config, isDev } from "../common";
 import { getFinderCoreInfo, switchDb } from "../db";
 import { cEvFinderState, cTypeServerState } from "../events/core/coreEvents";
@@ -19,7 +19,7 @@ import {
 } from "../events/core/coreTypes";
 import { joinContextPipe, switchEvent } from "../events/eventGateway";
 import { EvUiCmdResult, EvUiLaunched } from "../events/events";
-import { genRemoteExector, TypeGateway } from "../events/eventTools";
+import { genRemoteExector } from "../events/eventTools";
 import { uiCmdExecutor } from "../events/uiCmdExecutor";
 import {
   ConfigLineType,

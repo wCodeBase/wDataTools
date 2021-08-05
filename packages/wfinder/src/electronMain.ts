@@ -11,16 +11,13 @@ import {
   EvFinderState,
   EvUiLaunched,
 } from "./finder/events/events";
-import {
-  TypeGateway,
-  GATEWAY_CHANNEL,
-  CLIENT_READY,
-} from "./finder/events/eventTools";
+import { GATEWAY_CHANNEL, CLIENT_READY } from "./finder/events/eventTools";
 import { packetTool } from "./tools/streamTool";
 import { loadHtml } from "./ui/electron/common";
 import { USE_IPC_SERVER } from "./ui/electron/ipcServer";
 import { getUserPreference, setUserPreference } from "./ui/electron/preference";
 import net from "net";
+import { TypeGateway } from "wjstools";
 
 EvUiCmd.subscribe((msg) => {
   if (msg?.cmd === "queryUserDataDir") {

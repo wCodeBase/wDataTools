@@ -4,7 +4,7 @@ import {
   WebEventStatus,
   wEvEventStatus,
 } from "../../../finder/events/webEvent";
-import { useBehaviorSubjectValue } from "../../hooks/hooks";
+import { useBehaviorSubjectValue } from "wjstools";
 import { defaultPropsFc } from "../../tools/fc";
 
 const hintMap: Partial<Record<WebEventStatus, string>> = {

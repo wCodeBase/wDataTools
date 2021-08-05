@@ -11,8 +11,8 @@ import {
   PrimaryGeneratedColumn,
   RemoveOptions,
 } from "typeorm";
-import { splitPath } from "../../tools/pathTool";
-import { interactYield } from "../../tools/tool";
+import { splitPath } from "wjstools";
+import { interactYield } from "wjstools";
 import { createFtsTable, getConnection } from "../db";
 import { FileType } from "../types";
 import { DEFAULT_QUERY_LIMIT } from "./../common";

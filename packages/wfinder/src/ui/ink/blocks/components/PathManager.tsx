@@ -1,7 +1,7 @@
 import { Box, Text } from "ink";
 import React, { useEffect, useMemo } from "react";
 import { CmdInput } from "../../components/CmdInput";
-import { useStableState, useSubjectCallback } from "../../../hooks/hooks";
+import { useStableState, useSubjectCallback } from "wjstools";
 import { TypeMsgPathItem } from "../../../../finder/events/types";
 import {
   EvLog,

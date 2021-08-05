@@ -18,11 +18,12 @@ import {
   wEvGlobalState,
 } from "../../../finder/events/webEvent";
 import { FileType } from "../../../finder/types";
-import { useBehaviorSubjectValue, useStableState } from "../../hooks/hooks";
-import { useFinderReady, useWindowSize } from "../../hooks/webHooks";
+import { showModal, useBehaviorSubjectValue, useStableState } from "wjstools";
+import { useWindowSize } from "wjstools";
 import { simpleGetKey } from "../../tools";
 import { defaultPropsFc } from "../../tools/fc";
-import { messageError, showModal } from "../uiTools";
+import { messageError } from "../uiTools";
+import { useFinderReady } from "../../hooks/webHooks";
 
 const _formatNumber = format(".3s");
 const formatNumber = (num: number) => {

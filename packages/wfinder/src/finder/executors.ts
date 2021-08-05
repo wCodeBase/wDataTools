@@ -1,6 +1,6 @@
 import path from "path";
 import { In } from "typeorm";
-import { isPathEqual, isPathInclude, joinToAbsolute } from "../tools/pathTool";
+import { isPathEqual, isPathInclude, joinToAbsolute } from "wjstools";
 import { getConfig, removeDbFiles, switchDb } from "./db";
 import { ConfigLine } from "./entities/ConfigLine";
 import { DbIncluded } from "./entities/DbIncluded";

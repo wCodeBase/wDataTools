@@ -1,6 +1,6 @@
 import { Input, InputProps } from "antd";
 import React, { useMemo } from "react";
-import { useStableState } from "../../hooks/hooks";
+import { useStableState } from "wjstools";
 import { defaultPropsFc } from "./../../tools/fc";
 
 export const SimpleInput = defaultPropsFc(

@@ -3,14 +3,14 @@ import * as fs from "fs";
 import * as path from "path";
 import { BehaviorSubject } from "rxjs";
 import { SUB_DATABASE_PREFIX } from "../constants";
-import { pathPem } from "../tools/nodeTool";
+import { pathPem } from "wnodetools";
 import {
   isPathEqual,
   isPathInclude,
   joinToAbsolute,
   splitPath,
-} from "../tools/pathTool";
-import { interactYield } from "./../tools/tool";
+} from "wjstools";
+import { interactYield } from "wjstools";
 import { Config, isDev, MAX_PATH_DEPTH } from "./common";
 import { getConfig, getConnection, switchDb } from "./db";
 import { getEntityTableName } from "./entities/BaseDbInfoEntity";
