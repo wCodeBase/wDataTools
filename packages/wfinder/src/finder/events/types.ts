@@ -1,9 +1,9 @@
+import { TypeSimpleData, _TypeJsonData } from "wjstools";
 import { ConfigLine } from "../entities/ConfigLine";
 import { DbIncluded } from "../entities/DbIncluded";
 import { FileInfo } from "../entities/FileInfo";
 import { ScanPath } from "../entities/ScanPath";
 import { TypeDbInfo } from "../types";
-import { TypeJsonData, TypeSimpleData, _TypeJsonData } from "wjstools";
 
 export enum FinderStatus {
   idle,

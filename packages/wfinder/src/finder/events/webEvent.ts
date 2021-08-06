@@ -1,20 +1,17 @@
 import { first, isEmpty, isEqual, last } from "lodash";
 import { BehaviorSubject, merge, Subject } from "rxjs";
-import { joinToAbsolute } from "wjstools";
+import { joinToAbsolute, ShallowBehaviorSubject } from "wjstools";
+import { messageError } from "../../ui/html/uiTools";
 import { ConfigLineType, getDbInfoId, TypeDbInfo } from "./../types";
-import { ShallowBehaviorSubject } from "wjstools";
 import {
   EvDatabaseInfos,
   EvFileInfoChange,
   EvFinderReady,
   EvFinderState,
-  EvLog,
   EvUiCmd,
   EvUiCmdResult,
 } from "./events";
-import immer from "immer";
 import { executeUiCmd } from "./eventTools";
-import { messageError } from "../../ui/html/uiTools";
 
 export enum WebEventStatus {
   none,
@@ -41,6 +38,7 @@ export const wEvGlobalState = new ShallowBehaviorSubject({
   total: 0,
   remoteTotal: 0,
   localTotal: 0,
+  totalLoading: true,
 });
 
 export const getLocalContext = () =>
@@ -60,23 +58,23 @@ EvUiCmdResult.subscribe((msg) => {
     if (!type || (type === ConfigLineType.remoteUrl && isEmpty(rest))) {
       if (!wEvFinderReady.value || !EvFinderState.value.config) return;
       const dbId = getDbInfoId(msg.context);
-      const contextStack = immer(
-        wEvGlobalState.value.contextStack,
-        (contextStack) => {
-          const context = contextStack.find(
-            (v) => getDbInfoId(last(v.localContexts)) === dbId
-          );
-          if (context) {
-            const newRemotes = msg.result.results
-              .filter((v) => v.type === ConfigLineType.remoteUrl && !v.disabled)
-              .map((v) => v.content);
-            if (!isEqual(newRemotes, context.remoteOptionUrls)) {
-              context.remoteOptionUrls = newRemotes;
-            }
-          }
-        }
+      let contextStack = wEvGlobalState.value.contextStack;
+      const context = contextStack.find(
+        (v) => getDbInfoId(last(v.localContexts)) === dbId
       );
-      wEvGlobalState.next({ contextStack });
+      if (context) {
+        const newRemotes = msg.result.results
+          .filter((v) => v.type === ConfigLineType.remoteUrl && !v.disabled)
+          .map((v) => v.content);
+        if (!isEqual(newRemotes, context.remoteOptionUrls)) {
+          contextStack = contextStack.map((v) => {
+            return v === context
+              ? { ...context, remoteOptionUrls: newRemotes }
+              : v;
+          });
+          wEvGlobalState.next({ contextStack });
+        }
+      }
     }
   }
   // Update sub-database or ScanPath external database context options
@@ -136,7 +134,7 @@ EvUiCmdResult.subscribe((msg) => {
     !msg.result.error &&
     getDbInfoId(msg.context) === getDbInfoId(getLocalContext())
   ) {
-    wEvGlobalState.next({ ...wEvGlobalState.value, ...msg.result });
+    wEvGlobalState.next({ ...msg.result, totalLoading: false });
   }
 });
 
@@ -149,6 +147,7 @@ EvDatabaseInfos.subscribe((state) => {
       total: totalFileInfoCount,
       localTotal: localFileInfoCount,
       remoteTotal: remoteFileInfoCount,
+      totalLoading: false,
     });
   }
 });
@@ -180,8 +179,6 @@ EvFinderReady.subscribe((ready) => {
       cmd: "listDbIncluded",
       context: getLocalContext(),
     });
-
-    getTotalFile();
   }
 });
 
@@ -193,9 +190,19 @@ merge(EvFinderReady, EvFinderState, wEvEventStatus, wEvGlobalState).subscribe(
       wEvEventStatus.value !== WebEventStatus.connected ||
       !getLocalContext()
     ) {
-      if (wEvFinderReady.value) wEvFinderReady.next(false);
+      if (wEvFinderReady.value) {
+        wEvFinderReady.next(false);
+      }
     } else if (!wEvFinderReady.value) {
       wEvFinderReady.next(true);
     }
   }
 );
+
+let prevWebFinderReady: boolean | undefined = undefined;
+wEvFinderReady.subscribe((ready) => {
+  if (ready === prevWebFinderReady) return;
+  prevWebFinderReady = ready;
+  if (ready) getTotalFile();
+  else wEvGlobalState.next({ totalLoading: true });
+});

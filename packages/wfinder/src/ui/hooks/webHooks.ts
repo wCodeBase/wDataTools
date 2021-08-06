@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { wEvFinderReady } from "./../../finder/events/webEvent";
+import { useEffect } from "react";
 import { useUpdate } from "wjstools";
+import { wEvFinderReady } from "./../../finder/events/webEvent";
 
 export const useFinderReady = (effect: React.EffectCallback) => {
   const update = useUpdate();

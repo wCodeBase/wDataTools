@@ -14,6 +14,7 @@ import {
 } from "../../../finder/events/types";
 import {
   getLocalContext,
+  getLocalRootContext,
   wEvFinderReady,
   wEvGlobalState,
 } from "../../../finder/events/webEvent";
@@ -370,6 +371,7 @@ const FinderStateInfo = defaultPropsFc(
       );
 
     const context = getLocalContext();
+    const rootContext = getLocalRootContext();
     return (
       <div
         className={
@@ -381,19 +383,26 @@ const FinderStateInfo = defaultPropsFc(
         <div className="my-3">
           <span>File count: </span>
           <br />
-          {!!globalState.remoteTotal && (
-            <span>
-              local {globalState.localTotal}, remote {globalState.remoteTotal},{" "}
-            </span>
+          {globalState.totalLoading ? (
+            <LoadingOutlined />
+          ) : (
+            <>
+              {!!globalState.remoteTotal && (
+                <span>
+                  local {globalState.localTotal}, remote{" "}
+                  {globalState.remoteTotal},{" "}
+                </span>
+              )}
+              <span>total {globalState.total}</span>
+            </>
           )}
-          <span>total {globalState.total}</span>
         </div>
         <div>
           <span>Current path: </span>
           <br />
-          {context?.remoteUrls?.length && (
+          {rootContext?.remoteUrls?.length && (
             <span className="text-amber-400 font-bold">
-              {context.remoteUrls.join(" >> ") + " >> "}
+              {rootContext.remoteUrls.join(" >> ") + " >> "}
             </span>
           )}
           <span>{context?.finderRoot}</span>

@@ -62,7 +62,8 @@ const switchContext = async (
 export const ContextPannel = React.memo(() => {
   const [contexts] = usePickBehaviorSubjectValue(
     wEvGlobalState,
-    (v) => v.contextStack
+    (v) => v.contextStack,
+    false
   );
 
   return (

@@ -13,14 +13,18 @@ export const TotalFile = defaultPropsFc({ className: "" }, (props) => {
   return (
     <div className={" " + props.className}>
       {/* <span className="font-bold">Total file: </span> */}
-      <span>
-        {state.total} files
-        {!!state.remoteTotal && (
-          <span className="hidden sm:inline">
-            , {state.localTotal} in local
-          </span>
-        )}
-      </span>
+      {state.totalLoading ? (
+        <LoadingOutlined />
+      ) : (
+        <span>
+          {state.total} files
+          {!!state.remoteTotal && (
+            <span className="hidden sm:inline">
+              , {state.localTotal} in local
+            </span>
+          )}
+        </span>
+      )}
     </div>
   );
 });

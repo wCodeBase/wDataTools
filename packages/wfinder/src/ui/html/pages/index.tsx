@@ -41,9 +41,9 @@ export const FinderUi = () => {
       }
     });
     webInitEvent();
-    const uiCmdInterceptor = async () => {
+    const uiCmdInterceptor = async (cmd: string) => {
       if (wEvEventStatus.value !== WebEventStatus.connected)
-        throw new Error("Server is not connected yet.");
+        throw new Error("Server is not connected yet: " + cmd);
       return undefined;
     };
     executeUiCmdInterceptors.add(uiCmdInterceptor);
