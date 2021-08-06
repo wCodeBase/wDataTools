@@ -5,7 +5,7 @@ import { ColumnsType } from "antd/lib/table";
 import { format } from "d3-format";
 import { debounce } from "lodash";
 import prettyBytes from "pretty-bytes";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { EvFinderReady, useFinderStatus } from "../../../finder/events/events";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import {
@@ -96,55 +96,6 @@ const DetailButton = React.memo(
   }
 );
 
-const Columns: ColumnsType<TypeMsgSearchResultItem> = [
-  {
-    title: "name",
-    key: "name",
-    dataIndex: "name",
-    render: (v) => <span className="whitespace-nowrap">{v}</span>,
-  },
-  {
-    title: "type",
-    key: "type",
-    dataIndex: "type",
-    render: (val) => FileType[val],
-  },
-  {
-    title: "parent",
-    key: "parent",
-    dataIndex: "parent",
-    render: (_, record) => {
-      const parent = record.absPath?.slice(0, -record.name.length);
-      return (
-        <Tooltip title={parent}>
-          <div className="break-all truncate text-rtl max-w-vw1/2 lg:max-w-vw1/4 ">
-            {parent}
-          </div>
-        </Tooltip>
-      );
-    },
-  },
-  {
-    title: "size",
-    key: "size",
-    dataIndex: "size",
-    fixed: "right",
-    render: (val) => (
-      <span className="whitespace-nowrap">{prettyBytes(val)}</span>
-    ),
-  },
-  {
-    title: "operation",
-    key: "operation",
-    dataIndex: "operation",
-    fixed: "right",
-    render: (_, record) => {
-      return <DetailButton record={record} />;
-    },
-  },
-];
-Columns.forEach((v) => (v.align = "center"));
-
 export const Search = ({ className = "" }) => {
   const [finderStatus] = useFinderStatus();
   const [state, setState] = useStableState(() => ({
@@ -227,6 +178,62 @@ export const Search = ({ className = "" }) => {
   }, []);
 
   const windowSize = useWindowSize();
+
+  const Columns = useMemo(() => {
+    const Columns: ColumnsType<TypeMsgSearchResultItem> = [
+      {
+        title: "name",
+        key: "name",
+        dataIndex: "name",
+        render: (v) => <span className="whitespace-nowrap">{v}</span>,
+      },
+      {
+        title: "type",
+        key: "type",
+        dataIndex: "type",
+        render: (val) => FileType[val],
+      },
+      {
+        title: "parent",
+        key: "parent",
+        dataIndex: "parent",
+        render: (_, record) => {
+          const parent = record.absPath?.slice(0, -record.name.length);
+          return (
+            <Tooltip title={parent}>
+              <div className="break-all truncate text-rtl max-w-vw1/2 lg:max-w-vw1/4 ">
+                {parent}
+              </div>
+            </Tooltip>
+          );
+        },
+      },
+      {
+        title: "size",
+        key: "size",
+        dataIndex: "size",
+        ...(windowSize.width >= 640
+          ? {
+              fixed: "right",
+            }
+          : {}),
+        render: (val) => (
+          <span className="whitespace-nowrap">{prettyBytes(val)}</span>
+        ),
+      },
+      {
+        title: "operation",
+        key: "operation",
+        dataIndex: "operation",
+        fixed: "right",
+        render: (_, record) => {
+          return <DetailButton record={record} />;
+        },
+      },
+    ];
+    Columns.forEach((v) => (v.align = "center"));
+    return Columns;
+  }, [windowSize.width]);
 
   return (
     <div className={"rounded-sm flex flex-col flex-grow " + className}>

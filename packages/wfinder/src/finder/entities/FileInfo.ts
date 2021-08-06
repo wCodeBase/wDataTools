@@ -288,7 +288,7 @@ export class FileInfo extends BaseDbInfoEntity {
           keywords,
           fullMatchStr,
           regMatchStr,
-          end - pos,
+          end - Math.max(pos, skip),
           Math.max(0, skip - pos),
         ],
         queryLimit

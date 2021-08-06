@@ -169,6 +169,10 @@ export const ContextPannel = React.memo(() => {
   );
 });
 
+const IndicatorArrowStyle = {
+  transform: "rotate(45deg) scaleX(1.5) scaleY(0.75) translateX(-50%)",
+  transformOrigin: "left",
+};
 const IndicatorArrows = React.memo(
   (props: { contexts: WebContext[]; arrowClassName: string }) => {
     if (!props.contexts.length) return null;
@@ -181,8 +185,9 @@ const IndicatorArrows = React.memo(
         />
         <div className="overflow-hidden flex flex-row items-center">
           <div
+            style={IndicatorArrowStyle}
             className={
-              "pt-2/1 transform rotate-45 -translate-x-1/2 scale-x-150 scale-y-75 -mr-1/2 shadow-md cursor-pointer bg-gradient-to-tr " +
+              "pt-2/1 -mr-1/2 shadow-md cursor-pointer bg-gradient-to-tr " +
               (context.remoteUrls
                 ? "from-cyan-300 to-cyan-600 hover:from-cyan-500 hover:to-cyan-500 "
                 : "from-gray-100 to-gray-300 hover:from-cyan-500 hover:to-cyan-500 ") +

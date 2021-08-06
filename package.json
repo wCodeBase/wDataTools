@@ -2,8 +2,8 @@
   "name": "root",
   "private": true,
   "devDependencies": {
-    "lerna": "^4.0.0",
-    "husky": "^4.3.8"
+    "husky": "4",
+    "lerna": "^4.0.0"
   },
   "husky": {
     "hooks": {
