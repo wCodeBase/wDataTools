@@ -39,6 +39,7 @@ export const wEvGlobalState = new ShallowBehaviorSubject({
   remoteTotal: 0,
   localTotal: 0,
   totalLoading: true,
+  timeDiffToCore: 0,
 });
 
 export const getLocalContext = () =>
@@ -203,6 +204,12 @@ let prevWebFinderReady: boolean | undefined = undefined;
 wEvFinderReady.subscribe((ready) => {
   if (ready === prevWebFinderReady) return;
   prevWebFinderReady = ready;
-  if (ready) getTotalFile();
-  else wEvGlobalState.next({ totalLoading: true });
+  if (ready) {
+    getTotalFile();
+    executeUiCmd("coreTime", { cmd: "coreTime" }).then((res) => {
+      wEvGlobalState.next({
+        timeDiffToCore: Date.now() - res.result.time?.valueOf(),
+      });
+    });
+  } else wEvGlobalState.next({ totalLoading: true });
 });

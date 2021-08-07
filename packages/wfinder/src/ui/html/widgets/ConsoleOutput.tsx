@@ -12,6 +12,7 @@ import { EvConsole, EvUiCmdMessage } from "../../../finder/events/events";
 import { formatDate } from "../../../tools/tool";
 import { useStableState, useSubjectCallback } from "wjstools";
 import { defaultPropsFc } from "../../tools/fc";
+import { wEvGlobalState } from "../../../finder/events/webEvent";
 
 type Output = {
   at: Date;
@@ -48,7 +49,13 @@ export const ConsoleOutput = defaultPropsFc(
       lastImportOutput: null as null | Output,
       addNewOutput: (output: Output) => {
         if (!output.message) return;
-        if (Date.now() - output.at.valueOf() > 5000) return;
+        if (
+          Date.now() -
+            output.at.valueOf() -
+            wEvGlobalState.value.timeDiffToCore >
+          5000
+        )
+          return;
         state.outputs.unshift(output);
         if (state.outputs.length > 1.2 * OUTPUT_LIMIT)
           state.outputs = state.outputs.slice(0, OUTPUT_LIMIT);

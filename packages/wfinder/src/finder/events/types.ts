@@ -201,6 +201,11 @@ type TypeMsgCoreManage = {
     };
   };
   refreshRemote: {}; // eslint-disable-line
+  coreTime: {
+    result: {
+      time: Date;
+    };
+  };
 };
 
 export type TypeDbIncludedItem = Pick<DbIncluded, "path" | "dbName" | "dbInfo">;

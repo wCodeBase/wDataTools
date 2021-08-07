@@ -2,6 +2,12 @@ import { LoadingOutlined } from "@ant-design/icons";
 import { message, Modal, Spin, Switch, Tag as AntTag } from "antd";
 import { isEmpty } from "lodash";
 import React from "react";
+import {
+  parseAddress,
+  usePickBehaviorSubjectValue,
+  useStableState,
+  useSubjectCallback,
+} from "wjstools";
 import { EvFinderState, EvUiCmdResult } from "../../../finder/events/events";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import {
@@ -15,12 +21,6 @@ import {
   getDbInfoId,
   TypeServerSetting,
 } from "../../../finder/types";
-import { parseAddress } from "wjstools";
-import {
-  usePickBehaviorSubjectValue,
-  useStableState,
-  useSubjectCallback,
-} from "wjstools";
 import { useFinderReady } from "../../hooks/webHooks";
 import { defaultPropsFc } from "../../tools/fc";
 import { SimpleInput } from "../components/SimpleInput";
@@ -272,8 +272,13 @@ export const MServerSettings = defaultPropsFc(
 export const ServerSettings = defaultPropsFc(
   defaultServerSettingProps,
   (props) => {
+    usePickBehaviorSubjectValue(wEvGlobalState, (v) => v.contextStack);
     // Only in electron root context can change server settings.
-    if (!isWebElectron || wEvGlobalState.value.contextStack.length > 1)
+    if (
+      !isWebElectron ||
+      wEvGlobalState.value.contextStack.length > 1 ||
+      !!getLocalRootContext()?.remoteUrls?.length
+    )
       return null;
     return <MServerSettings {...props} />;
   },

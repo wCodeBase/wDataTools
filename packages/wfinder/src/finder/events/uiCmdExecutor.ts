@@ -232,6 +232,8 @@ export const uiCmdExecutor = async function (msg: TypeUiMsgData | null) {
       } else if (msg.cmd === "refreshRemote") {
         cEvRefreshRemote.next();
         cmdResult = { cmd: "refreshRemote", result: {} };
+      } else if (msg.cmd === "coreTime") {
+        cmdResult = { cmd: "coreTime", result: { time: new Date() } };
       } else {
         throw new Error(`Command will not be processed.`);
       }
