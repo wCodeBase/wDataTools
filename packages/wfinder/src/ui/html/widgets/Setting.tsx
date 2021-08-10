@@ -20,9 +20,11 @@ import {
   RelativePathToExcludeManager,
   RemoteWfinderManager,
 } from "./TypedConfigLineManager";
+import { AutoScanSetting } from "./AutoScanSetting";
 
 const Segments = {
   ServerSettings,
+  AutoScanSetting,
   ScanPathManager,
   FileNameToExcludeManager,
   FileNameToExcludeChildrenManager,
@@ -39,6 +41,7 @@ const Segments = {
 };
 
 const SubDbSegments = {
+  AutoScanSetting,
   ScanPathManager,
   FileNameToExcludeManager,
   FileNameToExcludeChildrenManager,

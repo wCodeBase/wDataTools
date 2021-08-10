@@ -1,15 +1,26 @@
-import { isEqual } from "lodash";
+import { isEmpty, isEqual } from "lodash";
 import { Subscription } from "rxjs";
 import { debounceTime } from "rxjs/operators";
+import { concatUrls, joinToAbsolute, JsonMore } from "wjstools";
 import Websocket from "ws";
 import { EVENT_ORM_METHOD_WEBSOCKET_ROUTE } from "../../../constants";
-import { concatUrls } from "wjstools";
+import { Config } from "../../common";
+import { switchDb } from "../../db";
 import { ConfigLine } from "../../entities/ConfigLine";
-import { ConfigLineType } from "../../types";
-import { EvLog, EvLogWarn } from "../events";
+import { DbIncluded } from "../../entities/DbIncluded";
+import { doScan } from "../../scan";
+import {
+  ConfigLineType,
+  defaultAutoScanSetting,
+  getDbInfoId,
+  isScanDurationAvailable,
+  TypeDbInfo,
+} from "../../types";
+import { EvLog, EvLogWarn, EvUiCmdResult } from "../events";
 import { genRemoteCaller, uiMsgTimeout } from "../eventTools";
 import {
   cEvConfigLineChange,
+  cEvDbIncludedChange,
   cEvFinderState,
   cEvRefreshRemote,
   cTypeLinkedRemote,
@@ -183,6 +194,100 @@ export const { linkRemotes, unlinkRemotes } = (() => {
     Object.values(linkedRemote).forEach((v) => v.socket?.close());
   };
   return { linkRemotes, unlinkRemotes };
+})();
+
+export const watchAutoRescan = (() => {
+  const genDbScanWatcher = (config: TypeDbInfo) => {
+    let lastScanAt = Date.now();
+    let scanDuration = Infinity;
+    let tHandle: NodeJS.Timeout | undefined;
+    const doWatch = async () => {
+      if (!isScanDurationAvailable(scanDuration)) return;
+      if (Date.now() - lastScanAt > scanDuration) {
+        lastScanAt = Date.now();
+        EvLog("Auto scan context: " + config.finderRoot);
+        await switchDb(config, doScan).catch((e) => {
+          EvLogWarn("Auto scan failed, context: " + config.finderRoot, e);
+        });
+        lastScanAt = Date.now();
+      }
+      if (tHandle) clearTimeout(tHandle);
+      if (isScanDurationAvailable(scanDuration)) {
+        tHandle = setTimeout(doWatch, scanDuration);
+      }
+    };
+
+    const subscribe = EvUiCmdResult.subscribe((res) => {
+      if (
+        res.cmd === "listConfig" &&
+        !res.result.error &&
+        (res.result.oriData.type === ConfigLineType.autoRescan ||
+          isEmpty(res.result.oriData)) &&
+        getDbInfoId(res.context) === getDbInfoId(config)
+      ) {
+        const configLine = res.result.results.find(
+          (v) => v.type === ConfigLineType.autoRescan
+        );
+        try {
+          let setting = defaultAutoScanSetting;
+          if (configLine?.jsonStr) {
+            setting = Object.assign(
+              { ...defaultAutoScanSetting },
+              JsonMore.parse(configLine.jsonStr)
+            );
+          }
+          scanDuration = isScanDurationAvailable(setting.duration)
+            ? setting.duration * 3600 * 1000
+            : Infinity;
+          doWatch();
+        } catch (e) {
+          EvLogWarn(
+            "Failed to parse autoRescan config: " + configLine?.jsonStr
+          );
+        }
+      }
+    });
+    dbPathWatcherCloseMap.get(config.finderRoot)?.();
+    dbPathWatcherCloseMap.set(config.finderRoot, () => {
+      subscribe.unsubscribe();
+      if (tHandle) clearTimeout(tHandle);
+      scanDuration = Infinity;
+      dbPathWatcherCloseMap.delete(config.finderRoot);
+    });
+  };
+  const dbPathWatcherCloseMap = new Map<string, () => void>();
+  const refreshWatcher = () => {
+    switchDb(Config, async () => {
+      const dbIncludeds = await DbIncluded.queryAllDbIncluded((handle) =>
+        handle.find()
+      );
+      const newDbIncludesSet = new Set(
+        dbIncludeds.map((v) => joinToAbsolute(v.dbInfo.finderRoot, v.path))
+      );
+      newDbIncludesSet.add(Config.finderRoot);
+      Array.from(dbPathWatcherCloseMap.entries()).forEach(([path, close]) => {
+        if (!newDbIncludesSet.has(path)) close();
+      });
+      dbIncludeds
+        .map((v) => {
+          const finderRoot = joinToAbsolute(v.dbInfo.finderRoot, v.path);
+          return {
+            ...v.dbInfo,
+            finderRoot,
+            dbPath: joinToAbsolute(finderRoot, v.dbInfo.dbName),
+            isSubDb: true,
+          } as TypeDbInfo;
+        })
+        .concat(Config)
+        .forEach((v) => {
+          if (!dbPathWatcherCloseMap.has(v.finderRoot)) genDbScanWatcher(v);
+        });
+    });
+  };
+  return () => {
+    cEvDbIncludedChange.pipe(debounceTime(500)).subscribe(refreshWatcher);
+    refreshWatcher();
+  };
 })();
 
 /**

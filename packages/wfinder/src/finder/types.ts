@@ -12,6 +12,7 @@ export enum ConfigLineType {
   serverSetting,
   excludeAbsPath,
   excludePathRelativeToCurrent,
+  autoRescan,
 }
 
 export type TypeServerSetting = {
@@ -28,6 +29,18 @@ export const defaultServerSetting: TypeServerSetting = {
   allowIps: [".*"],
   passwordPairs: [],
   allowTokens: [],
+};
+
+export type TypeAutoScanSetting = {
+  /** Hour duration */
+  duration: number;
+};
+
+export const isScanDurationAvailable = (duration: number) =>
+  duration > 0 && duration !== Infinity;
+
+export const defaultAutoScanSetting: TypeAutoScanSetting = {
+  duration: Infinity,
 };
 
 export type TypeDbInfo = {
