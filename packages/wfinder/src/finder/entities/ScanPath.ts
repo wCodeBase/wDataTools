@@ -48,7 +48,7 @@ SubDatabaseIterators.push(async (cb) => {
     const absDbPath = joinToAbsolute(config.finderRoot, scanPath.dbPath);
     const absFinderRoot = joinToAbsolute(config.finderRoot, scanPath.path);
     if (!fs.existsSync(absDbPath)) {
-      if (!EvFinderStatus.value.scanContextIdAndPathSet.size) {
+      if (!EvFinderStatus.value.scanAbsPathContexIdtMap.size) {
         EvLogWarn(
           `It's time to rescan, database file of scan path not exist: ${absDbPath}.`
         );

@@ -8,12 +8,18 @@ import {
 import { TypeJsonData } from "wjstools";
 import { interactYield } from "wjstools";
 import { entityChangeWatchingSubjectMap } from "../common";
-import { getCachedConnection, getConfig, getFinderCoreInfo } from "../db";
+import {
+  getCachedConnection,
+  getConfig,
+  getDbFlags,
+  getFinderCoreInfo,
+} from "../db";
 import { cEvFinderState } from "../events/core/coreEvents";
 import { cTypeImplementedOrmCall } from "../events/core/coreTypes";
 import { EvLogError } from "../events/events";
 import { TypeQueryLimit } from "../types";
 import { Config } from "./../common";
+import fs from "fs";
 
 export type SubDatabaseIterator = (cb: () => Promise<void>) => Promise<void>;
 
@@ -30,11 +36,29 @@ export class BaseDbInfoEntity extends BaseEntity {
     doQuery: (handle: typeof this) => Promise<T[]>,
     selfFirst = true
   ) {
+    return await this._queryAllDbIncluded(new Set(), doQuery, selfFirst);
+  }
+
+  private static async _queryAllDbIncluded<
+    E extends typeof BaseDbInfoEntity,
+    T
+  >(
+    this: E,
+    queriedDbPathSet: Set<string>,
+    doQuery: (handle: typeof this) => Promise<T[]>,
+    selfFirst = true
+  ) {
+    queriedDbPathSet.add(fs.realpathSync(getConfig().dbPath));
     let res: T[] = selfFirst ? await doQuery(this) : [];
     for (const cb of SubDatabaseIterators) {
       await cb(async () => {
         await interactYield();
-        res = res.concat(await this.queryAllDbIncluded(doQuery, selfFirst));
+        const realPath = fs.realpathSync(getConfig().dbPath);
+        if (queriedDbPathSet.has(realPath)) return;
+        else queriedDbPathSet.add(realPath);
+        res = res.concat(
+          await this._queryAllDbIncluded(queriedDbPathSet, doQuery, selfFirst)
+        );
       });
     }
     if (!selfFirst) res = res.concat(await doQuery(this));
@@ -171,7 +195,11 @@ const triggerChangeMethods = new Set([
           this.constructor.useConnection(getCachedConnection(getConfig()));
         // @ts-ignore
         const res = await old.apply(this, args);
-        entityChangeWatchingSubjectMap.get(this.constructor)?.next(getConfig());
+        if (getDbFlags().willChange) {
+          entityChangeWatchingSubjectMap
+            .get(this.constructor)
+            ?.next(getConfig());
+        }
         return res;
       };
     }
@@ -216,7 +244,9 @@ const triggerChangeMethods = new Set([
         if (connection) this.useConnection(connection);
         // @ts-ignore
         const res = old.apply(this, args);
-        entityChangeWatchingSubjectMap.get(this)?.next(getConfig());
+        if (getDbFlags().willChange) {
+          entityChangeWatchingSubjectMap.get(this)?.next(getConfig());
+        }
         return res;
       };
     }

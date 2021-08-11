@@ -1,7 +1,7 @@
 import { isEmpty, isEqual } from "lodash";
 import { Subscription } from "rxjs";
 import { debounceTime } from "rxjs/operators";
-import { concatUrls, joinToAbsolute, JsonMore } from "wjstools";
+import { concatUrls, JsonMore } from "wjstools";
 import Websocket from "ws";
 import { EVENT_ORM_METHOD_WEBSOCKET_ROUTE } from "../../../constants";
 import { Config } from "../../common";
@@ -206,7 +206,17 @@ export const watchAutoRescan = (() => {
       if (Date.now() - lastScanAt > scanDuration) {
         lastScanAt = Date.now();
         EvLog("Auto scan context: " + config.finderRoot);
-        await switchDb(config, doScan).catch((e) => {
+        await switchDb(config, async () => {
+          await doScan(
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            scanDuration
+          );
+        }).catch((e) => {
           EvLogWarn("Auto scan failed, context: " + config.finderRoot, e);
         });
         lastScanAt = Date.now();
@@ -239,6 +249,7 @@ export const watchAutoRescan = (() => {
           scanDuration = isScanDurationAvailable(setting.duration)
             ? setting.duration * 3600 * 1000
             : Infinity;
+          lastScanAt = Date.now();
           doWatch();
         } catch (e) {
           EvLogWarn(

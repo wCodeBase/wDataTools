@@ -89,7 +89,7 @@ export const DbIncludedManager = defaultPropsFc(
 
     const [scanning] = usePickBehaviorSubjectValue(
       EvFinderStatus,
-      (v) => !!v.scanContextIdAndPathSet.size
+      (v) => !!v.scanAbsPathContexIdtMap.size
     );
 
     const tableTitle = useMemo(() => {

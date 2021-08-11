@@ -1,6 +1,6 @@
 {
   "name": "wfinder",
-  "version": "0.0.1-alpha-10",
+  "version": "0.0.1-alpha-12",
   "description": "A local file indexing and searching tool.",
   "homepage": "https://github.com/wCodeBase/wDataTools/tree/main/packages/wfinder",
   "email": "wcodebase@126.com",

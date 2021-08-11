@@ -72,25 +72,37 @@ export const uiCmdExecutor = async function (msg: TypeUiMsgData | null) {
         const { cmd, data } = msg;
         EvFinderStatus.next({ status: FinderStatus.searching });
         try {
-          const [total, records] = await Promise.all([
-            await FileInfo.countByMatchName(
-              data.keywords,
-              data.fullMatchInput,
-              data.regMatchInput
-            ),
-            (
-              await FileInfo.findByMatchName(
-                data.keywords,
-                data.fullMatchInput,
-                data.regMatchInput,
-                data.take,
-                data.skip
-              )
-            ).map((v) => {
-              const { size, type, id, dbInfo, absPath } = v;
-              return { name: v.getName(), size, type, id, dbInfo, absPath };
-            }),
-          ]);
+          const [total, records] = await switchDb(
+            context,
+            () =>
+              Promise.all([
+                FileInfo.countByMatchName(
+                  data.keywords,
+                  data.fullMatchInput,
+                  data.regMatchInput
+                ),
+                FileInfo.findByMatchName(
+                  data.keywords,
+                  data.fullMatchInput,
+                  data.regMatchInput,
+                  data.take,
+                  data.skip
+                ).then((res) =>
+                  res.map((v) => {
+                    const { size, type, id, dbInfo, absPath } = v;
+                    return {
+                      name: v.getName(),
+                      size,
+                      type,
+                      id,
+                      dbInfo,
+                      absPath,
+                    };
+                  })
+                ),
+              ]),
+            { willChange: false }
+          );
           cmdResult = { cmd, result: { ...data, total, records } };
           EvFinderStatus.next({ status: FinderStatus.idle });
         } finally {

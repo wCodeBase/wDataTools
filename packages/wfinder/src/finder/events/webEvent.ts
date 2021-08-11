@@ -169,7 +169,7 @@ EvFileInfoChange.subscribe(() => {
   if (wEvFinderReady.value) getTotalFile();
 });
 
-EvFinderReady.subscribe((ready) => {
+wEvFinderReady.subscribe((ready) => {
   if (ready) {
     EvUiCmd.next({
       cmd: "listConfig",

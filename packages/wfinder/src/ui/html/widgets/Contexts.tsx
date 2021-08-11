@@ -2,18 +2,14 @@ import { LoadingOutlined } from "@ant-design/icons";
 import { message, Popover, Tooltip } from "antd";
 import { last } from "lodash";
 import React, { useRef } from "react";
+import { usePickBehaviorSubjectValue } from "wjstools";
 import { EvFinderState } from "../../../finder/events/events";
-import {
-  WebContext,
-  wEvFinderReady,
-  wEvGlobalState,
-} from "../../../finder/events/webEvent";
+import { executeUiCmd } from "../../../finder/events/eventTools";
+import { WebContext, wEvGlobalState } from "../../../finder/events/webEvent";
 import { webInitEvent } from "../../../finder/events/webEventTools";
 import { getDbInfoId, getLocalDbInfoStackId } from "../../../finder/types";
-import { usePickBehaviorSubjectValue } from "wjstools";
 import { SubDatabaseHint } from "../components/SubDatabaseHint";
 import { messageError } from "../uiTools";
-import { executeUiCmd } from "../../../finder/events/eventTools";
 
 const switchContext = async (
   context: WebContext,

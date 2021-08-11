@@ -408,7 +408,8 @@ export const doScan = async (
   ignoreCtime = false,
   currentDepth = 0,
   paths?: string[],
-  scanBrake?: BehaviorSubject<boolean>
+  scanBrake?: BehaviorSubject<boolean>,
+  lastScanDurationLimit = 0
 ) => {
   let errors: string[] = [];
   if (isScanRoot) {
@@ -439,13 +440,20 @@ export const doScan = async (
       const scanPaths = await (async () => {
         let res = await await ScanPath.find();
         const clsValue = clsScan.get();
+        const now = Date.now();
         if (clsValue.limitPathSet && clsValue.startConfig === config)
-          res = res.filter((v) => clsValue.limitPathSet?.has(v.path));
+          res = res
+            .filter((v) => clsValue.limitPathSet?.has(v.path))
+            .filter(
+              (v) =>
+                now - (v.lastScanedAt?.valueOf() || 0) > lastScanDurationLimit
+            );
         return res;
       })();
       scanPaths.forEach((v) =>
-        EvFinderStatus.value.scanContextIdAndPathSet.add(
-          getDbInfoId(config) + v.path
+        EvFinderStatus.value.scanAbsPathContexIdtMap.set(
+          joinToAbsolute(v.dbInfo.finderRoot, v.path),
+          getDbInfoId(config)
         )
       );
       EvFinderStatus.next(EvFinderStatus.value);
@@ -489,7 +497,8 @@ export const doScan = async (
           if (!pathPerm.read) {
             throw new Error(`Path to scan is no readable: "${absPath}"`);
           } else if (isPathInclude(config.finderRoot, absPath)) {
-            if (clsScan.get().Scaned.has(absPath)) {
+            const realPath = fs.realpathSync(absPath);
+            if (clsScan.get().Scaned.has(realPath)) {
               sendUiCmdMessage({
                 type: "warn",
                 message: "Skip scaned path: " + absPath,
@@ -508,7 +517,7 @@ export const doScan = async (
               pathToScan.dbPath = path.relative(config.finderRoot, testDbPath);
               await FileInfo.removePath(pathToScan.path);
             } else {
-              clsScan.get().Scaned.add(absPath);
+              clsScan.get().Scaned.add(realPath);
               errors = errors.concat(
                 await scanPath(
                   pathToScan,
@@ -559,7 +568,7 @@ export const doScan = async (
           }
           sendUiCmdMessage({
             type: "log",
-            message: `Path scan finished: ${absPath}`,
+            message: `Path scan finished: ${absPath}.`+(config === clsScan.get().startConfig?'':" Context: "+config.finderRoot),
           });
         } catch (e) {
           pathToScan.lastMessage = String(e);
@@ -577,8 +586,8 @@ export const doScan = async (
           }
         } finally {
           brakeSubscribe.unsubscribe();
-          EvFinderStatus.value.scanContextIdAndPathSet.delete(
-            getDbInfoId(config) + pathToScan.path
+          EvFinderStatus.value.scanAbsPathContexIdtMap.delete(
+            joinToAbsolute(pathToScan.dbInfo.finderRoot, pathToScan.path)
           );
           EvFinderStatus.next(EvFinderStatus.value);
         }

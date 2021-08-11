@@ -13,7 +13,7 @@ export enum FinderStatus {
 
 export type TypeFinderStatus = {
   status: FinderStatus;
-  scanContextIdAndPathSet: Set<string>;
+  scanAbsPathContexIdtMap: Map<string, string>;
   /** TODO: display this status */
   searchContextIdSet: Set<string>;
 };

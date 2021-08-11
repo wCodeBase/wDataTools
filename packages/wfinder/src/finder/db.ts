@@ -339,13 +339,25 @@ export const {
   };
 })();
 
-export const { switchDb, getConfig } = (() => {
+export const { switchDb, getConfig, getDbFlags } = (() => {
   const dbSession = (() => {
     const session = createNamespace("wfinderDbSession");
     const KEY_CONFIG = "key_config";
+    const KEY_FLAGS = "key_flags";
+    const defaultFlags = {
+      willChange: true,
+    };
     return {
       get: () => (session.get(KEY_CONFIG) || Config) as TypeDbInfo,
-      run: async <T>(config: TypeDbInfo, cb: () => Promise<T>) => {
+      flags: () =>
+        (session.get(KEY_FLAGS) || defaultFlags) as Partial<
+          typeof defaultFlags
+        >,
+      run: async <T>(
+        config: TypeDbInfo,
+        cb: () => Promise<T>,
+        flags?: Partial<typeof defaultFlags>
+      ) => {
         if (
           config.isSubDb &&
           config.dbPath.slice(0, fakePath.length) !== fakePath &&
@@ -356,6 +368,7 @@ export const { switchDb, getConfig } = (() => {
         await getConnection(config);
         return session.runPromise(async () => {
           session.set(KEY_CONFIG, config);
+          if (flags) session.set(KEY_FLAGS, flags);
           return await cb();
         });
       },
@@ -364,6 +377,7 @@ export const { switchDb, getConfig } = (() => {
   return {
     switchDb: dbSession.run,
     getConfig: dbSession.get,
+    getDbFlags: dbSession.flags,
   };
 })();
 

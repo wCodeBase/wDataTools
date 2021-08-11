@@ -372,7 +372,7 @@ const FinderStateInfo = defaultPropsFc(
             (props.className || "")
           }
         >
-          {!ready ? "Preparing wfinder" : "Searching"}{" "}
+          {!ready ? "WFinder preparing" : "Searching"}{" "}
           <LoadingOutlined className="ml-2" />
         </div>
       );

@@ -13,7 +13,7 @@ import { TypeMsgPathItem } from "../../../finder/events/types";
 import { getLocalContext } from "../../../finder/events/webEvent";
 import { getDbInfoId, TypeDbInfo } from "../../../finder/types";
 import { formatDate } from "../../../tools/tool";
-import { useStableState, useSubjectCallback } from "wjstools";
+import { joinToAbsolute, useStableState, useSubjectCallback } from "wjstools";
 import { useFinderReady } from "../../hooks/webHooks";
 import { simpleGetKey } from "../../tools";
 import {
@@ -29,13 +29,18 @@ const usePathScanning = (records: TypeMsgPathItem[], context?: TypeDbInfo) => {
   const [finderStatus] = useFinderStatus();
   context = context || getLocalContext();
   const contextPaths = useMemo(() => {
-    return records.map((v) => getDbInfoId(v.dbInfo) + v.path);
+    return records.map((v) =>
+      joinToAbsolute(
+        (v.dbInfo || context || getLocalContext())?.finderRoot || "",
+        v.path
+      )
+    );
   }, [context, records]);
   return useMemo(() => {
     return contextPaths.some((v) =>
-      finderStatus.scanContextIdAndPathSet.has(v)
+      finderStatus.scanAbsPathContexIdtMap.has(v)
     );
-  }, [finderStatus.scanContextIdAndPathSet, contextPaths]);
+  }, [finderStatus.scanAbsPathContexIdtMap, contextPaths]);
 };
 
 const SearchButton = React.memo(

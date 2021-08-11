@@ -2,18 +2,12 @@ import { LoadingOutlined } from "@ant-design/icons";
 import { Button, InputNumber, message, Spin } from "antd";
 import { isEmpty } from "lodash";
 import React from "react";
-import {
-  JsonMore,
-  usePickBehaviorSubjectValue,
-  useStableState,
-  useSubjectCallback,
-} from "wjstools";
+import { JsonMore, useStableState, useSubjectCallback } from "wjstools";
 import { EvUiCmdResult } from "../../../finder/events/events";
 import { executeUiCmd } from "../../../finder/events/eventTools";
 import {
   getLocalContext,
   wEvFinderReady,
-  wEvGlobalState,
 } from "../../../finder/events/webEvent";
 import {
   ConfigLineType,

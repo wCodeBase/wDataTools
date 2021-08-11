@@ -51,7 +51,7 @@ SubDatabaseIterators.push(async (cb) => {
     try {
       const dbPath = path.join(finderRoot, db.dbName);
       if (!fs.existsSync(dbPath)) {
-        if (!EvFinderStatus.value.scanContextIdAndPathSet.size) {
+        if (!EvFinderStatus.value.scanAbsPathContexIdtMap.size) {
           EvLogWarn(
             `It's time to rescan, sub database file not exist: ${dbPath}.`
           );

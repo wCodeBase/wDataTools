@@ -23,7 +23,7 @@ import {
 
 export const EvFinderStatus = new ShallowJsonBehaviorSubject<TypeFinderStatus>({
   status: FinderStatus.idle,
-  scanContextIdAndPathSet: new Set(),
+  scanAbsPathContexIdtMap: new Map(),
   searchContextIdSet: new Set(),
 });
 

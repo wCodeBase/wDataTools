@@ -33,7 +33,7 @@ export const FinderStatusIndicator = defaultPropsFc(
   { className: "" },
   (props) => {
     const [finderStatus] = useFinderStatus();
-    const status = finderStatus.scanContextIdAndPathSet.size
+    const status = finderStatus.scanAbsPathContexIdtMap.size
       ? FinderStatus.scanning
       : finderStatus.searchContextIdSet.size
       ? FinderStatus.searching
