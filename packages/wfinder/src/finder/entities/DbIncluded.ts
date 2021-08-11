@@ -28,6 +28,7 @@ export class DbIncluded extends BaseDbInfoEntity {
       record.dbName = dbName;
       await record.save();
     }
+    return record;
   }
 
   static async removeUnexists() {

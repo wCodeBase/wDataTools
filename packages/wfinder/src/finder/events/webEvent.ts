@@ -35,6 +35,7 @@ export type WebContext = {
 
 export const wEvGlobalState = new ShallowBehaviorSubject({
   contextStack: [] as WebContext[],
+  contextSwitching: false,
   total: 0,
   remoteTotal: 0,
   localTotal: 0,
@@ -153,8 +154,8 @@ EvDatabaseInfos.subscribe((state) => {
   }
 });
 
-const getTotalFile = () => {
-  if (getLocalContext() !== getLocalRootContext()) {
+const getTotalFile = (force = false) => {
+  if (force || getLocalContext() !== getLocalRootContext()) {
     messageError(
       executeUiCmd("countAllFileInfo", {
         cmd: "countAllFileInfo",
@@ -189,7 +190,8 @@ merge(EvFinderReady, EvFinderState, wEvEventStatus, wEvGlobalState).subscribe(
       !EvFinderReady.value ||
       !EvFinderState.value.config ||
       wEvEventStatus.value !== WebEventStatus.connected ||
-      !getLocalContext()
+      wEvGlobalState.value.contextSwitching ||
+      !getLocalContext()?.thumbnail
     ) {
       if (wEvFinderReady.value) {
         wEvFinderReady.next(false);
@@ -205,7 +207,7 @@ wEvFinderReady.subscribe((ready) => {
   if (ready === prevWebFinderReady) return;
   prevWebFinderReady = ready;
   if (ready) {
-    getTotalFile();
+    getTotalFile(true);
     executeUiCmd("coreTime", { cmd: "coreTime" }).then((res) => {
       wEvGlobalState.next({
         timeDiffToCore: Date.now() - res.result.time?.valueOf(),

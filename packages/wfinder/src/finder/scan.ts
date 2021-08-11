@@ -2,15 +2,15 @@ import { createNamespace } from "cls-hooked";
 import * as fs from "fs";
 import * as path from "path";
 import { BehaviorSubject } from "rxjs";
-import { SUB_DATABASE_PREFIX } from "../constants";
-import { pathPem } from "wnodetools";
 import {
+  interactYield,
   isPathEqual,
   isPathInclude,
   joinToAbsolute,
   splitPath,
 } from "wjstools";
-import { interactYield } from "wjstools";
+import { pathPem } from "wnodetools";
+import { SUB_DATABASE_PREFIX } from "../constants";
 import { Config, isDev, MAX_PATH_DEPTH } from "./common";
 import { getConfig, getConnection, switchDb } from "./db";
 import { getEntityTableName } from "./entities/BaseDbInfoEntity";
@@ -39,11 +39,8 @@ const testAndScanSubDb = async (
 ) => {
   if (isPathEqual(testAbsPath, config.finderRoot)) return false;
   const testDbPath = path.join(testAbsPath, config.dbName);
-  if (
-    fs.existsSync(testDbPath) &&
-    fs.statSync(testDbPath).isFile() &&
-    pathPem.canWrite(testDbPath)
-  ) {
+  const stat = fs.existsSync(testDbPath) ? fs.statSync(testDbPath) : undefined;
+  if (stat?.isFile() && pathPem.canWrite(testDbPath)) {
     sendUiCmdMessage({
       type: "log",
       message: `Sub database found: ${testDbPath}`,
@@ -97,19 +94,33 @@ export const scanPath = async (
     if (!isPathInclude(finderRoot, pathToScan))
       throw new FileScanError("Path to scan is not included in finderRoot.");
 
-    let parentId = -1;
-    const pathSegs = splitPath(path.relative(finderRoot, pathToScan));
-    while (true) {
-      const pathSeg = pathSegs.pop();
-      if (!pathSeg) break;
-      const existPath = await FileInfo.getOrInsert(
-        pathSeg,
-        FileType.folder,
-        new Date(),
-        parentId
+    const fileInfoTableName = getEntityTableName(FileInfo);
+    const folderNameQuery = `select name from ${fileInfoTableName} where parentId = ? and type is not ${FileType.file} `;
+    const getUnchangedChildren = async (infoId: number) => {
+      clsVars.scanedFileCount += await FileInfo.count({
+        where: { parentId: infoId, type: FileType.file },
+      });
+      return (await FileInfo.query(folderNameQuery, [infoId])).map(
+        (v: { name: string }) => restoreText(v.name)
       );
-      clsVars.scanedFileCount++;
-      parentId = existPath.id;
+    };
+    let scanRootFileInfo = await await FileInfo.findOneByPath(pathToScan);
+    let parentId = scanRootFileInfo?.id || -1;
+    if (!scanRootFileInfo) {
+      const pathSegs = splitPath(path.relative(finderRoot, pathToScan));
+      while (true) {
+        const pathSeg = pathSegs.pop();
+        if (!pathSeg) break;
+        const existPath = await FileInfo.getOrInsert(
+          pathSeg,
+          FileType.folder,
+          new Date(),
+          parentId
+        );
+        clsVars.scanedFileCount++;
+        parentId = existPath.id;
+        scanRootFileInfo = existPath;
+      }
     }
     if (fs.statSync(pathToScan).isFile()) {
       const fileInfo = await FileInfo.findOne(parentId);
@@ -123,17 +134,21 @@ export const scanPath = async (
       clsVars.scanedFileCount++;
       return errors;
     } else {
+      const ctime = fs.statSync(pathToScan).ctime;
+      const rootChanged =
+        ignoreCtime || ctime.valueOf() !== scanRootFileInfo?.ctime.valueOf();
       const scanStack = [
         {
           id: parentId,
           absPath: pathToScan,
-          restChildren: fs.readdirSync(pathToScan),
-          ctime: fs.statSync(pathToScan).ctime,
-          changed: true,
+          restChildren: rootChanged
+            ? fs.readdirSync(pathToScan)
+            : await getUnchangedChildren(parentId),
+          ctime,
+          changed: rootChanged,
           depth: currentDepth,
         },
       ];
-
       enum ExcludeType {
         false,
         current,
@@ -175,8 +190,6 @@ export const scanPath = async (
           return !!relativeRegs.some((v) => v.test(relativePath));
         };
       })();
-      const fileInfoTableName = getEntityTableName(FileInfo);
-      const folderNameQuery = `select name from ${fileInfoTableName} where parentId = ? and type is not ${FileType.file} `;
       while (!scanBrake.value) {
         const item = scanStack.pop();
         if (!item) break;
@@ -194,6 +207,18 @@ export const scanPath = async (
             scanBrake
           );
         }
+        const existChilFileInfoMap = new Map(
+          (
+            await FileInfo.find({
+              where: {
+                parentId: item.id,
+                ...(item.changed ? {} : { type: FileType.folder }),
+              },
+            })
+          ).map((v) => [v.getName(), v])
+        );
+
+        const toSaveChils: FileInfo[] = [];
         for (const name of item.restChildren) {
           clsVars.scanedFileCount++;
           if (scanBrake.value) break;
@@ -223,29 +248,36 @@ export const scanPath = async (
             continue;
           }
           const stat = fs.statSync(chilPath);
-          if (stat.isFile()) {
-            if (item.changed)
-              await FileInfo.getOrInsert(
-                name,
-                FileType.file,
-                stat.ctime,
-                item.id,
-                stat.size
-              );
+          if (item.changed && stat.isFile()) {
+            // If !item.changed, all restChildren should not be file.
+            const file =
+              existChilFileInfoMap.get(name) ||
+              new FileInfo(name, FileType.file, stat.ctime, item.id, stat.size);
+            if (
+              file.id === undefined ||
+              file.ctime.valueOf() !== stat.ctime.valueOf()
+            ) {
+              toSaveChils.push(file);
+              file.ctime = stat.ctime;
+            }
           } else {
+            let folder = existChilFileInfoMap.get(name);
             const changed =
-              ignoreCtime ||
-              (
-                await FileInfo.findByNameWhere(name, { parentId: item.id })
-              )[0]?.ctime.valueOf() !== stat.ctime.valueOf();
-            const info = await FileInfo.getOrInsert(
-              name,
-              FileType.folder,
-              stat.ctime,
-              item.id
-            );
+              ignoreCtime || folder?.ctime.valueOf() !== stat.ctime.valueOf();
+            if (folder) {
+              if (changed) {
+                folder.ctime = stat.ctime;
+                toSaveChils.push(folder);
+              }
+            } else
+              folder = await FileInfo.getOrInsert(
+                name,
+                FileType.folder,
+                stat.ctime,
+                item.id
+              );
             if (excludeType === ExcludeType.children) {
-              FileInfo.removeChildren(info.id, undefined, scanBrake);
+              FileInfo.removeChildren(folder.id, undefined, scanBrake);
             } else if (!pathPem.canRead(chilPath)) {
               errors.push(`Path unreadable: ${chilPath}`);
             } else {
@@ -261,29 +293,21 @@ export const scanPath = async (
                 let restChildren: string[];
                 if (changed) restChildren = fs.readdirSync(chilPath);
                 else {
-                  clsVars.scanedFileCount += await FileInfo.count({
-                    where: { parentId: info.id, type: FileType.file },
-                  });
-                  restChildren = (
-                    await FileInfo.query(folderNameQuery, [info.id])
-                  ).map((v: { name: string }) => restoreText(v.name));
-                  if (judgeExcludePath) {
-                    const folderSet = new Set(restChildren);
-                    const toRemoves: string[] = [];
-                    const files = fs.readdirSync(chilPath).filter((v) => {
-                      if (folderSet.has(v)) return false;
-                      if (judgeExcludePath(path.join(chilPath, v))) {
-                        toRemoves.push(v);
-                        return false;
-                      }
+                  restChildren = await getUnchangedChildren(folder.id);
+                  const folderSet = new Set(restChildren);
+                  const toRemoves = fs.readdirSync(chilPath).filter((v) => {
+                    if (folderSet.has(v)) return false;
+                    if (judgeExcludePath?.(path.join(chilPath, v))) {
                       return true;
-                    });
-                    await FileInfo.removeChildren(item.id, toRemoves);
-                    restChildren = files.concat(restChildren);
-                  }
+                    }
+                    if (judgeExcludeType(v) === ExcludeType.current)
+                      return true;
+                    return false;
+                  });
+                  await FileInfo.removeChildren(item.id, toRemoves);
                 }
                 scanStack.push({
-                  id: info.id,
+                  id: folder.id,
                   absPath: chilPath,
                   restChildren,
                   ctime: stat.ctime,
@@ -294,6 +318,7 @@ export const scanPath = async (
             }
           }
         }
+        await FileInfo.save(toSaveChils);
         if (!scanBrake.value) {
           const info = await FileInfo.findOne(item.id);
           if (info && info.ctime.valueOf() !== item.ctime.valueOf()) {
@@ -462,7 +487,7 @@ export const doScan = async (
           const pathPerm = pathPem.getPem(absPath);
           const pathScanStartAt = Date.now();
           if (!pathPerm.read) {
-            throw new Error("Path to scan is no readable: " + absPath);
+            throw new Error(`Path to scan is no readable: "${absPath}"`);
           } else if (isPathInclude(config.finderRoot, absPath)) {
             if (clsScan.get().Scaned.has(absPath)) {
               sendUiCmdMessage({

@@ -88,7 +88,13 @@ const SearchButton = React.memo(
             </Button>
           </div>
         )}
-        {!props.noClear && <ClearIndexButton {...props} disabled={scanning} />}
+        {!props.noClear && (
+          <ClearIndexButton
+            {...props}
+            records={undefined}
+            disabled={scanning}
+          />
+        )}
       </div>
     );
   }
@@ -99,7 +105,7 @@ const ClearIndexButton = React.memo(
     context?: TypeDbInfo;
     toLine?: boolean;
     disabled?: boolean;
-    records: TypeMsgPathItem[];
+    records?: TypeMsgPathItem[];
   }) => {
     const [lodaing, setLodaing] = useState(false);
     return (
@@ -112,7 +118,7 @@ const ClearIndexButton = React.memo(
               executeUiCmd("clearIndexedData", {
                 cmd: "clearIndexedData",
                 data: {
-                  path: props.records.map((v) => v.path),
+                  path: props.records?.map((v) => v.path),
                 },
                 context: props.context || getLocalContext(),
               })

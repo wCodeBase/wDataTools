@@ -190,7 +190,9 @@ type TypeMsgCoreManage = {
     data: {
       notSubDb: boolean;
     };
-    result: string;
+    result: {
+      thumbnail?: string;
+    };
   };
   countAllFileInfo: {
     result: {

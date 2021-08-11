@@ -3,6 +3,7 @@ import * as path from "path";
 import { BehaviorSubject } from "rxjs";
 import hashString from "string-hash";
 import {
+  BaseEntity,
   Column,
   Entity,
   FindConditions,
@@ -10,6 +11,7 @@ import {
   Index,
   PrimaryGeneratedColumn,
   RemoveOptions,
+  SaveOptions,
 } from "typeorm";
 import { splitPath } from "wjstools";
 import { interactYield } from "wjstools";
@@ -87,10 +89,39 @@ export class FileInfo extends BaseDbInfoEntity {
     return res;
   }
 
+  static async save<T extends BaseEntity>(
+    entities: T[],
+    options?: SaveOptions
+  ) {
+    const resList = await super.save(entities, options);
+    // @ts-ignore
+    const rests: FileInfo[] = resList.filter((v) => v instanceof FileInfo);
+    while (true) {
+      const toInsert = rests.pop();
+      if (!toInsert) break;
+      await FileInfo.getRepository().query(
+        `insert into ${IndexTableName}(rowid, name) values(${toInsert.id},?)`,
+        [toInsert.name]
+      );
+    }
+    return resList;
+  }
+
   async remove(options?: RemoveOptions) {
     await FileInfo.removeNameIndexs([this]);
     const res = await super.remove(options);
     return res;
+  }
+
+  static async remove<T extends BaseEntity>(
+    entities: T[],
+    options?: RemoveOptions
+  ) {
+    const resList = await super.remove(entities, options);
+    // @ts-ignore
+    const rests: FileInfo[] = resList.filter((v) => v instanceof FileInfo);
+    if (rests.length) await FileInfo.removeNameIndexs(rests);
+    return resList;
   }
 
   async getPath() {
@@ -438,6 +469,21 @@ export class FileInfo extends BaseDbInfoEntity {
         await info.remove();
       }
     }
+  }
+
+  static async findOneByPath(absPath: string, config = getConfig()) {
+    return await switchDb(config, async () => {
+      const pathSegs = splitPath(path.relative(config.finderRoot, absPath));
+      let fileInfo: FileInfo | undefined;
+      while (true) {
+        const name = pathSegs.pop();
+        if (!name) return fileInfo;
+        fileInfo = (
+          await FileInfo.findByNameWhere(name, { parentId: fileInfo?.id || -1 })
+        )[0];
+        if (!fileInfo) return fileInfo;
+      }
+    });
   }
 
   static async getPath(id: number, config = getConfig()) {

@@ -5,7 +5,7 @@ import { concatUrls, joinToAbsolute, JsonMore } from "wjstools";
 import Websocket from "ws";
 import { EVENT_ORM_METHOD_WEBSOCKET_ROUTE } from "../../../constants";
 import { Config } from "../../common";
-import { switchDb } from "../../db";
+import { getConfig, switchDb } from "../../db";
 import { ConfigLine } from "../../entities/ConfigLine";
 import { DbIncluded } from "../../entities/DbIncluded";
 import { doScan } from "../../scan";
@@ -16,7 +16,7 @@ import {
   isScanDurationAvailable,
   TypeDbInfo,
 } from "../../types";
-import { EvLog, EvLogWarn, EvUiCmdResult } from "../events";
+import { EvLog, EvLogWarn, EvUiCmd, EvUiCmdResult } from "../events";
 import { genRemoteCaller, uiMsgTimeout } from "../eventTools";
 import {
   cEvConfigLineChange,
@@ -254,34 +254,26 @@ export const watchAutoRescan = (() => {
       scanDuration = Infinity;
       dbPathWatcherCloseMap.delete(config.finderRoot);
     });
+    EvUiCmd.next({
+      cmd: "listConfig",
+      data: { type: ConfigLineType.autoRescan },
+      context: config,
+    });
   };
   const dbPathWatcherCloseMap = new Map<string, () => void>();
   const refreshWatcher = () => {
     switchDb(Config, async () => {
-      const dbIncludeds = await DbIncluded.queryAllDbIncluded((handle) =>
-        handle.find()
-      );
-      const newDbIncludesSet = new Set(
-        dbIncludeds.map((v) => joinToAbsolute(v.dbInfo.finderRoot, v.path))
-      );
+      const includedDbs = await DbIncluded.queryAllDbIncluded(async () => [
+        getConfig(),
+      ]);
+      const newDbIncludesSet = new Set(includedDbs.map((v) => v.finderRoot));
       newDbIncludesSet.add(Config.finderRoot);
       Array.from(dbPathWatcherCloseMap.entries()).forEach(([path, close]) => {
         if (!newDbIncludesSet.has(path)) close();
       });
-      dbIncludeds
-        .map((v) => {
-          const finderRoot = joinToAbsolute(v.dbInfo.finderRoot, v.path);
-          return {
-            ...v.dbInfo,
-            finderRoot,
-            dbPath: joinToAbsolute(finderRoot, v.dbInfo.dbName),
-            isSubDb: true,
-          } as TypeDbInfo;
-        })
-        .concat(Config)
-        .forEach((v) => {
-          if (!dbPathWatcherCloseMap.has(v.finderRoot)) genDbScanWatcher(v);
-        });
+      includedDbs.concat(Config).forEach((v) => {
+        if (!dbPathWatcherCloseMap.has(v.finderRoot)) genDbScanWatcher(v);
+      });
     });
   };
   return () => {

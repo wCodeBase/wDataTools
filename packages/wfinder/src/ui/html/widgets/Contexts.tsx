@@ -12,6 +12,8 @@ import { webInitEvent } from "../../../finder/events/webEventTools";
 import { getDbInfoId, getLocalDbInfoStackId } from "../../../finder/types";
 import { usePickBehaviorSubjectValue } from "wjstools";
 import { SubDatabaseHint } from "../components/SubDatabaseHint";
+import { messageError } from "../uiTools";
+import { executeUiCmd } from "../../../finder/events/eventTools";
 
 const switchContext = async (
   context: WebContext,
@@ -33,9 +35,9 @@ const switchContext = async (
     : isCurrentContext
     ? "Refresh current context"
     : "Switch database context";
+  wEvGlobalState.next({ contextSwitching: true });
   try {
     EvFinderState.value.config = undefined;
-    wEvFinderReady.next(false);
     if (!remoteUrls) {
       await webInitEvent(undefined, true);
     } else {
@@ -45,6 +47,20 @@ const switchContext = async (
         () => (context.loading = false)
       );
       if (!context.localContexts.length) context.localContexts = [res];
+    }
+    if (context.localContexts.length) {
+      const localContext =
+        context.localContexts[context.localContexts.length - 1];
+      const res = await messageError(
+        executeUiCmd("getThumbnail", {
+          cmd: "getThumbnail",
+          data: { notSubDb: false },
+          context: localContext,
+        })
+      );
+      if (res) {
+        localContext.thumbnail = res.result.thumbnail;
+      }
     }
     wEvGlobalState.next({ contextStack: newContexts });
     if (isRestore) message.warn(msg + " success");
@@ -56,6 +72,8 @@ const switchContext = async (
       wEvGlobalState.next({ contextStack });
       switchContext(contextToRestore, contextToRestore, false, true);
     }
+  } finally {
+    wEvGlobalState.next({ contextSwitching: false });
   }
 };
 

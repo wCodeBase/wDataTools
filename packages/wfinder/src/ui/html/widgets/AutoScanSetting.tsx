@@ -2,10 +2,19 @@ import { LoadingOutlined } from "@ant-design/icons";
 import { Button, InputNumber, message, Spin } from "antd";
 import { isEmpty } from "lodash";
 import React from "react";
-import { JsonMore, useStableState, useSubjectCallback } from "wjstools";
+import {
+  JsonMore,
+  usePickBehaviorSubjectValue,
+  useStableState,
+  useSubjectCallback,
+} from "wjstools";
 import { EvUiCmdResult } from "../../../finder/events/events";
 import { executeUiCmd } from "../../../finder/events/eventTools";
-import { getLocalRootContext } from "../../../finder/events/webEvent";
+import {
+  getLocalContext,
+  wEvFinderReady,
+  wEvGlobalState,
+} from "../../../finder/events/webEvent";
 import {
   ConfigLineType,
   defaultAutoScanSetting,
@@ -30,10 +39,15 @@ export const AutoScanSetting = defaultPropsFc(
           executeUiCmd("listConfig", {
             cmd: "listConfig",
             data: { type: ConfigLineType.autoRescan },
+            context: getLocalContext(),
           })
         );
       },
       saveConfig: async (setting: TypeAutoScanSetting) => {
+        if (!wEvFinderReady.value) {
+          message.warn("WFinder is not ready");
+          return;
+        }
         setState({ saving: true });
         await messageError(
           executeUiCmd("saveOrCreateConfig", {
@@ -43,6 +57,7 @@ export const AutoScanSetting = defaultPropsFc(
               content: "",
               jsonStr: JsonMore.stringify(setting),
             },
+            context: getLocalContext(),
           })
         );
         setState({ saving: false });
@@ -59,7 +74,7 @@ export const AutoScanSetting = defaultPropsFc(
         !res.result.error &&
         (res.result.oriData.type === ConfigLineType.autoRescan ||
           isEmpty(res.result.oriData)) &&
-        getDbInfoId(res.context) === getDbInfoId(getLocalRootContext())
+        getDbInfoId(res.context) === getDbInfoId(getLocalContext())
       ) {
         const configLine = res.result.results.find(
           (v) => v.type === ConfigLineType.autoRescan
@@ -81,7 +96,7 @@ export const AutoScanSetting = defaultPropsFc(
     return (
       <div className={"flex flex-col " + props.className}>
         <div className={props.titleClassName + " flex flex-row items-center"}>
-          Auto scan setting
+          Auto scan
         </div>
         <Spin
           size="large"
@@ -109,17 +124,19 @@ export const AutoScanSetting = defaultPropsFc(
                   onChange={(v) => setState({ newDuration: v })}
                 />
                 <div className="flex justify-end my-1">
-                  <Button
-                    className="mr-1"
-                    type="primary"
-                    size="small"
-                    loading={state.saving}
-                    onClick={() => {
-                      state.saveConfig({ duration: state.newDuration });
-                    }}
-                  >
-                    Save
-                  </Button>
+                  {!!state.newDuration && (
+                    <Button
+                      className="mr-1"
+                      type="primary"
+                      size="small"
+                      loading={state.saving}
+                      onClick={() => {
+                        state.saveConfig({ duration: state.newDuration });
+                      }}
+                    >
+                      Save
+                    </Button>
+                  )}
                   {durationAvailable && (
                     <Button
                       type="primary"

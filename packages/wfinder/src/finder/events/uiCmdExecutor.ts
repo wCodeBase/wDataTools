@@ -1,6 +1,12 @@
 import { joinToAbsolute } from "wjstools";
 import { isDev } from "../common";
-import { getConfig, initDb, removeDbFiles, switchDb } from "../db";
+import {
+  getConfig,
+  getFinderCoreInfo,
+  initDb,
+  removeDbFiles,
+  switchDb,
+} from "../db";
 import { FileInfo } from "../entities/FileInfo";
 import { ScanPath } from "../entities/ScanPath";
 import { Config } from "./../common";
@@ -234,6 +240,13 @@ export const uiCmdExecutor = async function (msg: TypeUiMsgData | null) {
         cmdResult = { cmd: "refreshRemote", result: {} };
       } else if (msg.cmd === "coreTime") {
         cmdResult = { cmd: "coreTime", result: { time: new Date() } };
+      } else if (msg.cmd === "getThumbnail") {
+        cmdResult = {
+          cmd: "getThumbnail",
+          result: {
+            thumbnail: (await getFinderCoreInfo(false, context)).thumbnail,
+          },
+        };
       } else {
         throw new Error(`Command will not be processed.`);
       }
