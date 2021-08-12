@@ -85,6 +85,7 @@ export type TypeMsgPathItem = Pick<
   | "lastScanedAt"
   | "lastMessage"
   | "lastSuccessCost"
+  | "configChanged"
 > &
   Partial<Pick<ScanPath, "dbInfo">>;
 

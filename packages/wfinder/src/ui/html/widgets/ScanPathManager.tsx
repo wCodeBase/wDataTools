@@ -267,24 +267,28 @@ export const ScanPathManager = defaultPropsFc(
         ],
         {
           lastScanedAt: (val, record) => {
+            let warnMessage = record.configChanged
+              ? "Configs changed, rescan required"
+              : "";
+            if (record.lastMessage) warnMessage += "\n" + record.lastMessage;
             const content = (
               <div
                 className={
                   "flex flex-row items-center truncate " +
-                  (record.lastMessage ? "text-red-400 cursor-pointer" : "")
+                  (warnMessage ? "text-red-400 cursor-pointer" : "")
                 }
               >
                 <span className="flex-shrink">{formatDate(val)}</span>
-                {record.lastMessage && (
+                {warnMessage && (
                   <span className="flex items-center flex-shrink-0 ml-1">
                     <ExclamationCircleFilled />
                   </span>
                 )}
               </div>
             );
-            if (record.lastMessage)
+            if (warnMessage)
               return (
-                <Tooltip title={"Last message: \n" + record.lastMessage}>
+                <Tooltip title={"Last message: \n" + warnMessage}>
                   {content}
                 </Tooltip>
               );
@@ -300,6 +304,7 @@ export const ScanPathManager = defaultPropsFc(
           path: "",
           createdAt: new Date(),
           dbInfo: EvDefaultDbInfo.value,
+          configChanged: false,
         }),
         SearchButton,
         ScanAddonOperations

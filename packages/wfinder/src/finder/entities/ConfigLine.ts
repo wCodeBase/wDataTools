@@ -6,8 +6,9 @@ import {
   UpdateDateColumn,
 } from "typeorm";
 import { TypeMsgConfigItem } from "../events/types";
-import { ConfigLineType } from "../types";
+import { ConfigLineType, SCAN_CONFIG_SET } from "../types";
 import { BaseDbInfoEntity } from "./BaseDbInfoEntity";
+import { ScanPath } from "./ScanPath";
 
 @Entity()
 export class ConfigLine extends BaseDbInfoEntity {
@@ -61,3 +62,39 @@ export class ConfigLine extends BaseDbInfoEntity {
     };
   }
 }
+
+const markScanConfigChange = async () => {
+  const paths = await ScanPath.find();
+  paths.forEach((v) => (v.configChanged = true));
+  await ScanPath.save(paths);
+};
+
+// @ts-ignore
+["save", "remove", "softRemove"].forEach((p: "save") => {
+  const old = ConfigLine.prototype[p];
+  ConfigLine.prototype[p] = async function (...args: any[]) {
+    const res = await old.call(this, ...args);
+    if (SCAN_CONFIG_SET.has(this.type)) {
+      await markScanConfigChange();
+    }
+    return res;
+  };
+});
+
+// @ts-ignore
+["save", "remove", "softRemove"].forEach((p: "save") => {
+  const old = ConfigLine[p];
+  // @ts-ignore
+  ConfigLine[p] = async function (...args: any[]) {
+    // @ts-ignore
+    const res = await old.apply(ConfigLine, args);
+    if (
+      args[0].find(
+        (v: any) => v instanceof ConfigLine && SCAN_CONFIG_SET.has(v.type)
+      )
+    ) {
+      await markScanConfigChange();
+    }
+    return res;
+  };
+});

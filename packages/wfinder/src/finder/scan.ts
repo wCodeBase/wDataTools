@@ -304,7 +304,7 @@ export const scanPath = async (
                       return true;
                     return false;
                   });
-                  await FileInfo.removeChildren(item.id, toRemoves);
+                  await FileInfo.removeChildren(folder.id, toRemoves);
                 }
                 scanStack.push({
                   id: folder.id,
@@ -520,7 +520,7 @@ export const doScan = async (
 
             const testDbPath = await testAndScanSubDb(
               absPath,
-              ignoreCtime,
+              ignoreCtime || pathToScan.configChanged,
               config,
               currentDepth,
               mScanBrake
@@ -533,7 +533,7 @@ export const doScan = async (
               errors = errors.concat(
                 await scanPath(
                   pathToScan,
-                  ignoreCtime,
+                  ignoreCtime || pathToScan.configChanged,
                   config,
                   currentDepth,
                   mScanBrake
@@ -560,7 +560,7 @@ export const doScan = async (
                 isSubDb: true,
               },
               false,
-              ignoreCtime,
+              ignoreCtime || pathToScan.configChanged,
               currentDepth,
               undefined,
               mScanBrake
@@ -571,6 +571,7 @@ export const doScan = async (
           if (mScanBrake.value)
             pathToScan.lastMessage = "Scanning is stopped manually.";
           else pathToScan.lastSuccessCost = Date.now() - pathScanStartAt;
+          if (!mScanBrake.value) pathToScan.configChanged = false;
           await pathToScan.save();
           if (mScanBrake.value) {
             sendUiCmdMessage({

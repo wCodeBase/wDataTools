@@ -15,6 +15,13 @@ export enum ConfigLineType {
   autoRescan,
 }
 
+export const SCAN_CONFIG_SET = new Set([
+  ConfigLineType.excludeFileName,
+  ConfigLineType.excludeChildrenFolderName,
+  ConfigLineType.excludeAbsPath,
+  ConfigLineType.excludePathRelativeToCurrent,
+]);
+
 export type TypeServerSetting = {
   bindAddressList: string[];
   allowIps: string[];

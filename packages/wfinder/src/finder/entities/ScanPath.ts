@@ -34,6 +34,9 @@ export class ScanPath extends BaseDbInfoEntity {
   @Column({ nullable: true })
   lastSuccessCost?: number;
 
+  @Column({ nullable: true })
+  configChanged?: boolean;
+
   constructor(path: string) {
     super();
     this.path = path;
