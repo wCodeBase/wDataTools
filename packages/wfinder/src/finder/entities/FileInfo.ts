@@ -15,7 +15,13 @@ import {
 } from "typeorm";
 import { splitPath } from "wjstools";
 import { interactYield } from "wjstools";
-import { createFtsTable, getConnection } from "../db";
+import {
+  checkCompleteDb,
+  createFtsTable,
+  getCachedConnection,
+  getConnection,
+  getDbTriggerNames,
+} from "../db";
 import { FileType } from "../types";
 import { DEFAULT_QUERY_LIMIT } from "./../common";
 import { getConfig, switchDb } from "./../db";
@@ -82,10 +88,11 @@ export class FileInfo extends BaseDbInfoEntity {
 
   async save() {
     const res = await super.save();
-    await FileInfo.query(
-      `insert into ${IndexTableName}(rowid, name) values(${this.id},?)`,
-      [this.name]
-    );
+    // Replaced by sql trigger
+    // await FileInfo.query(
+    //   `insert into ${IndexTableName}(rowid, name) values(${this.id},?)`,
+    //   [this.name]
+    // );
     return res;
   }
 
@@ -99,18 +106,19 @@ export class FileInfo extends BaseDbInfoEntity {
     const config = getConfig();
     while (toSave.length && !brake?.value) {
       if (await interactYield(5, 2000)) EvFileInfoChange.next(config);
-      const batch = toSave.splice(0, 100);
+      const batch = toSave.splice(0, 200);
       resList = resList.concat(await super.save(batch, options));
       // @ts-ignore
-      const rests: FileInfo[] = batch.filter((v) => v instanceof FileInfo);
-      while (true) {
-        const toInsert = rests.pop();
-        if (!toInsert) break;
-        await FileInfo.query(
-          `insert into ${IndexTableName}(rowid, name) values(${toInsert.id},?)`,
-          [toInsert.name]
-        );
-      }
+      // const rests: FileInfo[] = batch.filter((v) => v instanceof FileInfo);
+      // Replaced by sql trigger
+      // while (true) {
+      //   const toInsert = rests.pop();
+      //   if (!toInsert) break;
+      //   await FileInfo.query(
+      //     `insert into ${IndexTableName}(rowid, name) values(${toInsert.id},?)`,
+      //     [toInsert.name]
+      //   );
+      // }
     }
     return resList;
   }
@@ -157,6 +165,15 @@ export class FileInfo extends BaseDbInfoEntity {
       await DbIncluded.clear().catch((e) => {
         console.error("Clear DbIncluded table failed: ", e);
       });
+      const connection = getCachedConnection(getConfig());
+      if (connection) {
+        const triggers = (await getDbTriggerNames(connection)).filter((v) =>
+          v.includes(IndexTableName)
+        );
+        for (const trigger of triggers)
+          await handle.query(`drop trigger ${trigger}`);
+        await checkCompleteDb(connection);
+      }
       return [];
     }, false);
   }
@@ -368,15 +385,16 @@ export class FileInfo extends BaseDbInfoEntity {
   }
 
   static async removeNameIndexs(fileInfos: FileInfo[]) {
-    while (fileInfos.length) {
-      await interactYield();
-      const infos = fileInfos.splice(0, 100);
-      await FileInfo.query(
-        `delete from ${IndexTableName} where rowid in (${infos
-          .map((v) => v.id)
-          .join(",")})`
-      );
-    }
+    // Replaced by sql trigger
+    // while (fileInfos.length) {
+    //   await interactYield();
+    //   const infos = fileInfos.splice(0, 100);
+    //   await FileInfo.query(
+    //     `delete from ${IndexTableName} where rowid in (${infos
+    //       .map((v) => v.id)
+    //       .join(",")})`
+    //   );
+    // }
   }
 
   /**

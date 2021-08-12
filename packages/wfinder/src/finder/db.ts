@@ -23,11 +23,56 @@ import { ScanPath } from "./entities/ScanPath";
 
 export const createFtsTable = async (connection: Connection) => {
   const { tableName } = connection.getMetadata(FileInfo);
-  await connection.query(
-    `CREATE VIRTUAL TABLE ${IndexTableName} USING fts4(content="${tableName}",
+  try {
+    await connection.query(`CREATE VIRTUAL TABLE ${IndexTableName} USING fts4(content="${tableName}",
     tokenize=porter unicode61 "separators=/",
-    name);`
+    name);`);
+    await checkCompleteDb(connection);
+  } catch (e) {
+    console.log("Failed to create fts table: ", e);
+    throw new Error("Failed to create fts table: " + e);
+  }
+};
+
+export const getDbTriggerNames = async (
+  connection: Connection
+): Promise<string[]> => {
+  const triggers: any[] = await connection.query(
+    `select type,name from sqlite_master;`
   );
+  return triggers.filter((v) => v.type === "trigger").map((v) => v.name);
+};
+
+export const checkCompleteDb = async (connection: Connection) => {
+  try {
+    const { tableName } = connection.getMetadata(FileInfo);
+    const triggerPrefix = `${tableName}_${IndexTableName}`;
+    const triggers = await getDbTriggerNames(connection);
+    if (!triggers.includes(`${triggerPrefix}_bu`)) {
+      const sqls = [
+        `CREATE TRIGGER ${triggerPrefix}_bu BEFORE UPDATE ON ${tableName} BEGIN
+      DELETE FROM ${IndexTableName} WHERE docid=old.rowid;
+    END;`,
+        `CREATE TRIGGER ${triggerPrefix}_bd BEFORE DELETE ON ${tableName} BEGIN
+      DELETE FROM ${IndexTableName} WHERE docid=old.rowid;
+    END;`,
+
+        `CREATE TRIGGER ${triggerPrefix}_au AFTER UPDATE ON ${tableName} BEGIN
+      INSERT INTO ${IndexTableName}(docid, name) VALUES(new.rowid, new.name);
+    END;`,
+        `CREATE TRIGGER ${triggerPrefix}_ai AFTER INSERT ON ${tableName} BEGIN
+      INSERT INTO ${IndexTableName}(docid, name) VALUES(new.rowid, new.name);
+    END;
+    `,
+      ];
+      for (const sql of sqls) {
+        await connection.query(sql);
+      }
+    }
+  } catch (e) {
+    console.log("Failed to create triggers: ", e);
+    throw new Error("Failed to create triggers: " + e);
+  }
 };
 
 const dbType = "better-sqlite3";
@@ -292,6 +337,7 @@ export const {
           database: dbPath,
           entities: AUTO_CONNECT_ENTITIES,
         });
+        await checkCompleteDb(connection);
         if (!config.thumbnail) {
           const tmpConfig: TypeDbInfo = {
             ...config,
