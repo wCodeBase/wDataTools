@@ -27,6 +27,22 @@ import {
 } from "./coreEvents";
 import { JsonMoreEntity } from "./coreTypes";
 
+export const clsRootTrigger = (() => {
+  let cbs: (() => void)[] = [];
+  setInterval(() => {
+    cbs.forEach((cb) => cb());
+    cbs = [];
+  }, 500);
+  return <T>(cb: () => Promise<T>) => {
+    return new Promise<T>((res, rej) => {
+      cbs.push(async () => {
+        const data = await cb().catch(rej);
+        if (data) res(data);
+      });
+    });
+  };
+})();
+
 export function waitWsConnected(
   url: string,
   throwError: true,
@@ -201,31 +217,32 @@ export const watchAutoRescan = (() => {
     let lastScanAt = Date.now();
     let scanDuration = Infinity;
     let tHandle: NodeJS.Timeout | undefined;
-    const doWatch = async () => {
-      if (!isScanDurationAvailable(scanDuration)) return;
-      if (Date.now() - lastScanAt > scanDuration) {
-        lastScanAt = Date.now();
-        EvLog("Auto scan context: " + config.finderRoot);
-        await switchDb(config, async () => {
-          await doScan(
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            scanDuration
-          );
-        }).catch((e) => {
-          EvLogWarn("Auto scan failed, context: " + config.finderRoot, e);
-        });
-        lastScanAt = Date.now();
-      }
-      if (tHandle) clearTimeout(tHandle);
-      if (isScanDurationAvailable(scanDuration)) {
-        tHandle = setTimeout(doWatch, scanDuration);
-      }
-    };
+    const doWatch = () =>
+      clsRootTrigger(async () => {
+        if (!isScanDurationAvailable(scanDuration)) return;
+        if (Date.now() - lastScanAt > scanDuration) {
+          lastScanAt = Date.now();
+          EvLog("Auto scan context: " + config.finderRoot);
+          await switchDb(config, async () => {
+            await doScan(
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              undefined,
+              scanDuration
+            );
+          }).catch((e) => {
+            EvLogWarn("Auto scan failed, context: " + config.finderRoot, e);
+          });
+          lastScanAt = Date.now();
+        }
+        if (tHandle) clearTimeout(tHandle);
+        if (isScanDurationAvailable(scanDuration)) {
+          tHandle = setTimeout(doWatch, scanDuration);
+        }
+      });
 
     const subscribe = EvUiCmdResult.subscribe((res) => {
       if (

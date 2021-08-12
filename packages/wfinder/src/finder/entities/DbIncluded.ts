@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { Column, Entity, PrimaryColumn } from "typeorm";
 import { isPathEqual } from "wjstools";
-import { getConfig, switchDb } from "../db";
+import { getConfig, getThumbnail, switchDb } from "../db";
 import { EvFinderStatus, EvLogWarn } from "../events/events";
 import { Config } from "./../common";
 import { BaseDbInfoEntity, SubDatabaseIterators } from "./BaseDbInfoEntity";
@@ -64,6 +64,7 @@ SubDatabaseIterators.push(async (cb) => {
             dbPath,
             readOnly: true,
             isSubDb: true,
+            thumbnail: await getThumbnail(dbPath),
           },
           cb
         );

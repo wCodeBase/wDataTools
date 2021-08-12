@@ -118,19 +118,18 @@ export const AutoScanSetting = defaultPropsFc(
                   onChange={(v) => setState({ newDuration: v })}
                 />
                 <div className="flex justify-end my-1">
-                  {!!state.newDuration && (
-                    <Button
-                      className="mr-1"
-                      type="primary"
-                      size="small"
-                      loading={state.saving}
-                      onClick={() => {
-                        state.saveConfig({ duration: state.newDuration });
-                      }}
-                    >
-                      Save
-                    </Button>
-                  )}
+                  <Button
+                    className="mr-1"
+                    type="primary"
+                    size="small"
+                    loading={state.saving}
+                    disabled={!state.newDuration}
+                    onClick={() => {
+                      state.saveConfig({ duration: state.newDuration });
+                    }}
+                  >
+                    Save
+                  </Button>
                   {durationAvailable && (
                     <Button
                       type="primary"

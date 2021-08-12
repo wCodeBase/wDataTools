@@ -19,7 +19,7 @@ import { createFtsTable, getConnection } from "../db";
 import { FileType } from "../types";
 import { DEFAULT_QUERY_LIMIT } from "./../common";
 import { getConfig, switchDb } from "./../db";
-import { EvLogError } from "./../events/events";
+import { EvFileInfoChange, EvLogError } from "./../events/events";
 import { BaseDbInfoEntity } from "./BaseDbInfoEntity";
 import { DbIncluded } from "./DbIncluded";
 
@@ -82,7 +82,7 @@ export class FileInfo extends BaseDbInfoEntity {
 
   async save() {
     const res = await super.save();
-    await FileInfo.getRepository().query(
+    await FileInfo.query(
       `insert into ${IndexTableName}(rowid, name) values(${this.id},?)`,
       [this.name]
     );
@@ -91,18 +91,26 @@ export class FileInfo extends BaseDbInfoEntity {
 
   static async save<T extends BaseEntity>(
     entities: T[],
-    options?: SaveOptions
+    options?: SaveOptions,
+    brake?: BehaviorSubject<boolean>
   ) {
-    const resList = await super.save(entities, options);
-    // @ts-ignore
-    const rests: FileInfo[] = resList.filter((v) => v instanceof FileInfo);
-    while (true) {
-      const toInsert = rests.pop();
-      if (!toInsert) break;
-      await FileInfo.getRepository().query(
-        `insert into ${IndexTableName}(rowid, name) values(${toInsert.id},?)`,
-        [toInsert.name]
-      );
+    const toSave = [...entities];
+    let resList: T[] = [];
+    const config = getConfig();
+    while (toSave.length && !brake?.value) {
+      if (await interactYield(5, 2000)) EvFileInfoChange.next(config);
+      const batch = toSave.splice(0, 100);
+      resList = resList.concat(await super.save(batch, options));
+      // @ts-ignore
+      const rests: FileInfo[] = batch.filter((v) => v instanceof FileInfo);
+      while (true) {
+        const toInsert = rests.pop();
+        if (!toInsert) break;
+        await FileInfo.query(
+          `insert into ${IndexTableName}(rowid, name) values(${toInsert.id},?)`,
+          [toInsert.name]
+        );
+      }
     }
     return resList;
   }
@@ -117,10 +125,10 @@ export class FileInfo extends BaseDbInfoEntity {
     entities: T[],
     options?: RemoveOptions
   ) {
-    const resList = await super.remove(entities, options);
     // @ts-ignore
     const rests: FileInfo[] = resList.filter((v) => v instanceof FileInfo);
     if (rests.length) await FileInfo.removeNameIndexs(rests);
+    const resList = await super.remove(entities, options);
     return resList;
   }
 
@@ -140,12 +148,9 @@ export class FileInfo extends BaseDbInfoEntity {
       await handle.clear().catch((e) => {
         console.error("Clear FileInfo table failed: ", e);
       });
-      await handle
-        .getRepository()
-        .query(`drop table ${IndexTableName}`)
-        .catch((e) => {
-          console.error("Clear fts table failed: ", e);
-        });
+      await handle.query(`drop table ${IndexTableName}`).catch((e) => {
+        console.error("Clear fts table failed: ", e);
+      });
       await createFtsTable(await getConnection()).catch((e) => {
         console.error("Create fts table failed: ", e);
       });
@@ -363,12 +368,15 @@ export class FileInfo extends BaseDbInfoEntity {
   }
 
   static async removeNameIndexs(fileInfos: FileInfo[]) {
-    if (!fileInfos.length) return;
-    await FileInfo.getRepository().query(
-      `delete from ${IndexTableName} where rowid in (${fileInfos
-        .map((v) => v.id)
-        .join(",")})`
-    );
+    while (fileInfos.length) {
+      await interactYield();
+      const infos = fileInfos.splice(0, 100);
+      await FileInfo.query(
+        `delete from ${IndexTableName} where rowid in (${infos
+          .map((v) => v.id)
+          .join(",")})`
+      );
+    }
   }
 
   /**
@@ -427,6 +435,7 @@ export class FileInfo extends BaseDbInfoEntity {
       if (!children.length) break;
       const toRemove: FileInfo[] = [];
       for (const child of children) {
+        await interactYield();
         if (!existSet.has(child.name)) {
           await this.removeUnexistChildren(child.id, []);
           toRemove.push(child);
@@ -434,7 +443,6 @@ export class FileInfo extends BaseDbInfoEntity {
       }
       await this.removeNameIndexs(toRemove);
       toRemoveIds = toRemoveIds.concat(toRemove.map((v) => v.id));
-      await interactYield();
     }
     if (!brake?.value && toRemoveIds.length) await this.delete(toRemoveIds);
   }

@@ -339,7 +339,7 @@ export const {
   };
 })();
 
-export const { switchDb, getConfig, getDbFlags } = (() => {
+export const { switchDb, getConfig, getDbFlags, getThumbnail } = (() => {
   const dbSession = (() => {
     const session = createNamespace("wfinderDbSession");
     const KEY_CONFIG = "key_config";
@@ -366,7 +366,7 @@ export const { switchDb, getConfig, getDbFlags } = (() => {
           await initDb(config, getConfig());
         }
         await getConnection(config);
-        return session.runPromise(async () => {
+        return session.runAndReturn(async () => {
           session.set(KEY_CONFIG, config);
           if (flags) session.set(KEY_FLAGS, flags);
           return await cb();
@@ -378,6 +378,11 @@ export const { switchDb, getConfig, getDbFlags } = (() => {
     switchDb: dbSession.run,
     getConfig: dbSession.get,
     getDbFlags: dbSession.flags,
+    getThumbnail: async (dbPath: string) => {
+      return (
+        await getFinderCoreInfo(false, { finderRoot: "", dbName: "", dbPath })
+      ).thumbnail;
+    },
   };
 })();
 

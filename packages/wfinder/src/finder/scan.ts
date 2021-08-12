@@ -318,7 +318,7 @@ export const scanPath = async (
             }
           }
         }
-        await FileInfo.save(toSaveChils);
+        await FileInfo.save(toSaveChils, undefined, scanBrake);
         if (!scanBrake.value) {
           const info = await FileInfo.findOne(item.id);
           if (info && info.ctime.valueOf() !== item.ctime.valueOf()) {
@@ -374,19 +374,29 @@ const clsScan = (() => {
     };
   };
   const defaultScanVar = genScanVars();
-  return {
-    runPromise: cls.runPromise.bind(cls),
+  let allVars: typeof defaultScanVar[] = [];
+  const clsScan = {
+    run: cls.runAndReturn.bind(cls),
     update(values?: Partial<typeof defaultScanVar>) {
       const exist: typeof defaultScanVar | undefined = cls.get(clsVarKey);
       const toSet = exist ? { ...exist } : genScanVars();
       toSet.currentStartAt = new Date();
       if (values) Object.assign(toSet, values);
       cls.set(clsVarKey, toSet);
+      allVars.push(toSet);
+    },
+    clear() {
+      const current = clsScan.get();
+      allVars = allVars.filter((v) => v !== current);
     },
     get(): typeof defaultScanVar {
       return cls.get(clsVarKey) || defaultScanVar;
     },
+    getAll() {
+      return allVars;
+    },
   };
+  return clsScan;
 })();
 
 const resetScanBrake = async (paths?: string[], config = getConfig()) => {
@@ -413,7 +423,7 @@ export const doScan = async (
 ) => {
   let errors: string[] = [];
   if (isScanRoot) {
-    await clsScan.runPromise(async () => {
+    await clsScan.run(async () => {
       EvFinderStatus.next({ status: FinderStatus.scanning });
       await resetScanBrake(paths, config);
       clsScan.update({
@@ -421,6 +431,7 @@ export const doScan = async (
         startConfig: config,
       });
       await doScan(config, ignoreCtime, false);
+      clsScan.clear();
       if (await checkScanBrake(paths, config))
         sendUiCmdMessage({
           type: "warn",
@@ -450,12 +461,13 @@ export const doScan = async (
             );
         return res;
       })();
-      scanPaths.forEach((v) =>
-        EvFinderStatus.value.scanAbsPathContexIdtMap.set(
-          joinToAbsolute(v.dbInfo.finderRoot, v.path),
-          getDbInfoId(config)
-        )
-      );
+      scanPaths.forEach((v) => {
+        const absPath = joinToAbsolute(v.dbInfo.finderRoot, v.path);
+        const ids =
+          EvFinderStatus.value.scanAbsPathContexIdtMap.get(absPath) || [];
+        ids.push(getDbInfoId(config));
+        EvFinderStatus.value.scanAbsPathContexIdtMap.set(absPath, ids);
+      });
       EvFinderStatus.next(EvFinderStatus.value);
       if (config.isSubDb && !scanPaths.length) {
         scanPaths.push(new ScanPath("./"));
@@ -498,7 +510,7 @@ export const doScan = async (
             throw new Error(`Path to scan is no readable: "${absPath}"`);
           } else if (isPathInclude(config.finderRoot, absPath)) {
             const realPath = fs.realpathSync(absPath);
-            if (clsScan.get().Scaned.has(realPath)) {
+            if (clsScan.getAll().find((v) => v.Scaned.has(realPath))) {
               sendUiCmdMessage({
                 type: "warn",
                 message: "Skip scaned path: " + absPath,
@@ -568,7 +580,11 @@ export const doScan = async (
           }
           sendUiCmdMessage({
             type: "log",
-            message: `Path scan finished: ${absPath}.`+(config === clsScan.get().startConfig?'':" Context: "+config.finderRoot),
+            message:
+              `Path scan finished: ${absPath}.` +
+              (config === clsScan.get().startConfig
+                ? ""
+                : " Context: " + config.finderRoot),
           });
         } catch (e) {
           pathToScan.lastMessage = String(e);
@@ -586,10 +602,18 @@ export const doScan = async (
           }
         } finally {
           brakeSubscribe.unsubscribe();
-          EvFinderStatus.value.scanAbsPathContexIdtMap.delete(
-            joinToAbsolute(pathToScan.dbInfo.finderRoot, pathToScan.path)
+          const absPath = joinToAbsolute(
+            pathToScan.dbInfo.finderRoot,
+            pathToScan.path
           );
-          EvFinderStatus.next(EvFinderStatus.value);
+          const id = getDbInfoId(config);
+          const ids = EvFinderStatus.value.scanAbsPathContexIdtMap
+            .get(absPath)
+            ?.filter((v) => v !== id);
+          if (!ids?.length)
+            EvFinderStatus.value.scanAbsPathContexIdtMap.delete(absPath);
+          else EvFinderStatus.value.scanAbsPathContexIdtMap.set(absPath, ids);
+          EvFinderStatus.next({ ...EvFinderStatus.value });
         }
       }
     });
